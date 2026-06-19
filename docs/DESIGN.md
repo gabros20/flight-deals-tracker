@@ -140,13 +140,58 @@ This yields a **hybrid architecture** that is:
 - **Testing Strategy**: Mock providers for unit tests; live integration tests on key routes.
 
 ## 6. Non-Functional Requirements Addressed
-
+## 6. Non-Functional Requirements Addressed
 - **Maintainability**: Thin wrappers around proven code → minimal custom logic.
 - **Reliability**: Multiple data sources + history tracking.
 - **Usability**: Natural language via skill + powerful CLI.
 - **Cost**: Mostly free (direct APIs + optional cheap Apify runs).
 - **Privacy**: All data local + user-controlled.
-
 This design maximizes reuse of working components (`cohaolain/ryanair-py`, wizzair-scraper patterns, X Telegram bot patterns, Apify) while creating a clean, category-aware system tailored to the user's broad European island/seaside/gem/shopping searches and long-term price tracking needs.
+Next: PLAN.md (phased implementation roadmap).
+
+## 7. Second Round Design Refinements (Deeper Inspection)
+
+After re-cloning and deeper file inspection of the source repositories, several valuable patterns and missed details were identified and folded into the architecture:
+
+### Additional Insights from Inspected Code
+
+- **cohaolain/ryanair-py**:
+  - `SessionManager` pattern (bootstrap cookies by visiting main site first) is simple and effective for maintaining sessions.
+  - Clean `dataclass` models (`Flight`, `Trip`) with `departureTime`, `flightNumber`, `price`, `currency`, full origin/destination names — excellent for normalization.
+  - Uses `backoff` for retry logic on queries.
+  - Supports rich parameters (destination_country, time windows, max_price, custom_params).
+
+- **@2bad/ryanair** (TypeScript reference):
+  - Strong Zod schemas for `Fare`, `CheapestFares`, `RoundTrip`, `Price` — inspires use of Pydantic models in Python for validation and type safety.
+  - `findDailyFaresInRange` implementation (split by month → parallel `getCheapestPerDay` → flatten) is highly efficient for broad date-range searches.
+  - Modular separation (`airports/`, `fares/`, `flights/`) and MCP tools (agent-friendly endpoints) are valuable for future Hermes skill integration.
+
+- **ryantrak**:
+  - Simple, proven CSV schema for price history (`timestamp_utc, origin, destination, departure_date, arrival_date, price, currency`).
+  - GitHub Actions + dataclass `SearchConfig` pattern for scheduled tracking.
+
+- **Wizz Air patterns** (from earlier scraper analysis):
+  - Need explicit support for bundle types (BASIC, WIZZ GO / MIDDLE, PLUS) and WDC pricing in the `WizzProvider`.
+
+### Refinements Integrated into the Design
+
+1. **Provider Layer Enhancements**:
+   - `RyanairProvider` will incorporate `SessionManager`-style cookie bootstrap and `backoff` retry.
+   - Add Pydantic models mirroring the clean `Flight`/`Trip` dataclasses and Zod `Fare` schemas.
+   - Implement `find_daily_fares_in_range` style logic for efficient category-wide date scanning.
+
+2. **History Store**:
+   - Adopt the exact CSV column structure from `ryantrak` as the initial simple storage format (easy to migrate to SQLite later).
+
+3. **Wizz Provider**:
+   - Explicitly model bundle types and WDC flag in result objects.
+
+4. **Future-Proofing**:
+   - Reserve space for MCP-style tool exposure (from 2bad) so the system can later be exposed as a Hermes-native agent tool.
+
+5. **Error & Resilience**:
+   - Centralize 409 "client-version" refresh logic (Ryanair) and dynamic version detection (Wizz) inside the Provider layer with clear logging.
+
+These refinements make the architecture even more robust and directly informed by production-grade code patterns from the inspected tools.
 
 Next: PLAN.md (phased implementation roadmap).
