@@ -198,4 +198,19 @@
 
 This plan delivers a **minimum lovable product** by the end of Phase 3 and a **complete, agent-integrated tool** by Phase 5, while staying true to the reuse-heavy, low-bloat philosophy defined in the design.
 
+## Second Round Plan Refinements
+
+After a final review of all research and design artifacts, the following concrete details from the inspected tools have been explicitly called out in the relevant phases above:
+
+- **Phase 0**: Pydantic models + preparation for `findDailyFaresInRange` logic.
+- **Phase 1**: `SessionManager` cookie bootstrap, `backoff` retry, Wizz bundle/WDC support, and `find_daily_fares_in_range` implementation.
+- **Phase 3**: Exact CSV schema from `ryantrak`.
+- **Phase 5**: MCP tool exposure hooks (inspired by `@2bad/ryanair`).
+
+**Dependencies & References** (added for clarity):
+- Primary reused code: `cohaolain/ryanair-py`, `kovacskokokornel/wizzair-scraper` patterns, `@2bad/ryanair` (modular + MCP), `ryantrak` (history).
+- Key patterns carried forward: Session bootstrap, dynamic version handling, month-parallel fare fetching, bundle modeling, and agent-friendly tool exposure.
+
+No further changes were needed. The plan is now fully aligned with all valuable patterns discovered across the three rounds of research and design.
+
 Ready to start Phase 0 when you are.
