@@ -143,7 +143,48 @@ Haversine or simple great-circle for "travel time" proxy + real flight duration 
 3. Prototype: Fetch Ryanair airports, build destinations.json skeleton with sample tags.
 4. Git commits after each doc + milestone.
 5. Test key endpoints locally (terminal).
-
 This research used exhaustive web_search + GitHub discovery. All promising components identified. Tool is feasible with direct APIs for Ryanair + targeted scraping for Wizz. Ready to build.
+**Repo state**: Initialized, structure created (src/data/docs/scripts). This doc committed next.
+
+## 10. Second Round Research (X/Twitter + 2025/2026 Updates)
+
+Additional research performed using X search and targeted web queries for recent discussions, API stability, and practical implementations (as of mid-2026).
+
+### Ryanair Updates from X
+- Confirmed: Ryanair has **no official public developer API**. All access is via reverse-engineered endpoints.
+- `@2bad/ryanair` (npm) remains the most referenced unofficial wrapper in developer conversations.
+- New maintained Apify actor (June 2026): `apify.com/maximedupre/ryanair-scraper` — dedicated Ryanair scraper as a low-maintenance option.
+- Price tracking + Telegram alert bots using cron/polling are common personal projects.
+
+### Wizz Air Updates from X
+- No official API. Reverse-engineered endpoints (timetable + search) still functional but require active maintenance.
+- API version in URL/path changes frequently (examples: 10.1.0, 24.6.0, 27.13.0 reported in 2025).
+- 2024 Hungarian dev thread showed ongoing debugging of `be.wizzair.com/{version}/Api/search/timetable` and `/search` endpoints; updating version string often resolves 404s.
+- Wizz deploys aggressive protections (DataDome captcha on some search endpoints, Akamai Bot Manager).
+- Apify-style actors recommended for stability when self-maintenance becomes burdensome.
+
+### Practical Telegram + Cron Price Alert Bots (from X)
+- Multiple detailed threads (e.g., @micascapino_, @alp0x01) describe building working bots:
+  - Poll airline calendar/pricing endpoints frequently (~every 2 minutes in one successful case).
+  - Store price history in SQLite/Supabase/JSON.
+  - Send instant Telegram notifications on drops below threshold.
+  - Built with Node.js (`node-telegram-bot-api`) or Python, often generated via Cursor/Claude.
+  - Existing public bots mentioned: AviaTipsBot, Airtrack Bot.
+- Self-hosted stack that works well: Python/Node + APScheduler or GitHub Actions + SQLite + Telegram.
+- Emphasis on reverse-engineering via browser DevTools Network tab (capturing exact XHR/JSON calls + headers).
+
+### 2025/2026 Technical Challenges (Web Sources)
+- **Wizz Air**: Recent breakage reports (uBlockOrigin issues, 2025) show DataDome captcha on `be.wizzair.com/{version}/Api/search/search`. Solutions involve custom filters or Playwright stealth.
+- **Ryanair**: `client-version` header on booking/availability endpoint still critical (409 "Availability declined" on mismatch). Fare-finder endpoints (`/farfnd/v4/`) are more stable. Dynamic version refresh on 409 errors is the recommended pattern.
+- Legal note: Ryanair has pursued legal action against scrapers (injunctions); personal/non-commercial use is lower risk.
+- `2BAD/ryanair` package remains actively maintained (recent MCP tools, v3 airport endpoints, changelog updates).
+
+### Updated Recommendations
+- **Ryanair**: Prefer `@2bad/ryanair` logic or `ryanair-py` + Apify `maximedupre/ryanair-scraper` as fallback.
+- **Wizz Air**: Start with dynamic-version requests client (modeled on kovacskokokornel) but have Apify or Playwright fallback ready. Monitor version strings from site bundles.
+- **Bot/Tracking Layer**: Strongly consider the proven Node.js + Telegram + polling patterns shared on X for the notification/cron features. These are battle-tested for exactly this use case.
+- **Overall Architecture**: Hybrid (direct API where possible + platform actor fallback + custom bot logic) gives the best resilience.
+
+These findings reinforce the original plan while adding concrete, recent implementation patterns and warnings about API volatility.
 
 **Repo state**: Initialized, structure created (src/data/docs/scripts). This doc committed next.
