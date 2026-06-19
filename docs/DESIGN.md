@@ -194,4 +194,18 @@ After re-cloning and deeper file inspection of the source repositories, several 
 
 These refinements make the architecture even more robust and directly informed by production-grade code patterns from the inspected tools.
 
+## 8. Final Third Review Confirmation
+
+One final pass was performed (additional web + X searches + re-inspection of farepy, flight-finder, Apify MCP, and recent MCP/agent patterns).
+
+**Conclusion**: No significant missed patterns that would improve the current design without adding bloat or over-engineering.
+
+**Minor reusable elements noted (kept out of core design for simplicity)**:
+- `farepy` normalization layer (useful if we later want easy Google Flights fallback alongside Ryanair/Wizz).
+- `flight-finder` self-hosted history + LLM query patterns (inspiration only; our CLI + Telegram approach is lighter and more aligned with user preference).
+- Apify MCP server exposure (already aligned with our existing note on MCP future-proofing from @2bad/ryanair).
+- Broader MCP + Claude/Cursor automation trend (reinforces keeping Provider layer clean and tool-exposable).
+
+The design remains lean, focused on direct Ryanair + Wizz reuse, category-aware search, and reliable tracking/alerting. All high-value patterns from the ecosystem have been considered and selectively incorporated where they add clear value without complexity.
+
 Next: PLAN.md (phased implementation roadmap).
