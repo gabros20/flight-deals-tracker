@@ -1,5 +1,6 @@
 from flight_deals.providers.ryanair import RyanairProvider
 from flight_deals.providers.wizz import WizzProvider
+from flight_deals.providers.apify import ApifyProvider
 from flight_deals.registry.destinations import DestinationRegistry
 from flight_deals.models import FlightDeal
 from typing import List, Optional, Tuple
@@ -12,6 +13,7 @@ class DealOrchestrator:
         config = get_config()
         self.ryanair = RyanairProvider()
         self.wizz = WizzProvider()
+        self.apify = ApifyProvider()
         self.registry = DestinationRegistry()
         self.max_workers = max_workers or config.max_workers
 
@@ -35,7 +37,7 @@ class DealOrchestrator:
 
         def fetch_for_dest(dest):
             local_results = []
-            # Outbound direct
+            # Outbound direct (LCC)
             try:
                 ryanair_out = self.ryanair.get_cheapest_flights(origin, date_from, date_to, dest.iata)
                 local_results.extend(ryanair_out)
@@ -47,7 +49,15 @@ class DealOrchestrator:
             except Exception:
                 pass
 
-            # Return legs
+            # Apify for multi-source / connections
+            if connections and self.apify.is_available:
+                try:
+                    apify_results = self.apify.get_cheapest_flights(origin, date_from, date_to, dest.iata)
+                    local_results.extend(apify_results)
+                except Exception:
+                    pass
+
+            # Return legs (LCC only for now)
             if return_date_from and return_date_to:
                 try:
                     ryanair_ret = self.ryanair.get_cheapest_flights(dest.iata, return_date_from, return_date_to, origin)
@@ -59,6 +69,14 @@ class DealOrchestrator:
                     local_results.extend(wizz_ret)
                 except Exception:
                     pass
+
+                if connections and self.apify.is_available:
+                    try:
+                        apify_ret = self.apify.get_cheapest_flights(dest.iata, return_date_from, return_date_to, origin)
+                        local_results.extend(apify_ret)
+                    except Exception:
+                        pass
+
             return local_results
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
@@ -72,8 +90,16 @@ class DealOrchestrator:
         if max_price:
             results = [d for d in results if d.price <= max_price]
 
-        results.sort(key=lambda x: x.price)
-        return results
+        # Deduplicate by key + keep cheapest
+        seen = {}
+        for d in results:
+            key = (d.origin, d.destination, d.departure_date, d.source)
+            if key not in seen or d.price < seen[key].price:
+                seen[key] = d
+
+        deduped = list(seen.values())
+        deduped.sort(key=lambda x: x.price)
+        return deduped
 
     def find_roundtrip_deals(
         self,

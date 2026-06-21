@@ -21,6 +21,12 @@ class FlightDealsConfig(BaseModel):
     data_dir: str = Field(default="data")
     enable_cache: bool = True
 
+    # Apify multi-source config (for connections + broader coverage)
+    apify_token: Optional[str] = None
+    apify_actor_id: str = Field(default="makework36/flight-price-scraper")
+    apify_enabled: bool = True
+    apify_cache_ttl_hours: int = Field(default=12, ge=0)
+
     @property
     def data_path(self) -> Path:
         return Path(self.data_dir)
@@ -34,6 +40,10 @@ class FlightDealsConfig(BaseModel):
     @property
     def history_path(self) -> Path:
         return self.data_path / "price_history.csv"
+
+    @property
+    def has_apify(self) -> bool:
+        return bool(self.apify_token) and self.apify_enabled
 
 
 def get_config_path() -> Path:
@@ -80,17 +90,22 @@ def load_config() -> FlightDealsConfig:
         "FLIGHT_DEALS_MAX_WORKERS": "max_workers",
         "FLIGHT_DEALS_DATA_DIR": "data_dir",
         "FLIGHT_DEALS_ENABLE_CACHE": "enable_cache",
+        # Apify
+        "APIFY_TOKEN": "apify_token",
+        "APIFY_ACTOR_ID": "apify_actor_id",
+        "FLIGHT_DEALS_APIFY_ENABLED": "apify_enabled",
+        "FLIGHT_DEALS_APIFY_CACHE_TTL_HOURS": "apify_cache_ttl_hours",
     }
 
     for env_var, field in env_mapping.items():
         if env_var in os.environ:
             val = os.environ[env_var]
-            if field in ("cache_ttl_hours", "max_workers"):
+            if field in ("cache_ttl_hours", "max_workers", "apify_cache_ttl_hours"):
                 try:
                     config_data[field] = int(val)
                 except ValueError:
                     pass
-            elif field == "enable_cache":
+            elif field == "enable_cache" or field == "apify_enabled":
                 config_data[field] = val.lower() in ("true", "1", "yes")
             else:
                 config_data[field] = val
@@ -98,19 +113,13 @@ def load_config() -> FlightDealsConfig:
     return FlightDealsConfig(**config_data)
 
 
-# Global config instance (lazy loaded)
-_config: Optional[FlightDealsConfig] = None
+def save_user_config(config: FlightDealsConfig) -> None:
+    """Save config to user config file (excludes secrets in some cases)"""
+    path = get_config_path()
+    # Only save non-secret fields or let user manage token via env
+    data = config.model_dump(exclude={"apify_token", "telegram_bot_token"})
+    path.write_text(json.dumps(data, indent=2))
 
 
 def get_config() -> FlightDealsConfig:
-    global _config
-    if _config is None:
-        _config = load_config()
-    return _config
-
-
-def save_user_config(config: FlightDealsConfig) -> Path:
-    """Save config to user directory"""
-    path = get_config_path()
-    path.write_text(config.model_dump_json(indent=2))
-    return path
+    return load_config()

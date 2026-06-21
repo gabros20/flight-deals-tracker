@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field
 
 
@@ -21,9 +21,13 @@ class FlightDeal(BaseModel):
     return_date: Optional[str] = None
     price: float
     currency: str
-    source: str  # "ryanair" or "wizz"
+    source: str  # "ryanair", "wizz", "apify:google_flights", "apify:kiwi" etc.
     flight_number: Optional[str] = None
     duration_minutes: Optional[int] = None
+    # New fields for connections / multi-source
+    stops: int = 0
+    source_details: Dict[str, Any] = Field(default_factory=dict)
+    booking_url: Optional[str] = None
 
 
 class PriceSnapshot(BaseModel):

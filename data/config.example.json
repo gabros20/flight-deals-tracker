@@ -6,5 +6,9 @@
   "cache_ttl_hours": 6,
   "max_workers": 8,
   "data_dir": "data",
-  "enable_cache": true
+  "enable_cache": true,
+  "apify_token": "YOUR_APIFY_TOKEN_HERE (get from apify.com)",
+  "apify_actor_id": "makework36/flight-price-scraper",
+  "apify_enabled": true,
+  "apify_cache_ttl_hours": 12
 }

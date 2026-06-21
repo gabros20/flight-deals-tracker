@@ -60,16 +60,20 @@ def search(
     table.add_column("Date", style="green")
     table.add_column("Price", style="magenta")
     table.add_column("Source", style="yellow")
+    table.add_column("Stops", style="dim")
 
     for deal in deals[:25]:
         route = f"{deal.origin} → {deal.destination}"
-        table.add_row(route, deal.departure_date, f"{deal.price} {deal.currency}", deal.source)
+        stops_str = str(getattr(deal, "stops", 0)) if getattr(deal, "stops", 0) > 0 else "direct"
+        table.add_row(route, deal.departure_date, f"{deal.price} {deal.currency}", deal.source, stops_str)
 
     console.print(table)
     note = f"Showing top {min(25, len(deals))} of {len(deals)} deals (cached where possible)"
     if connections:
         note += " | --connections includes popular 1-stop via major hubs (VIE, MUC, etc.)"
     console.print(f"[dim]{note}[/dim]")
+    if hasattr(orchestrator, "apify") and orchestrator.apify.is_available:
+        console.print("[yellow]Note: Apify multi-source used (~/bin/bash.0003/search). Results may include self-transfers.[/yellow]")
 
 
 @app.command()

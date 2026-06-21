@@ -91,3 +91,19 @@ Ask Hermes:
 - Always verify final prices on the official airline websites.
 - Caching and reachability dramatically reduce API calls.
 - The project is fully versioned with git.
+
+## Apify Integration (Connections & Multi-Airline)
+The tool now supports Apify as the cheapest way to get true connection and multi-airline results.
+
+- Use `--connections` flag to enable.
+- Requires free Apify account + token (set via env `APIFY_TOKEN` or config).
+- Cost: ~$0.0003 per search (heavily cached).
+- Results include stops count and source (Google Flights / Kiwi / etc.).
+- Virtual interlining / self-transfer support.
+
+Example:
+```
+flight-deals search --category european-islands --date-from 2026-08-01 --date-to 2026-08-10 --connections
+```
+
+See `data/config.example.json` and docs/ for setup.
