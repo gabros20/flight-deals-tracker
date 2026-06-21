@@ -61,11 +61,16 @@ def search(
     table.add_column("Price", style="magenta")
     table.add_column("Source", style="yellow")
     table.add_column("Stops", style="dim")
+    table.add_column("Ground", style="blue")
+    table.add_column("Total", style="green")
 
     for deal in deals[:25]:
         route = f"{deal.origin} → {deal.destination}"
         stops_str = str(getattr(deal, "stops", 0)) if getattr(deal, "stops", 0) > 0 else "direct"
-        table.add_row(route, deal.departure_date, f"{deal.price} {deal.currency}", deal.source, stops_str)
+        g = getattr(deal, "ground_leg", None)
+        ground_str = f"{g.duration_minutes}m" if g else "-"
+        total_str = f"{getattr(deal, "total_duration_minutes", "-")}m" if getattr(deal, "total_duration_minutes", None) else "-"
+        table.add_row(route, deal.departure_date, f"{deal.price} {deal.currency}", deal.source, stops_str, ground_str, total_str)
 
     console.print(table)
     note = f"Showing top {min(25, len(deals))} of {len(deals)} deals (cached where possible)"

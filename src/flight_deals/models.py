@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, Field
 
 
@@ -28,6 +28,9 @@ class FlightDeal(BaseModel):
     stops: int = 0
     source_details: Dict[str, Any] = Field(default_factory=dict)
     booking_url: Optional[str] = None
+    # Ground transport enrichment for connections
+    ground_leg: Optional["GroundLeg"] = None
+    total_duration_minutes: Optional[int] = None
 
 
 class PriceSnapshot(BaseModel):
@@ -39,3 +42,15 @@ class PriceSnapshot(BaseModel):
     price: float
     currency: str
     source: str
+
+
+class GroundLeg(BaseModel):
+    """Represents a ground transport leg between two airports or airport and destination."""
+    from_iata: str
+    to_iata: str
+    mode: str  # "driving", "train", "bus", "taxi", "public_transit"
+    duration_minutes: int
+    distance_km: float
+    estimated_cost_eur: Optional[float] = None
+    notes: str = ""
+    options: List[str] = Field(default_factory=list)  # e.g. ["train", "bus"] for multi

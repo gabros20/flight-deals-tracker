@@ -118,3 +118,14 @@ class DestinationRegistry:
 
     def get_connection_hubs(self, origin: str) -> List[str]:
         return CONNECTION_HUBS.get(origin.upper(), [])
+    def get_ground_options(self, from_iata: str, to_iata: str) -> List[Dict]:
+        """Return ground transport options between two airports (integrated with GroundTransport)."""
+        from flight_deals.ground import GroundTransport
+        gt = GroundTransport()
+        legs = gt.get_ground_options(from_iata, to_iata)
+        return [leg.model_dump() for leg in legs]
+
+    def estimate_connection_efficiency(self, origin: str, hub: str, dest: str, flight1_min: int = 90, flight2_min: int = 120) -> Dict:
+        from flight_deals.ground import GroundTransport
+        gt = GroundTransport()
+        return gt.estimate_total_connection_time(origin, hub, dest, flight1_min, flight2_min)

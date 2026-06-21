@@ -6,6 +6,7 @@ from flight_deals.models import FlightDeal
 from typing import List, Optional, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from flight_deals.config import get_config
+from flight_deals.ground import GroundTransport
 
 
 class DealOrchestrator:

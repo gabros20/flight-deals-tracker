@@ -1,69 +1,76 @@
 # Flight Deals Tracker — Implementation Plan (Updated)
 
 **Update Date**: 2026-06-21
-**New Focus**: Apify Integration for Connections (Phase 6)
+**Focus**: Phase 7 - Ground Transport Efficiency (Option A: Integrated)
 
 ## Phases Completed
-- Phase 0-5: Foundation, Providers (Ryanair/Wizz), Registry, Orchestrator, Config/Cache, Hermes skill, Connections registry logic.
+- Phase 0-6: Foundation, Providers (Ryanair/Wizz/Apify), Registry, Orchestrator, Config/Cache, Hermes skill, Connections registry + Apify multi-source.
 
-## Phase 6: Apify Multi-Source Provider for Connections (Current)
+## Phase 7: Ground Transport for Realistic Connections (Current - Option A)
 
 **Objectives**
-- Add cheapest multi-airline support using Apify (~$0.0003/search).
-- Turn `--connections` into real 1-stop / virtual interlining results (Google Flights + Kiwi data).
-- Keep direct LCC searches free and primary.
-- Make fully optional (no key = no Apify calls).
-- Strong caching + cost warnings.
+- Address the "missing unaccounted time" in connection searches.
+- Calculate realistic **distance, travel time, and travel options** (driving, public transport) between airports/hubs.
+- Integrate into `--connections` flows so users see total door-to-door estimates.
+- Use free/low-cost sources: haversine (baseline), OSRM (driving), Transitous/MOTIS (public transit).
+- Precompute for common European hubs from BUD.
+- Add efficiency scoring and filters.
+- Keep everything optional, cached, and local.
 
 **Tasks**
-1. Update RESEARCH.md, DESIGN.md, PLAN.md (this doc) with Apify details.
-2. Extend `FlightDealsConfig`:
-   - apify_token, apify_actor_id, apify_enabled, apify_cache_ttl_hours.
-3. Enhance `FlightDeal` model:
-   - stops: int
-   - source_details: dict
-   - booking_url: Optional[str]
-4. Implement `providers/apify.py` (TDD):
-   - Class ApifyProvider.
-   - Uses requests + Apify run API.
-   - Method: get_cheapest_flights(...) returning normalized deals.
-   - Graceful degradation if no token.
-5. Update `DealOrchestrator.search_by_category`:
-   - When connections=True, also query ApifyProvider.
-   - Merge results intelligently.
-6. Update CLI `search` command:
-   - Better table columns for stops and detailed source.
-   - Warning when Apify is used (cost).
-7. Enhance cache.py for Apify-specific TTL.
-8. Add `tests/test_apify.py` (mocked API responses).
-9. Update:
-   - data/config.example.json
-   - README.md
-   - ~/.hermes/skills/travel/flight-deals/SKILL.md
-   - scripts/daily_track.py (optional broad connections run)
-10. Manual test with placeholder (dry-run mode).
-11. Git commit with clear message.
+1. Update RESEARCH.md, DESIGN.md, PLAN.md with ground transport findings and integration plan.
+2. Add `src/flight_deals/ground.py`:
+   - `GroundTransport` class.
+   - Haversine distance.
+   - OSRM public API for driving time/distance.
+   - Optional Transitous integration (public API for public transport options).
+   - Return structured `GroundLeg` options (mode, time_min, distance_km, cost_estimate, steps).
+3. Enhance models:
+   - Add `GroundLeg` Pydantic model.
+   - Extend `FlightDeal` with optional `ground_leg: Optional[GroundLeg] = None` and `total_duration_minutes`.
+4. Update `DestinationRegistry`:
+   - `get_ground_options(origin_iata, dest_iata)` 
+   - `get_connection_efficiency(origin, dest, flight_time_min)` 
+   - Preload common ground data or compute on fly with cache.
+5. Update `DealOrchestrator`:
+   - When `connections=True`, enrich deals with ground legs between origin-hub or hub-dest.
+   - Compute total effective time (air + ground + buffer).
+   - Sort by price or by total_time.
+6. Update CLI `search`:
+   - New columns: Ground Time, Total Time, Ground Mode.
+   - Options: `--max-ground-minutes`, `--show-ground-details`.
+7. Add caching for ground results (leverage existing FlightCache or dedicated).
+8. Add `tests/test_ground.py` (TDD first: haversine, OSRM mock, integration).
+9. Update config for ground settings (osrm_base_url, transit_api, precompute).
+10. Update data/ with `ground_transfers.json` sample for BUD hubs.
+11. Update README, Hermes skill, daily_track.py.
+12. Full tests + manual verification on BUD connections.
+13. Git commit.
 
 **Deliverables**
-- Working `flight-deals search --category european-islands --connections --date-from ...` that can return multi-source results when token is set.
+- `flight-deals search --category european-islands --connections --date-from ...` now shows realistic ground time and total door-to-door.
+- Example output includes ground options for hub connections (e.g. BUD-VIE ground + VIE-PMI).
 - All tests passing.
-- Clear docs on cost and configuration.
+- Clear documentation on sources and limitations.
 
 **Verification**
-- Without token: falls back to current behavior, no errors.
-- With mock token: returns deals with stops > 0 and source containing "apify".
-- Caching prevents repeated paid calls.
-- CLI output clearly labels connection deals.
+- Haversine matches known distances.
+- OSRM calls return plausible driving times.
+- Connections results include ground data without breaking direct searches.
+- `--max-ground-minutes 60` filters unrealistic options.
+- No external API keys required (public endpoints).
 
 **Guiding Rules**
-- TDD: Write failing test → implement → pass.
-- Optional & safe: Never require Apify token.
-- Cost-aware: Cache aggressively.
-- Reuse existing models/orchestrator patterns.
+- TDD first.
+- Free-first (OSRM + Transitous public).
+- Cache aggressively (ground data is stable).
+- Extend existing connection logic rather than replace.
+- Local execution only.
 
 ---
 
-## Future Phases (Post 6)
-- Phase 7: Advanced history analysis + price drop alerts using Apify data.
-- Phase 8: Distance / travel-time filters using lat/lon.
-- Polish + full Hermes cron integration for connections.
+## Future Phases (Post 7)
+- Phase 8: Advanced efficiency scoring + price-per-hour.
+- Phase 9: Full history analysis + alerts.
+- Polish + precomputed matrices for all 58 airports.
+- Optional self-hosted OSRM/Transitous for privacy/speed.

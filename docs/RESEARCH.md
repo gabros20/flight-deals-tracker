@@ -51,3 +51,35 @@
 - TDD implementation.
 - Hermes skill enhancement.
 - Config support for token (user will provide later).
+
+## 13. Ground Transport for Connections (Option A Research - 2026)
+
+**Problem**: Flight searches ignore realistic ground time between airports/hubs and destinations. This is critical for 1-stop connections via VIE/MUC/FRA etc. from BUD.
+
+**Key Findings**:
+- Commercial tools (Google Flights, Skyscanner, Kayak): Use only airport MCTs. Ground between airports or to city is missing or manual.
+- Kiwi.com: Best partial support; added some multimodal ground.
+- Best free data sources:
+  - **OSRM (OpenStreetMap)**: Free public or self-host. Table/Route API for driving time + distance. Perfect baseline.
+  - **Transitous + MOTIS**: Free pan-European public transit router (GTFS + OSM). Returns real journeys with times, modes, transfers.
+  - Haversine (lat/lon): Instant rough distance.
+  - Rome2Rio: Good multimodal but API degraded (scrape or Apify as fallback).
+  - GTFS feeds (FlixBus, national) for schedules.
+- Precompute for small set (58 airports) is highly efficient.
+- Academic papers used Google Maps for European airport access/egress; we can replicate with free OSRM.
+
+**Integration Strategy (Option A)**:
+- Add `GroundTransport` module.
+- Enrich connections with ground legs.
+- Compute total door-to-door time.
+- Options in CLI and filters.
+- Sources: OSRM public + Transitous public + static precompute.
+- No paid keys required initially.
+
+**Implementation Notes**:
+- Use existing lat/lon in destinations.json.
+- Cache ground results (stable data).
+- For Apify connections: post-process with ground enrichment.
+- Limitations: Public APIs have rate limits → cache + fallbacks.
+
+**Sources**: OSRM docs, Transitous API, MOTIS, GTFS open data portals, academic papers on airport access times.
