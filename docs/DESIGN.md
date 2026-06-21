@@ -132,3 +132,19 @@ This directly solves the "unaccounted time and travel options" gap identified in
 - Registry can preload from ground_transfers.json.
 
 This makes connection searches "efficient" by surfacing realistic options and allowing users to optimize for time or value.
+
+
+## Phase 8: Multi-Airport Self-Transfer Engine
+
+**Key Design**:
+- FlightDeal gains optional connection_path: List[dict] to represent full itineraries (flight leg + ground leg + flight leg).
+- Orchestrator has a new _build_composite_deals method that:
+  1. Gets multi-airport entry airports reachable from origin.
+  2. Fetches deals to those entry airports.
+  3. For interesting destinations, fetches from sibling exit airports.
+  4. Attaches GroundLeg between entry and exit.
+  5. Creates composite FlightDeal with full path and adjusted total time/price.
+- Ground enrichment is generalized: always consider short ground for multi-airport pairs even if not the direct deal pair.
+- Registry's MULTI_AIRPORT_CITIES drives the logic.
+- CLI renders path when present (e.g. "BUD→BGY + 79m ground + MXP→TFS").
+- Backward compatible: direct deals unchanged.

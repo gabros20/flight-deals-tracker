@@ -69,3 +69,6 @@ class PriceHistoryStore:
                 if len(snapshots) >= limit:
                     break
         return snapshots
+
+# Phase 8 note: Composite connection deals (with connection_path) are supported.
+# When storing, the full path info is preserved in source_details if needed.

@@ -73,7 +73,27 @@ def search(
 
     for deal in deals[:25]:
         route = f"{deal.origin} → {deal.destination}"
+        if getattr(deal, "connection_path", None) and len(deal.connection_path) > 1:
+            parts = []
+            for leg in deal.connection_path:
+                if leg.get("type") == "flight":
+                    parts.append(f'{leg.get("from")}→{leg.get("to")}')
+                elif leg.get("type") == "ground":
+                    parts.append(f'ground {leg.get("duration_minutes", "?")}m')
+            if parts:
+                route = " + ".join(parts)
+        if getattr(deal, "connection_path", None) and len(deal.connection_path) > 1:
+            path_parts = []
+            for leg in deal.connection_path:
+                if leg.get("type") == "flight":
+                    path_parts.append(f'{leg["from"]}→{leg["to"]}')
+                elif leg.get("type") == "ground":
+                    path_parts.append(f'ground {leg.get("duration_minutes", "?")}m')
+            if path_parts:
+                route = " + ".join(path_parts)
         stops_str = str(getattr(deal, "stops", 0)) if getattr(deal, "stops", 0) > 0 else "direct"
+        if getattr(deal, "connection_path", None) and len(getattr(deal, "connection_path", [])) > 2:
+            stops_str = "self-xfer"
         g = getattr(deal, "ground_leg", None)
         ground_str = f"{g.duration_minutes}m" if g else "-"
         total_str = f"{getattr(deal, "total_duration_minutes", "-")}m" if getattr(deal, "total_duration_minutes", None) else "-"
@@ -285,3 +305,13 @@ def cache(
 
 if __name__ == "__main__":
     app()
+@app.command()
+def multi_airports():
+    """List multi-airport self-transfer hubs supported for --connections."""
+    reg = DestinationRegistry()
+    cities = reg.get_multi_airport_cities()
+    console.print("[bold]Supported Multi-Airport Self-Transfer Hubs[/bold]")
+    for city in cities:
+        airports = reg.get_airports_for_multi_city(city)
+        console.print(f"  {city}: {', '.join(airports)}")
+    console.print("\nUse with: flight-deals search --connections ...")

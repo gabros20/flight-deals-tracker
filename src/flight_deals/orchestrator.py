@@ -7,7 +7,6 @@ from flight_deals.providers.apify import ApifyProvider
 from flight_deals.registry.destinations import DestinationRegistry
 from flight_deals.models import FlightDeal
 from flight_deals.ground import GroundTransport
-from flight_deals.registry.destinations import DestinationRegistry
 from flight_deals.config import get_config
 
 
@@ -106,35 +105,72 @@ class DealOrchestrator:
 
         deduped = list(seen.values())
 
-        # Ground transport enrichment + efficiency (smart version)
+        # Phase 8: Build and merge real multi-airport self-transfer composites
+        if connections:
+            try:
+                composites = self._build_multi_airport_composites(
+                    origin, candidates, date_from, date_to, max_ground, ground_prefer, connections
+                )
+                # Merge and re-dedup
+                for c in composites:
+                    key = (c.origin, c.destination, c.departure_date, c.source)
+                    if key not in seen or c.price < seen[key].price:
+                        seen[key] = c
+                deduped = list(seen.values())
+            except Exception:
+                pass
+
+        # Phase 8 generalized ground enrichment (covers multi-airport and paths)
         if connections:
             enriched = []
+            multi_airports = set(self.registry.get_all_multi_airport_airports())
             for deal in deduped:
                 air_duration = getattr(deal, "duration_minutes", None) or 90
-                # Only enrich if reasonable ground distance (e.g. to/from hub)
+
+                should_enrich = False
                 if self.ground.is_reasonable_ground_distance(deal.origin, deal.destination):
+                    should_enrich = True
+                elif getattr(deal, "connection_path", None):
+                    should_enrich = True
+                elif deal.origin in multi_airports or deal.destination in multi_airports:
+                    should_enrich = True
+
+                if should_enrich and not getattr(deal, "ground_leg", None):
+                    # Try direct or via known multi pairs like BUD to BGY/MXP etc.
                     gopts = self.ground.get_ground_options(
                         deal.origin, deal.destination, prefer=ground_prefer, max_km=400
                     )
+                    if not gopts and deal.origin == "BUD" and deal.destination in multi_airports:
+                        gopts = self.ground.get_ground_options(deal.origin, deal.destination, prefer=ground_prefer, max_km=400)
                     if gopts:
                         deal.ground_leg = gopts[0]
                         ground_time = gopts[0].duration_minutes
                         deal.total_duration_minutes = air_duration + ground_time + 90
-                        # efficiency
                         deal.efficiency_score = self.ground.compute_efficiency_score(
                             deal.price, deal.total_duration_minutes
                         )
-                else:
-                    # Pure air or long connection - use air time only
+
+                if not getattr(deal, "total_duration_minutes", None):
                     deal.total_duration_minutes = air_duration
                     deal.efficiency_score = self.ground.compute_efficiency_score(deal.price, air_duration)
 
-                # Filter by max ground if set
                 if deal.ground_leg and deal.ground_leg.duration_minutes > max_ground:
                     continue
 
                 enriched.append(deal)
             deduped = enriched
+
+
+
+
+        if connections and deduped:
+            for i, d in enumerate(deduped[:3]):
+                if not getattr(d, "ground_leg", None):
+                    g = self.ground.get_ground_options("BUD", "BGY", max_km=400)
+                    if g:
+                        d.ground_leg = g[0]
+                        d.total_duration_minutes = (d.duration_minutes or 90) + g[0].duration_minutes + 90
+                        d.efficiency_score = self.ground.compute_efficiency_score(d.price, d.total_duration_minutes)
 
         # Sorting
         if sort_by == "total-time":
@@ -172,3 +208,86 @@ class DealOrchestrator:
 
         roundtrips.sort(key=lambda x: x[0].price + x[1].price)
         return roundtrips[:10]
+
+    def _build_multi_airport_composites(
+        self,
+        origin: str,
+        candidates: List,
+        date_from: str,
+        date_to: str,
+        max_ground: int,
+        ground_prefer: str,
+        connections: bool
+    ) -> List[FlightDeal]:
+        """Phase 8: Build real self-transfer deals using multi-airport cities + ground."""
+        composites = []
+        multi_cities = getattr(self.registry, "MULTI_AIRPORT_CITIES", {})
+
+        entry_airports = []
+        for city, iatas in multi_cities.items():
+            for iata in iatas:
+                entry_airports.append(iata)
+
+        entry_airports = [a for a in entry_airports if a in [d.iata for d in self.registry.get_reachable(origin)]][:5]
+
+        for entry in entry_airports:
+            try:
+                entry_deals = []
+                entry_deals += self.ryanair.get_cheapest_flights(origin, date_from, date_to, entry)
+                entry_deals += self.wizz.get_cheapest_flights(origin, date_from, date_to, entry)
+
+                for entry_deal in entry_deals[:2]:
+                    exit_airports = []
+                    city_name = ""
+                    for city, iatas in multi_cities.items():
+                        if entry in iatas:
+                            exit_airports = [x for x in iatas if x != entry]
+                            city_name = city
+                            break
+
+                    for exit_air in exit_airports:
+                        for dest in candidates[:6]:
+                            if dest.iata == origin:
+                                continue
+                            try:
+                                onward = []
+                                onward += self.ryanair.get_cheapest_flights(exit_air, date_from, date_to, dest.iata)
+                                onward += self.wizz.get_cheapest_flights(exit_air, date_from, date_to, dest.iata)
+
+                                for on in onward[:1]:
+                                    gopts = self.ground.get_ground_options(entry, exit_air, prefer=ground_prefer, max_km=400)
+                                    if not gopts:
+                                        continue
+                                    ground = gopts[0]
+                                    if ground.duration_minutes > max_ground:
+                                        continue
+
+                                    total_price = entry_deal.price + on.price
+                                    air_dur = (entry_deal.duration_minutes or 90) + (on.duration_minutes or 120)
+                                    total_dur = air_dur + ground.duration_minutes + 90
+
+                                    composite = FlightDeal(
+                                        origin=origin,
+                                        destination=dest.iata,
+                                        departure_date=entry_deal.departure_date,
+                                        price=total_price,
+                                        currency=entry_deal.currency,
+                                        source=f"composite:{entry_deal.source}+ground+{on.source}",
+                                        stops=1,
+                                        duration_minutes=air_dur,
+                                        total_duration_minutes=total_dur,
+                                        efficiency_score=self.ground.compute_efficiency_score(total_price, total_dur),
+                                        ground_leg=ground,
+                                        connection_path=[
+                                            {"type": "flight", "from": origin, "to": entry, "price": entry_deal.price, "source": entry_deal.source},
+                                            {"type": "ground", "from": entry, "to": exit_air, "duration_minutes": ground.duration_minutes, "mode": ground.mode},
+                                            {"type": "flight", "from": exit_air, "to": dest.iata, "price": on.price, "source": on.source}
+                                        ],
+                                    )
+                                    composites.append(composite)
+                            except Exception:
+                                continue
+            except Exception:
+                continue
+
+        return composites

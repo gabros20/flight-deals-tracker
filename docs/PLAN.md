@@ -74,3 +74,46 @@
 - Phase 9: History + alerts with ground-adjusted prices.
 - Self-hosted routers + more GTFS integration.
 - Destination planning sub-tool (if needed).
+
+## Completed: Multi-Airport Self-Transfer Hubs (Post Phase 7)
+
+Added support for calculating connections via cities with multiple airports:
+- Istanbul (IST/SAW), Milan (BGY/MXP), London (STN/LGW/LTN), Rome (CIA/FCO), Paris (BVA/CDG), Brussels (CRL/BRU), Warsaw (WAW/WMI).
+- These are now included in get_connection_hubs and get_reachable_with_connections when --connections.
+- GroundTransport automatically calculates realistic short ground legs between them (e.g. 79min BGY-MXP, 69min IST-SAW).
+- Precomputed data and registry methods support this.
+- Orchestrator enriches deals with ground_leg for these pairs.
+- This enables efficient BUD -> multi-airport-hub -> Canary/Madeira/Islands routes with proper total time and efficiency scoring.
+
+## Phase 8: Comprehensive Multi-Airport Connection Engine + Full Improvements (User: "all")
+
+**Date**: 2026-06-21
+**Goal**: Deliver real value from multi-airport self-transfers + improve all major connection-related areas.
+
+### Areas to Improve (all requested)
+1. Real self-transfer deal generation (generate composite BUD → entry + ground + exit → island deals)
+2. Ground enrichment logic (make it trigger for hub-style and multi-airport cases, not only direct close pairs)
+3. Full itinerary output (show complete path in CLI and models)
+4. Reachability + KNOWN_DIRECT_ROUTES (wire new multi-airport airports properly)
+5. Apify + multi-leg usage (use Apify for better connection pricing when available)
+6. Price history & tracking (support composite routes)
+7. Ground data quality (better precompute, notes, public transit for key pairs)
+8. CLI / UX polish (better table for connections, path display, more helpful output)
+
+### Implementation Plan (TDD + incremental)
+- Update models: Add connection_path or legs for full itinerary.
+- Registry: Expand KNOWN_DIRECT_ROUTES for new multi-airport airports.
+- Orchestrator: 
+  - When connections=True, explicitly search to multi-airport entry points.
+  - Build composite deals using sibling airports + ground.
+  - Generalize ground enrichment.
+- Ground: Improve precompute for multi-airport pairs.
+- CLI: Enhance table for paths.
+- History: Support composite routes.
+- Apify: Better usage for connections.
+- Tests + docs updates.
+
+**Success Criteria**
+- Realistic composite deals with ground + path info appear with --connections.
+- All 8 areas see measurable improvement.
+- Tests pass.

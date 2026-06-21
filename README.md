@@ -127,3 +127,30 @@ Example:
 `flight-deals search --category seaside --connections --max-ground-minutes 90 --ground-prefer public --sort-by total-time`
 
 See docs/ for full research and design.
+
+
+## Multi-Airport Self-Transfer Hubs (Phase 8)
+
+The tool now supports realistic connections via cities with multiple airports:
+
+- Istanbul (IST/SAW)
+- Milan (BGY/MXP)
+- London (STN/LGW/LTN)
+- Rome (CIA/FCO)
+- Paris (BVA/CDG)
+- Brussels (CRL/BRU)
+- Warsaw (WAW/WMI)
+
+Use `--connections` to include self-transfer options with ground transport time between airports in the same city.
+
+Example:
+```
+flight-deals search --category european-islands --connections --max-ground-minutes 120
+```
+
+New command:
+```
+flight-deals multi-airports
+```
+
+Ground times are calculated using OSRM + public transit data and precomputed for speed.

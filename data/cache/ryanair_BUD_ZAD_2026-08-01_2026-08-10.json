@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-21T17:07:28.949366",
+  "timestamp": "2026-06-21T23:14:55.283268",
   "provider": "ryanair",
   "origin": "BUD",
   "destination": "ZAD",
@@ -9,13 +9,21 @@
     {
       "origin": "BUD",
       "destination": "ZAD",
-      "departure_date": "2026-08-02",
+      "departure_date": "2026-08-05",
       "return_date": null,
       "price": 22.69,
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 6521",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null,
+      "connection_path": [],
+      "notes": ""
     }
   ]
 }

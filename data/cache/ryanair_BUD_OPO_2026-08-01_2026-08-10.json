@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-21T17:07:29.078830",
+  "timestamp": "2026-06-21T23:14:55.540853",
   "provider": "ryanair",
   "origin": "BUD",
   "destination": "OPO",
@@ -15,7 +15,15 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 4243",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null,
+      "connection_path": [],
+      "notes": ""
     }
   ]
 }

@@ -1,187 +1,33 @@
 {
-  "BGY-MXP": [
+  "BUD-VIE": [
     {
-      "from_iata": "BGY",
-      "to_iata": "MXP",
+      "from_iata": "BUD",
+      "to_iata": "VIE",
       "mode": "driving",
-      "duration_minutes": 79,
-      "distance_km": 92.1,
-      "estimated_cost_eur": 11.1,
+      "duration_minutes": 173,
+      "distance_km": 262.2,
+      "estimated_cost_eur": 31.5,
       "notes": "Via OSRM (OpenStreetMap)",
       "options": []
     },
     {
-      "from_iata": "BGY",
-      "to_iata": "MXP",
-      "mode": "public_transit",
-      "duration_minutes": 91,
-      "distance_km": 76.0,
-      "estimated_cost_eur": null,
-      "notes": "Estimated public transit (no live data)",
-      "options": []
-    }
-  ],
-  "IST-SAW": [
-    {
-      "from_iata": "IST",
-      "to_iata": "SAW",
-      "mode": "driving",
-      "duration_minutes": 69,
-      "distance_km": 93.1,
-      "estimated_cost_eur": 11.2,
-      "notes": "Via OSRM (OpenStreetMap)",
-      "options": []
-    },
-    {
-      "from_iata": "IST",
-      "to_iata": "SAW",
-      "mode": "public_transit",
-      "duration_minutes": 75,
-      "distance_km": 63.3,
-      "estimated_cost_eur": null,
-      "notes": "Estimated public transit (no live data)",
-      "options": []
-    }
-  ],
-  "STN-LGW": [
-    {
-      "from_iata": "STN",
-      "to_iata": "LGW",
-      "mode": "driving",
-      "duration_minutes": 102,
-      "distance_km": 122.0,
-      "estimated_cost_eur": 14.6,
-      "notes": "Via OSRM (OpenStreetMap)",
-      "options": []
-    },
-    {
-      "from_iata": "STN",
-      "to_iata": "LGW",
-      "mode": "public_transit",
-      "duration_minutes": 103,
-      "distance_km": 86.3,
-      "estimated_cost_eur": null,
-      "notes": "Estimated public transit (no live data)",
-      "options": []
-    }
-  ],
-  "STN-LTN": [
-    {
-      "from_iata": "STN",
-      "to_iata": "LTN",
-      "mode": "public_transit",
-      "duration_minutes": 49,
-      "distance_km": 41.4,
-      "estimated_cost_eur": null,
-      "notes": "Estimated public transit (no live data)",
-      "options": []
-    },
-    {
-      "from_iata": "STN",
-      "to_iata": "LTN",
-      "mode": "driving",
-      "duration_minutes": 76,
-      "distance_km": 69.6,
-      "estimated_cost_eur": 8.4,
-      "notes": "Via OSRM (OpenStreetMap)",
-      "options": []
-    }
-  ],
-  "LGW-LTN": [
-    {
-      "from_iata": "LGW",
-      "to_iata": "LTN",
-      "mode": "driving",
-      "duration_minutes": 93,
-      "distance_km": 123.0,
-      "estimated_cost_eur": 14.8,
-      "notes": "Via OSRM (OpenStreetMap)",
-      "options": []
-    },
-    {
-      "from_iata": "LGW",
-      "to_iata": "LTN",
-      "mode": "public_transit",
-      "duration_minutes": 97,
-      "distance_km": 81.2,
-      "estimated_cost_eur": null,
-      "notes": "Estimated public transit (no live data)",
-      "options": []
-    }
-  ],
-  "CIA-FCO": [
-    {
-      "from_iata": "CIA",
-      "to_iata": "FCO",
-      "mode": "driving",
-      "duration_minutes": 53,
-      "distance_km": 37.8,
-      "estimated_cost_eur": 4.5,
-      "notes": "Via OSRM (OpenStreetMap)",
-      "options": []
-    },
-    {
-      "from_iata": "CIA",
-      "to_iata": "FCO",
+      "from_iata": "BUD",
+      "to_iata": "VIE",
       "mode": "airplane,walk",
-      "duration_minutes": 127,
-      "distance_km": 29.5,
+      "duration_minutes": 417,
+      "distance_km": 214.2,
       "estimated_cost_eur": 15.0,
-      "notes": "Transitous: walk, airplane",
+      "notes": "Transitous: airplane, walk",
       "options": []
     },
     {
-      "from_iata": "CIA",
-      "to_iata": "FCO",
+      "from_iata": "BUD",
+      "to_iata": "VIE",
       "mode": "airplane,walk",
-      "duration_minutes": 217,
-      "distance_km": 29.5,
+      "duration_minutes": 1542,
+      "distance_km": 214.2,
       "estimated_cost_eur": 15.0,
-      "notes": "Transitous: walk, airplane",
-      "options": []
-    }
-  ],
-  "BVA-CDG": [
-    {
-      "from_iata": "BVA",
-      "to_iata": "CDG",
-      "mode": "driving",
-      "duration_minutes": 58,
-      "distance_km": 76.6,
-      "estimated_cost_eur": 9.2,
-      "notes": "Via OSRM (OpenStreetMap)",
-      "options": []
-    },
-    {
-      "from_iata": "BVA",
-      "to_iata": "CDG",
-      "mode": "public_transit",
-      "duration_minutes": 70,
-      "distance_km": 58.7,
-      "estimated_cost_eur": null,
-      "notes": "Estimated public transit (no live data)",
-      "options": []
-    }
-  ],
-  "WAW-WMI": [
-    {
-      "from_iata": "WAW",
-      "to_iata": "WMI",
-      "mode": "public_transit",
-      "duration_minutes": 45,
-      "distance_km": 38.3,
-      "estimated_cost_eur": null,
-      "notes": "Estimated public transit (no live data)",
-      "options": []
-    },
-    {
-      "from_iata": "WAW",
-      "to_iata": "WMI",
-      "mode": "driving",
-      "duration_minutes": 73,
-      "distance_km": 57.5,
-      "estimated_cost_eur": 6.9,
-      "notes": "Via OSRM (OpenStreetMap)",
+      "notes": "Transitous: airplane, walk",
       "options": []
     }
   ]

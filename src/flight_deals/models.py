@@ -32,6 +32,10 @@ class FlightDeal(BaseModel):
     ground_leg: Optional["GroundLeg"] = None
     total_duration_minutes: Optional[int] = None
     efficiency_score: Optional[float] = None
+    # Phase 8: Full connection path support
+    connection_path: List[Dict[str, Any]] = Field(default_factory=list)  # e.g. [{"type": "flight", "from": "BUD", "to": "BGY", ...}, {"type": "ground", ...}, ...]
+    notes: str = ""
+
 
 
 class PriceSnapshot(BaseModel):
