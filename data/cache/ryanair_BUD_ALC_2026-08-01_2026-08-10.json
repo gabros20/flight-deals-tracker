@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-06-21T16:00:02.633667",
+  "provider": "ryanair",
+  "origin": "BUD",
+  "destination": "ALC",
+  "date_from": "2026-08-01",
+  "date_to": "2026-08-10",
+  "deals": [
+    {
+      "origin": "BUD",
+      "destination": "ALC",
+      "departure_date": "2026-08-06",
+      "return_date": null,
+      "price": 54.99,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 8012",
+      "duration_minutes": null
+    }
+  ]
+}

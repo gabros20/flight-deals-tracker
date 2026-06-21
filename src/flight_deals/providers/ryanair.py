@@ -3,12 +3,17 @@ from flight_deals.models import FlightDeal
 from typing import List, Optional
 import backoff
 from datetime import datetime
+from flight_deals.cache import FlightCache
+from flight_deals.config import get_config
 
 
 class RyanairProvider:
-    def __init__(self, currency: str = "EUR"):
+    def __init__(self, currency: str = "EUR", use_cache: bool = True):
         self.currency = currency
         self.client = RyanairClient(currency=currency)
+        self.use_cache = use_cache
+        self._cache = FlightCache() if use_cache else None
+        self.name = "ryanair"
 
     @backoff.on_exception(backoff.expo, Exception, max_tries=3)
     def get_cheapest_flights(
@@ -18,6 +23,12 @@ class RyanairProvider:
         date_to: str,
         destination_airport: Optional[str] = None,
     ) -> List[FlightDeal]:
+        # Check cache first
+        if self._cache:
+            cached = self._cache.get(self.name, origin, date_from, date_to, destination_airport)
+            if cached is not None:
+                return cached
+
         try:
             flights = self.client.get_cheapest_flights(
                 airport=origin,
@@ -25,7 +36,7 @@ class RyanairProvider:
                 date_to=date_to,
                 destination_airport=destination_airport,
             )
-            return [
+            deals = [
                 FlightDeal(
                     origin=f.origin,
                     destination=f.destination,
@@ -37,5 +48,11 @@ class RyanairProvider:
                 )
                 for f in flights
             ]
+
+            # Store in cache
+            if self._cache and deals:
+                self._cache.set(self.name, origin, date_from, date_to, deals, destination_airport)
+
+            return deals
         except Exception:
             return []

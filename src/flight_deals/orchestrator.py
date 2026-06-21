@@ -4,15 +4,16 @@ from flight_deals.registry.destinations import DestinationRegistry
 from flight_deals.models import FlightDeal
 from typing import List, Optional, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import os
+from flight_deals.config import get_config
 
 
 class DealOrchestrator:
-    def __init__(self, max_workers: int = 6):
+    def __init__(self, max_workers: Optional[int] = None):
+        config = get_config()
         self.ryanair = RyanairProvider()
         self.wizz = WizzProvider()
         self.registry = DestinationRegistry()
-        self.max_workers = max_workers
+        self.max_workers = max_workers or config.max_workers
 
     def search_by_category(
         self,
@@ -24,7 +25,8 @@ class DealOrchestrator:
         return_date_from: Optional[str] = None,
         return_date_to: Optional[str] = None,
     ) -> List[FlightDeal]:
-        candidates = self.registry.get_by_tag(category)
+        # Use reachability filtering
+        candidates = self.registry.get_reachable(origin, category)
         results: List[FlightDeal] = []
 
         def fetch_for_dest(dest):

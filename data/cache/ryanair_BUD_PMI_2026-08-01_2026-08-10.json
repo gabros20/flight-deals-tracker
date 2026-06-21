@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-06-21T16:00:02.449027",
+  "provider": "ryanair",
+  "origin": "BUD",
+  "destination": "PMI",
+  "date_from": "2026-08-01",
+  "date_to": "2026-08-10",
+  "deals": [
+    {
+      "origin": "BUD",
+      "destination": "PMI",
+      "departure_date": "2026-08-05",
+      "return_date": null,
+      "price": 57.7,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 3110",
+      "duration_minutes": null
+    }
+  ]
+}

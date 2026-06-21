@@ -7,6 +7,8 @@ from flight_deals.history import PriceHistoryStore
 from flight_deals.notifier import TelegramNotifier
 from flight_deals.models import PriceSnapshot
 from flight_deals.registry.destinations import DestinationRegistry
+from flight_deals.config import get_config, save_user_config, FlightDealsConfig
+
 
 app = typer.Typer(
     name="flight-deals",
@@ -14,23 +16,27 @@ app = typer.Typer(
     add_completion=False,
 )
 console = Console()
+
+# Initialize with config
+config = get_config()
 orchestrator = DealOrchestrator()
-history_store = PriceHistoryStore()
-notifier = TelegramNotifier()
+history_store = PriceHistoryStore(str(config.history_path))
+notifier = TelegramNotifier(config=config)
 registry = DestinationRegistry()
 
 
 @app.command()
 def search(
     category: str = typer.Option(..., "--category", "-c"),
-    origin: str = typer.Option(..., "--from", "-f"),
+    origin: str = typer.Option(None, "--from", "-f"),
     date_from: str = typer.Option(..., "--date-from"),
     date_to: str = typer.Option(..., "--date-to"),
     return_from: str = typer.Option(None, "--return-from"),
     return_to: str = typer.Option(None, "--return-to"),
     max_price: int = typer.Option(None, "--max-price"),
 ):
-    """Search deals by category"""
+    """Search deals by category (uses reachability + cache)"""
+    origin = origin or config.default_origin
     deals = orchestrator.search_by_category(
         category=category,
         origin=origin,
@@ -44,22 +50,23 @@ def search(
         console.print("[yellow]No deals found[/yellow]")
         return
 
-    table = Table(title=f"Deals for {category}")
+    table = Table(title=f"Deals for {category} from {origin}")
     table.add_column("Route", style="cyan")
     table.add_column("Date", style="green")
     table.add_column("Price", style="magenta")
     table.add_column("Source", style="yellow")
 
-    for deal in deals[:20]:
+    for deal in deals[:25]:
         route = f"{deal.origin} → {deal.destination}"
         table.add_row(route, deal.departure_date, f"{deal.price} {deal.currency}", deal.source)
 
     console.print(table)
+    console.print(f"[dim]Showing top {min(25, len(deals))} of {len(deals)} deals (cached where possible)[/dim]")
 
 
 @app.command()
 def roundtrip(
-    origin: str = typer.Option(..., "--origin", "-o"),
+    origin: str = typer.Option(None, "--origin", "-o"),
     destination: str = typer.Option(..., "--destination", "-d"),
     outbound_from: str = typer.Option(..., "--outbound-from"),
     outbound_to: str = typer.Option(..., "--outbound-to"),
@@ -68,6 +75,7 @@ def roundtrip(
     max_price: int = typer.Option(None, "--max-price"),
 ):
     """Find paired round-trip deals"""
+    origin = origin or config.default_origin
     pairs = orchestrator.find_roundtrip_deals(
         origin, destination, outbound_from, outbound_to, return_from, return_to, max_price
     )
@@ -92,14 +100,15 @@ def roundtrip(
 
 @app.command()
 def track(
-    origin: str = typer.Option(..., "--origin", "-o"),
+    origin: str = typer.Option(None, "--origin", "-o"),
     destination: str = typer.Option(..., "--destination", "-d"),
     date_out: str = typer.Option(..., "--date-out"),
     date_return: str = typer.Option(None, "--date-return"),
     threshold: float = typer.Option(15.0, "--threshold", "-t"),
-    currency: str = typer.Option("EUR", "--currency"),
 ):
-    """Track a route with price drop alerts (checks both Ryanair and Wizz)"""
+    """Track a route with price drop alerts (real Telegram if configured)"""
+    origin = origin or config.default_origin
+
     # Try both providers
     deals = orchestrator.ryanair.get_cheapest_flights(origin, date_out, date_out, destination)
     if not deals:
@@ -115,7 +124,7 @@ def track(
     if previous:
         change = ((current.price - previous) / previous) * 100
         if abs(change) >= threshold:
-            msg = f"PRICE ALERT: {origin}-{destination} {date_out} changed {change:+.1f}%"
+            msg = f"PRICE ALERT: {origin}-{destination} {date_out} changed {change:+.1f}% → {current.price} {current.currency}"
             console.print(f"[bold red]{msg}[/bold red]")
             notifier.send_deal(msg)
         else:
@@ -165,12 +174,44 @@ def history(
     console.print(table)
 
 
+@app.command("config")
+def config_cmd(
+    show: bool = typer.Option(True, "--show"),
+    set_origin: str = typer.Option(None, "--set-default-origin"),
+    set_token: str = typer.Option(None, "--set-telegram-token"),
+    set_chat: str = typer.Option(None, "--set-telegram-chat"),
+):
+    """View or update configuration"""
+    if set_origin:
+        config.default_origin = set_origin
+        save_user_config(config)
+        console.print(f"[green]Default origin set to {set_origin}[/green]")
+
+    if set_token:
+        config.telegram_bot_token = set_token
+        save_user_config(config)
+        console.print("[green]Telegram token saved[/green]")
+
+    if set_chat:
+        config.telegram_chat_id = set_chat
+        save_user_config(config)
+        console.print("[green]Telegram chat ID saved[/green]")
+
+    if show:
+        console.print("Current configuration:")
+        console.print(f"  Default origin: {config.default_origin}")
+        console.print(f"  Currency: {config.currency}")
+        console.print(f"  Telegram configured: {bool(config.telegram_bot_token and config.telegram_chat_id)}")
+        console.print(f"  Cache TTL: {config.cache_ttl_hours}h")
+        console.print(f"  Max workers: {config.max_workers}")
+        console.print(f"  Config file: {save_user_config(config)}")  # this also saves current state
+
+
 @app.command()
 def version():
     """Show version"""
-    typer.echo("Flight Deals Tracker v0.3.1")
+    typer.echo("Flight Deals Tracker v0.4.0 (config + cache + real Telegram + reachability)")
 
 
 if __name__ == "__main__":
-    app()
     app()

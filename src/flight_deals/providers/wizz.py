@@ -3,13 +3,18 @@ from typing import List, Optional
 import requests
 import backoff
 import re
+from flight_deals.cache import FlightCache
+from flight_deals.config import get_config
 
 
 class WizzProvider:
-    def __init__(self, currency: str = "EUR"):
+    def __init__(self, currency: str = "EUR", use_cache: bool = True):
         self.currency = currency
         self.session = requests.Session()
         self.version = self._get_current_version()
+        self.use_cache = use_cache
+        self._cache = FlightCache() if use_cache else None
+        self.name = "wizz"
 
     def _get_current_version(self) -> str:
         """Try to detect current Wizz API version from the website"""
@@ -30,6 +35,12 @@ class WizzProvider:
         date_to: str,
         destination_airport: Optional[str] = None,
     ) -> List[FlightDeal]:
+        # Check cache first
+        if self._cache:
+            cached = self._cache.get(self.name, origin, date_from, date_to, destination_airport)
+            if cached is not None:
+                return cached
+
         try:
             url = f"https://be.wizzair.com/{self.version}/Api/search/timetable"
             payload = {
@@ -67,6 +78,11 @@ class WizzProvider:
                             source="wizz",
                         )
                     )
+
+            # Store in cache
+            if self._cache and deals:
+                self._cache.set(self.name, origin, date_from, date_to, deals, destination_airport)
+
             return deals
         except Exception:
             return []
