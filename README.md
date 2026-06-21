@@ -17,7 +17,7 @@ Track Ryanair and Wizz Air flight deals by broad categories such as:
 - Full **configuration system**
 - Cache management commands
 - Proper Hermes skill for natural language use
-- Cron-ready daily tracking script
+- Cron-ready daily tracking script (local only)
 
 ## Installation
 
@@ -59,19 +59,30 @@ flight-deals cache list
 flight-deals cache clear
 ```
 
-## Cron / Scheduled Tracking
+## Local Cron / Scheduled Tracking (runs on your machine only)
+
+**Important**: This tool is designed to run **locally only**. No GitHub Actions, no cloud schedulers.
 
 Use the included script:
 
 ```bash
 # Run manually
 python scripts/daily_track.py
+```
 
-# Example cron (every day at 9am)
-0 9 * * * cd /Users/macmini/Documents/flight-deals-tracker && /path/to/venv/bin/python scripts/daily_track.py >> ~/flight-deals-cron.log 2>&1
+### Setting up local cron (macOS / Linux)
+
+```bash
+# Edit your crontab
+crontab -e
+
+# Add a line like this (runs every day at 9:00 AM):
+0 9 * * * cd /Users/macmini/Documents/flight-deals-tracker && /Users/macmini/Documents/flight-deals-tracker/.venv/bin/python scripts/daily_track.py >> ~/flight-deals-cron.log 2>&1
 ```
 
 You can customize the routes inside `scripts/daily_track.py` or pass them via arguments.
+
+On macOS you can also use `launchd` for more reliable scheduling if cron is disabled.
 
 ## Hermes Skill
 

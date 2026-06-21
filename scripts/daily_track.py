@@ -1,5 +1,8 @@
 """
-Daily tracking script for cron / GitHub Actions / scheduled runs.
+Daily tracking script for **local** cron or scheduled runs on your own machine only.
+
+Everything runs locally — no GitHub Actions or cloud services.
+
 
 Usage examples:
   python scripts/daily_track.py
