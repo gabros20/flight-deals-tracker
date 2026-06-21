@@ -31,6 +31,7 @@ class FlightDeal(BaseModel):
     # Ground transport enrichment for connections
     ground_leg: Optional["GroundLeg"] = None
     total_duration_minutes: Optional[int] = None
+    efficiency_score: Optional[float] = None
 
 
 class PriceSnapshot(BaseModel):

@@ -95,3 +95,40 @@ Search (connections=True)
 - Extensible (add more modes, self-hosted routers later).
 
 This directly solves the "unaccounted time and travel options" gap identified in research.
+
+## Ground Transport Additions (Phase 7 Enhancements)
+
+**Smart Filtering**
+- Ground legs only applied when haversine distance < 400 km (configurable).
+- Prevents using driving estimates for long-haul "connections".
+- For long air segments, ground is only used for hub airport transfers (e.g. arrival at one airport, depart from another close one, or to final city).
+
+**Precomputed Data**
+- `data/ground_transfers.json`: Static matrix for common pairs (BUD + hubs).
+- Loaded at startup for instant results + offline.
+- Falls back to live OSRM/Transitous only for new pairs.
+
+**Efficiency Scoring**
+- `efficiency_score = price / (total_minutes / 60)` (lower is better: € per hour total door-to-door).
+- Or pure total_time ranking.
+- Orchestrator can sort by "efficiency" or "total-time".
+
+**CLI Controls**
+- `--max-ground-minutes`: Filter deals where ground > threshold.
+- `--ground-prefer`: driving | public | any.
+- `--sort-by`: price (default) | total-time | efficiency.
+
+**Orchestrator Flow Update**
+1. Fetch air deals (LCC + Apify).
+2. For connections: compute ground only if reasonable distance.
+3. If deal has `duration_minutes`, use it for air time.
+4. total_duration = air + ground + buffer.
+5. Filter + sort per user flags.
+6. Attach ground_leg and efficiency.
+
+**Data Model**
+- GroundLeg remains.
+- FlightDeal gains optional efficiency_score.
+- Registry can preload from ground_transfers.json.
+
+This makes connection searches "efficient" by surfacing realistic options and allowing users to optimize for time or value.

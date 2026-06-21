@@ -1,76 +1,76 @@
 # Flight Deals Tracker — Implementation Plan (Updated)
 
 **Update Date**: 2026-06-21
-**Focus**: Phase 7 - Ground Transport Efficiency (Option A: Integrated)
+**Focus**: Phase 7 Enhancements - Ground Transport Efficiency Additions (Option A)
 
 ## Phases Completed
-- Phase 0-6: Foundation, Providers (Ryanair/Wizz/Apify), Registry, Orchestrator, Config/Cache, Hermes skill, Connections registry + Apify multi-source.
+- Phase 0-6: Foundation, Providers (Ryanair/Wizz/Apify), Registry, Orchestrator, Config/Cache, Hermes skill, Connections + Apify.
+- Phase 7 Base: GroundTransport, GroundLeg, basic enrichment in orchestrator/CLI, haversine + OSRM + Transitous.
 
-## Phase 7: Ground Transport for Realistic Connections (Current - Option A)
+## Phase 7 Additions: Smarter Efficient Searching (Current Task)
 
 **Objectives**
-- Address the "missing unaccounted time" in connection searches.
-- Calculate realistic **distance, travel time, and travel options** (driving, public transport) between airports/hubs.
-- Integrate into `--connections` flows so users see total door-to-door estimates.
-- Use free/low-cost sources: haversine (baseline), OSRM (driving), Transitous/MOTIS (public transit).
-- Precompute for common European hubs from BUD.
-- Add efficiency scoring and filters.
-- Keep everything optional, cached, and local.
+- Make ground calculations realistic: only apply ground transport for reasonable short/medium distances (e.g. <400km between hub airports).
+- Separate air flight time from ground time properly (use deal.duration_minutes when available).
+- Precompute ground data for speed and offline use on common BUD hub pairs.
+- Add user controls: --max-ground-minutes filter, --ground-prefer mode.
+- Add efficiency scoring for better ranking (total time + price efficiency).
+- Improve orchestrator to support sorting by total time / efficiency.
+- Ensure integration with Apify-sourced connection deals.
+- Keep free, cached, local.
 
-**Tasks**
-1. Update RESEARCH.md, DESIGN.md, PLAN.md with ground transport findings and integration plan.
-2. Add `src/flight_deals/ground.py`:
-   - `GroundTransport` class.
-   - Haversine distance.
-   - OSRM public API for driving time/distance.
-   - Optional Transitous integration (public API for public transport options).
-   - Return structured `GroundLeg` options (mode, time_min, distance_km, cost_estimate, steps).
-3. Enhance models:
-   - Add `GroundLeg` Pydantic model.
-   - Extend `FlightDeal` with optional `ground_leg: Optional[GroundLeg] = None` and `total_duration_minutes`.
-4. Update `DestinationRegistry`:
-   - `get_ground_options(origin_iata, dest_iata)` 
-   - `get_connection_efficiency(origin, dest, flight_time_min)` 
-   - Preload common ground data or compute on fly with cache.
-5. Update `DealOrchestrator`:
-   - When `connections=True`, enrich deals with ground legs between origin-hub or hub-dest.
-   - Compute total effective time (air + ground + buffer).
-   - Sort by price or by total_time.
-6. Update CLI `search`:
-   - New columns: Ground Time, Total Time, Ground Mode.
-   - Options: `--max-ground-minutes`, `--show-ground-details`.
-7. Add caching for ground results (leverage existing FlightCache or dedicated).
-8. Add `tests/test_ground.py` (TDD first: haversine, OSRM mock, integration).
-9. Update config for ground settings (osrm_base_url, transit_api, precompute).
-10. Update data/ with `ground_transfers.json` sample for BUD hubs.
-11. Update README, Hermes skill, daily_track.py.
-12. Full tests + manual verification on BUD connections.
-13. Git commit.
+**Detailed Tasks (TDD-driven)**
+1. Update RESEARCH.md + DESIGN.md with additions for smart filtering, precompute, efficiency scoring, CLI flags.
+2. Enhance `src/flight_deals/ground.py`:
+   - Add `is_reasonable_ground_distance()` (max 400km).
+   - Add `max_distance_km` param to get_ground_options.
+   - Improve `estimate_total_connection_time` to accept/ use air_duration_minutes.
+   - Add `compute_efficiency_score(price, total_minutes)` helper.
+3. Create/populate `data/ground_transfers.json` with precomputed values for common pairs (BUD-VIE, BUD-MUC, VIE-FRA, etc. + sample island ground).
+4. Add precompute helper function + optional script.
+5. Update models if needed (add efficiency fields?).
+6. Update `DestinationRegistry` to support preloaded ground data + max distance.
+7. Update `DealOrchestrator.search_by_category`:
+   - Accept max_ground_minutes, ground_prefer.
+   - Smarter enrichment: only if reasonable distance + use real air duration.
+   - Support sorting by "total_time" or "efficiency".
+8. Update `cli.py` search command:
+   - New options: `--max-ground-minutes 120`, `--ground-prefer driving|public|any`, `--sort-by price|total-time|efficiency`.
+   - Pass flags to orchestrator.
+   - Improve table with ground mode and filter results.
+9. Add/update `tests/test_ground.py` and integration tests for new logic/filters.
+10. Update config.py for defaults (max_ground_minutes=180, ground_prefer="any").
+11. Update Hermes skill, README, daily_track script to mention new flags.
+12. Full pytest run + manual BUD connections test with new flags.
+13. Git commit with detailed message.
 
 **Deliverables**
-- `flight-deals search --category european-islands --connections --date-from ...` now shows realistic ground time and total door-to-door.
-- Example output includes ground options for hub connections (e.g. BUD-VIE ground + VIE-PMI).
-- All tests passing.
-- Clear documentation on sources and limitations.
+- `flight-deals search ... --connections --max-ground-minutes 120 --ground-prefer public --sort-by total-time` produces realistic, filterable, ranked results.
+- Precomputed ground data loaded fast.
+- Efficiency score visible or used in ranking.
+- All tests passing (30+).
+- Docs reflect the additions.
 
-**Verification**
-- Haversine matches known distances.
-- OSRM calls return plausible driving times.
-- Connections results include ground data without breaking direct searches.
-- `--max-ground-minutes 60` filters unrealistic options.
-- No external API keys required (public endpoints).
+**Verification Steps**
+- Ground legs only shown for pairs <400km (e.g. BUD-VIE yes, VIE-PMI no or minimal).
+- Total time = air_duration (if present) + ground + buffer.
+- --max-ground-minutes filters out bad connections.
+- Precompute loads without API calls.
+- Apify + ground works together.
+- No breaking changes to direct searches.
 
 **Guiding Rules**
-- TDD first.
-- Free-first (OSRM + Transitous public).
-- Cache aggressively (ground data is stable).
-- Extend existing connection logic rather than replace.
-- Local execution only.
+- TDD: tests before or alongside changes.
+- Realism first: prevent absurd totals.
+- User control via CLI flags.
+- Precompute for performance.
+- Reuse patterns from Apify integration (optional, cached, graceful).
+- Local only.
 
 ---
 
 ## Future Phases (Post 7)
-- Phase 8: Advanced efficiency scoring + price-per-hour.
-- Phase 9: Full history analysis + alerts.
-- Polish + precomputed matrices for all 58 airports.
-- Optional self-hosted OSRM/Transitous for privacy/speed.
+- Phase 8: Full price-per-hour ranking + charts.
+- Phase 9: History + alerts with ground-adjusted prices.
+- Self-hosted routers + more GTFS integration.
+- Destination planning sub-tool (if needed).

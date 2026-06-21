@@ -35,6 +35,9 @@ def search(
     return_to: str = typer.Option(None, "--return-to"),
     max_price: int = typer.Option(None, "--max-price"),
     connections: bool = typer.Option(False, "--connections", "--with-stops", help="Include destinations reachable with 1 stop via hubs"),
+    max_ground_minutes: int = typer.Option(180, "--max-ground-minutes", help="Filter connections with ground time > this (minutes)"),
+    ground_prefer: str = typer.Option("any", "--ground-prefer", help="driving|public|any"),
+    sort_by: str = typer.Option("price", "--sort-by", help="price|total-time|efficiency"),
 ):
     """Search deals by category (uses reachability + cache). Use --connections for 1-stop options."""
     origin = origin or config.default_origin
@@ -47,6 +50,9 @@ def search(
         return_date_from=return_from,
         return_date_to=return_to,
         connections=connections,
+        max_ground_minutes=max_ground_minutes,
+        ground_prefer=ground_prefer,
+        sort_by=sort_by,
     )
     if not deals:
         console.print("[yellow]No deals found[/yellow]")
@@ -63,6 +69,7 @@ def search(
     table.add_column("Stops", style="dim")
     table.add_column("Ground", style="blue")
     table.add_column("Total", style="green")
+    table.add_column("Eff €/h", style="yellow")
 
     for deal in deals[:25]:
         route = f"{deal.origin} → {deal.destination}"
@@ -70,7 +77,9 @@ def search(
         g = getattr(deal, "ground_leg", None)
         ground_str = f"{g.duration_minutes}m" if g else "-"
         total_str = f"{getattr(deal, "total_duration_minutes", "-")}m" if getattr(deal, "total_duration_minutes", None) else "-"
-        table.add_row(route, deal.departure_date, f"{deal.price} {deal.currency}", deal.source, stops_str, ground_str, total_str)
+        eff = getattr(deal, "efficiency_score", None)
+        eff_str = f"{eff}" if eff else "-"
+        table.add_row(route, deal.departure_date, f"{deal.price} {deal.currency}", deal.source, stops_str, ground_str, total_str, eff_str)
 
     console.print(table)
     note = f"Showing top {min(25, len(deals))} of {len(deals)} deals (cached where possible)"

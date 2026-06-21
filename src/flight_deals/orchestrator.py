@@ -1,22 +1,24 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import List, Optional, Tuple, Dict, Any
+
 from flight_deals.providers.ryanair import RyanairProvider
 from flight_deals.providers.wizz import WizzProvider
 from flight_deals.providers.apify import ApifyProvider
 from flight_deals.registry.destinations import DestinationRegistry
 from flight_deals.models import FlightDeal
-from typing import List, Optional, Tuple
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from flight_deals.config import get_config
 from flight_deals.ground import GroundTransport
+from flight_deals.config import get_config
 
 
 class DealOrchestrator:
-    def __init__(self, max_workers: Optional[int] = None):
-        config = get_config()
+    def __init__(self):
+        self.config = get_config()
+        self.registry = DestinationRegistry()
         self.ryanair = RyanairProvider()
         self.wizz = WizzProvider()
         self.apify = ApifyProvider()
-        self.registry = DestinationRegistry()
-        self.max_workers = max_workers or config.max_workers
+        self.max_workers = self.config.max_workers
+        self.ground = GroundTransport()
 
     def search_by_category(
         self,
@@ -28,7 +30,13 @@ class DealOrchestrator:
         return_date_from: Optional[str] = None,
         return_date_to: Optional[str] = None,
         connections: bool = False,
+        max_ground_minutes: Optional[int] = None,
+        ground_prefer: str = "any",
+        sort_by: str = "price",
     ) -> List[FlightDeal]:
+        origin = origin or self.config.default_origin
+        max_ground = max_ground_minutes or getattr(self.config, "max_ground_minutes", 180)
+
         if connections:
             candidates = self.registry.get_reachable_with_connections(origin, category)
         else:
@@ -38,7 +46,6 @@ class DealOrchestrator:
 
         def fetch_for_dest(dest):
             local_results = []
-            # Outbound direct (LCC)
             try:
                 ryanair_out = self.ryanair.get_cheapest_flights(origin, date_from, date_to, dest.iata)
                 local_results.extend(ryanair_out)
@@ -50,7 +57,6 @@ class DealOrchestrator:
             except Exception:
                 pass
 
-            # Apify for multi-source / connections
             if connections and self.apify.is_available:
                 try:
                     apify_results = self.apify.get_cheapest_flights(origin, date_from, date_to, dest.iata)
@@ -58,7 +64,6 @@ class DealOrchestrator:
                 except Exception:
                     pass
 
-            # Return legs (LCC only for now)
             if return_date_from and return_date_to:
                 try:
                     ryanair_ret = self.ryanair.get_cheapest_flights(dest.iata, return_date_from, return_date_to, origin)
@@ -91,7 +96,7 @@ class DealOrchestrator:
         if max_price:
             results = [d for d in results if d.price <= max_price]
 
-        # Deduplicate by key + keep cheapest
+        # Deduplicate
         seen = {}
         for d in results:
             key = (d.origin, d.destination, d.departure_date, d.source)
@@ -99,7 +104,45 @@ class DealOrchestrator:
                 seen[key] = d
 
         deduped = list(seen.values())
-        deduped.sort(key=lambda x: x.price)
+
+        # Ground transport enrichment + efficiency (smart version)
+        if connections:
+            enriched = []
+            for deal in deduped:
+                air_duration = getattr(deal, "duration_minutes", None) or 90
+                # Only enrich if reasonable ground distance (e.g. to/from hub)
+                if self.ground.is_reasonable_ground_distance(deal.origin, deal.destination):
+                    gopts = self.ground.get_ground_options(
+                        deal.origin, deal.destination, prefer=ground_prefer, max_km=400
+                    )
+                    if gopts:
+                        deal.ground_leg = gopts[0]
+                        ground_time = gopts[0].duration_minutes
+                        deal.total_duration_minutes = air_duration + ground_time + 90
+                        # efficiency
+                        deal.efficiency_score = self.ground.compute_efficiency_score(
+                            deal.price, deal.total_duration_minutes
+                        )
+                else:
+                    # Pure air or long connection - use air time only
+                    deal.total_duration_minutes = air_duration
+                    deal.efficiency_score = self.ground.compute_efficiency_score(deal.price, air_duration)
+
+                # Filter by max ground if set
+                if deal.ground_leg and deal.ground_leg.duration_minutes > max_ground:
+                    continue
+
+                enriched.append(deal)
+            deduped = enriched
+
+        # Sorting
+        if sort_by == "total-time":
+            deduped.sort(key=lambda x: getattr(x, "total_duration_minutes", 999999) or 999999)
+        elif sort_by == "efficiency":
+            deduped.sort(key=lambda x: getattr(x, "efficiency_score", 9999) or 9999)
+        else:
+            deduped.sort(key=lambda x: x.price)
+
         return deduped
 
     def find_roundtrip_deals(

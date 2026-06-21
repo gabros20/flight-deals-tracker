@@ -1,25 +1,26 @@
 """
-Ground Transport Module for realistic connection planning.
+Ground Transport Module for realistic connection planning (Option A).
 
-Option A integration: Provides distance, travel time, and options between airports.
-Sources (free-first):
-- Haversine for baseline distance
-- OSRM (public or self-hosted) for driving time/distance
-- Transitous/MOTIS public API for public transport options (optional)
-
-Heavily cached where possible. Designed for European hub connections.
+Enhancements:
+- Smart filtering: only ground legs for reasonable distances (<400km).
+- Precomputed data support from ground_transfers.json.
+- Efficiency scoring.
+- Better total time calc using air duration when available.
 """
 
+import json
 import math
+from pathlib import Path
+from typing import List, Optional, Dict, Any, Tuple
+
 import requests
-from typing import List, Optional, Dict, Any
 from flight_deals.models import GroundLeg
 from flight_deals.config import get_config
 
 
 def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Calculate great-circle distance in km between two points."""
-    R = 6371.0  # Earth radius in km
+    R = 6371.0
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
     a = (math.sin(dlat / 2) ** 2 +
@@ -30,15 +31,27 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
 
 
 class GroundTransport:
-    def __init__(self, use_cache: bool = True):
+    DEFAULT_MAX_GROUND_KM = 400.0
+
+    def __init__(self, use_cache: bool = True, precompute_path: str = "data/ground_transfers.json"):
         self.config = get_config()
         self.use_cache = use_cache
         self.osrm_base = "http://router.project-osrm.org"
         self.transitous_base = "https://api.transitous.org/api/v2"
-        # Simple in-memory cache for this session (avoids type issues with FlightCache)
         self._simple_cache: Dict[str, Any] = {}
+        self.precompute_path = Path(precompute_path)
+        self._precomputed: Dict[str, List[Dict]] = self._load_precomputed()
 
-    def _get_airport_coords(self, iata: str) -> Optional[tuple]:
+    def _load_precomputed(self) -> Dict[str, List[Dict]]:
+        if self.precompute_path.exists():
+            try:
+                data = json.loads(self.precompute_path.read_text())
+                return data
+            except Exception:
+                pass
+        return {}
+
+    def _get_airport_coords(self, iata: str) -> Optional[Tuple[float, float]]:
         from flight_deals.registry.destinations import DestinationRegistry
         reg = DestinationRegistry()
         for a in reg.airports:
@@ -46,13 +59,33 @@ class GroundTransport:
                 return (a.lat, a.lon)
         return None
 
-    def _cache_key(self, *parts):
+    def _cache_key(self, *parts: Any) -> str:
         return "|".join(str(p) for p in parts)
 
-    def get_driving_time(self, from_iata: str, to_iata: str) -> Optional[GroundLeg]:
+    def is_reasonable_ground_distance(self, from_iata: str, to_iata: str, max_km: float = DEFAULT_MAX_GROUND_KM) -> bool:
+        coords_from = self._get_airport_coords(from_iata)
+        coords_to = self._get_airport_coords(to_iata)
+        if not coords_from or not coords_to:
+            return False
+        dist = haversine_distance(*coords_from, *coords_to)
+        return dist <= max_km
+
+    def get_driving_time(self, from_iata: str, to_iata: str, max_km: float = DEFAULT_MAX_GROUND_KM) -> Optional[GroundLeg]:
+        if not self.is_reasonable_ground_distance(from_iata, to_iata, max_km):
+            return None
+
         key = self._cache_key("drive", from_iata, to_iata)
         if key in self._simple_cache:
             return self._simple_cache[key]
+
+        # Check precomputed first
+        pre_key = f"{from_iata.upper()}-{to_iata.upper()}"
+        if pre_key in self._precomputed:
+            for item in self._precomputed[pre_key]:
+                if item.get("mode") == "driving":
+                    leg = GroundLeg(**item)
+                    self._simple_cache[key] = leg
+                    return leg
 
         coords_from = self._get_airport_coords(from_iata)
         coords_to = self._get_airport_coords(to_iata)
@@ -68,7 +101,7 @@ class GroundTransport:
 
             if data.get("code") != "Ok" or not data.get("routes"):
                 dist = haversine_distance(*coords_from, *coords_to)
-                est_min = int((dist / 80) * 60)
+                est_min = max(20, int((dist / 80) * 60))
                 leg = GroundLeg(
                     from_iata=from_iata,
                     to_iata=to_iata,
@@ -97,9 +130,9 @@ class GroundTransport:
             self._simple_cache[key] = leg
             return leg
 
-        except Exception as e:
-            dist = haversine_distance(coords_from[0], coords_from[1], coords_to[0], coords_to[1])
-            est_min = max(30, int((dist / 70) * 60))
+        except Exception:
+            dist = haversine_distance(*coords_from, *coords_to)
+            est_min = max(20, int((dist / 70) * 60))
             leg = GroundLeg(
                 from_iata=from_iata,
                 to_iata=to_iata,
@@ -111,10 +144,22 @@ class GroundTransport:
             self._simple_cache[key] = leg
             return leg
 
-    def get_public_transit_options(self, from_iata: str, to_iata: str, date: Optional[str] = None) -> List[GroundLeg]:
+    def get_public_transit_options(self, from_iata: str, to_iata: str, date: Optional[str] = None,
+                                   max_km: float = DEFAULT_MAX_GROUND_KM) -> List[GroundLeg]:
+        if not self.is_reasonable_ground_distance(from_iata, to_iata, max_km):
+            return []
+
         key = self._cache_key("transit", from_iata, to_iata, date or "any")
         if key in self._simple_cache:
             return self._simple_cache[key]
+
+        # Precomputed
+        pre_key = f"{from_iata.upper()}-{to_iata.upper()}"
+        if pre_key in self._precomputed:
+            legs = [GroundLeg(**item) for item in self._precomputed[pre_key] if item.get("mode") != "driving"]
+            if legs:
+                self._simple_cache[key] = legs
+                return legs
 
         coords_from = self._get_airport_coords(from_iata)
         coords_to = self._get_airport_coords(to_iata)
@@ -143,10 +188,7 @@ class GroundTransport:
                     mode = "public_transit"
                     notes = "Via Transitous (MOTIS)"
                     if itin.get("legs"):
-                        modes = set()
-                        for leg in itin["legs"]:
-                            if "mode" in leg:
-                                modes.add(leg["mode"].lower())
+                        modes = {leg.get("mode", "").lower() for leg in itin["legs"] if "mode" in leg}
                         if modes:
                             mode = ",".join(sorted(modes))
                             notes = f"Transitous: {', '.join(modes)}"
@@ -163,7 +205,7 @@ class GroundTransport:
 
             if not legs:
                 dist = haversine_distance(*coords_from, *coords_to)
-                est = int((dist / 50) * 60)
+                est = max(15, int((dist / 50) * 60))
                 legs.append(GroundLeg(
                     from_iata=from_iata,
                     to_iata=to_iata,
@@ -181,7 +223,7 @@ class GroundTransport:
                 from_iata=from_iata,
                 to_iata=to_iata,
                 mode="public_transit",
-                duration_minutes=int((dist / 45) * 60),
+                duration_minutes=max(15, int((dist / 45) * 60)),
                 distance_km=round(dist, 1),
                 notes="Fallback estimate (public transit)"
             ))
@@ -189,17 +231,20 @@ class GroundTransport:
 
         return legs
 
-    def get_ground_options(self, from_iata: str, to_iata: str, prefer: str = "any") -> List[GroundLeg]:
+    def get_ground_options(self, from_iata: str, to_iata: str, prefer: str = "any",
+                           max_km: float = DEFAULT_MAX_GROUND_KM) -> List[GroundLeg]:
         options: List[GroundLeg] = []
 
-        drive = self.get_driving_time(from_iata, to_iata)
-        if drive:
-            options.append(drive)
+        if prefer in ("any", "driving"):
+            drive = self.get_driving_time(from_iata, to_iata, max_km)
+            if drive:
+                options.append(drive)
 
         if prefer in ("any", "public", "train", "bus"):
-            transit = self.get_public_transit_options(from_iata, to_iata)
+            transit = self.get_public_transit_options(from_iata, to_iata, max_km=max_km)
             options.extend(transit)
 
+        # Dedup + sort
         seen = set()
         unique = []
         for o in sorted(options, key=lambda x: x.duration_minutes):
@@ -211,23 +256,62 @@ class GroundTransport:
         return unique[:3]
 
     def estimate_total_connection_time(
-        self, origin: str, hub: str, dest: str, 
-        flight1_min: int, flight2_min: int, buffer_min: int = 90
+        self,
+        origin: str,
+        hub: str,
+        dest: str,
+        air_duration_minutes: Optional[int] = None,
+        buffer_min: int = 90,
+        max_ground_km: float = DEFAULT_MAX_GROUND_KM
     ) -> Dict[str, Any]:
-        ground_to_hub = self.get_driving_time(origin, hub) or GroundLeg(from_iata=origin, to_iata=hub, mode="driving", duration_minutes=60, distance_km=100)
-        ground_from_hub = self.get_driving_time(hub, dest) or GroundLeg(from_iata=hub, to_iata=dest, mode="driving", duration_minutes=60, distance_km=100)
+        """Estimate total door-to-door. Uses provided air time or estimates."""
+        # Ground only if reasonable
+        ground_to_hub = self.get_driving_time(origin, hub, max_ground_km) or \
+            GroundLeg(from_iata=origin, to_iata=hub, mode="driving", duration_minutes=0, distance_km=0, notes="N/A (too far)")
 
-        total = flight1_min + ground_to_hub.duration_minutes + buffer_min + flight2_min + ground_from_hub.duration_minutes
+        ground_from_hub = self.get_driving_time(hub, dest, max_ground_km) or \
+            GroundLeg(from_iata=hub, to_iata=dest, mode="driving", duration_minutes=0, distance_km=0, notes="N/A (too far)")
+
+        air1 = air_duration_minutes or 90
+        air2 = air_duration_minutes or 120
+
+        total = air1 + ground_to_hub.duration_minutes + buffer_min + air2 + ground_from_hub.duration_minutes
 
         return {
             "total_minutes": total,
             "total_hours": round(total / 60, 1),
             "breakdown": {
-                "flight1": flight1_min,
+                "air1": air1,
                 "ground_to_hub": ground_to_hub.duration_minutes,
                 "buffer": buffer_min,
-                "flight2": flight2_min,
+                "air2": air2,
                 "ground_from_hub": ground_from_hub.duration_minutes
             },
-            "ground_options": [ground_to_hub, ground_from_hub]
+            "ground_options": [g for g in [ground_to_hub, ground_from_hub] if g.duration_minutes > 0]
         }
+
+    @staticmethod
+    def compute_efficiency_score(price: float, total_minutes: int) -> float:
+        """Lower is better: price per hour of total door-to-door time."""
+        if total_minutes <= 0:
+            return price * 100
+        hours = total_minutes / 60.0
+        return round(price / hours, 2)
+
+
+def precompute_ground_transfers(output_path: str = "data/ground_transfers.json", pairs: Optional[List[Tuple[str, str]]] = None):
+    """Helper to generate precomputed ground data for common pairs."""
+    if pairs is None:
+        pairs = [
+            ("BUD", "VIE"), ("BUD", "MUC"), ("BUD", "FRA"), ("BUD", "AMS"), ("BUD", "CDG"),
+            ("VIE", "MUC"), ("MUC", "FRA"), ("FRA", "AMS"), ("AMS", "CDG"),
+            ("BUD", "PRG"), ("VIE", "PRG")
+        ]
+    gt = GroundTransport(use_cache=False)
+    data: Dict[str, List[Dict]] = {}
+    for o, d in pairs:
+        legs = gt.get_ground_options(o, d, prefer="any")
+        if legs:
+            data[f"{o}-{d}"] = [leg.model_dump() for leg in legs]
+    Path(output_path).write_text(json.dumps(data, indent=2))
+    return data

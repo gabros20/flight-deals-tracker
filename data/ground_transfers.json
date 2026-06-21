@@ -1,0 +1,24 @@
+{
+  "BUD-VIE": [
+    {
+      "from_iata": "BUD",
+      "to_iata": "VIE",
+      "mode": "driving",
+      "duration_minutes": 165,
+      "distance_km": 262.0,
+      "estimated_cost_eur": 31.4,
+      "notes": "Via OSRM (OpenStreetMap)",
+      "options": []
+    },
+    {
+      "from_iata": "BUD",
+      "to_iata": "VIE",
+      "mode": "public_transit",
+      "duration_minutes": 180,
+      "distance_km": 262.0,
+      "estimated_cost_eur": 15.0,
+      "notes": "Transitous: train,bus",
+      "options": []
+    }
+  ]
+}

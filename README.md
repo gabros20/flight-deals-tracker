@@ -107,3 +107,23 @@ flight-deals search --category european-islands --date-from 2026-08-01 --date-to
 ```
 
 See `data/config.example.json` and docs/ for setup.
+
+## Ground Transport & Efficient Connections (Phase 7 Additions)
+The tool now accounts for realistic ground time and options between airports when using `--connections`.
+
+**New CLI flags for search:**
+- `--max-ground-minutes 120` — Filter out connections with excessive ground time.
+- `--ground-prefer public` — Prefer train/bus over driving (driving|public|any).
+- `--sort-by efficiency` — Sort by price-per-total-hour or total-time.
+
+**Features:**
+- Ground legs only applied for reasonable distances (<400km).
+- Precomputed data for common BUD hub pairs (instant, offline).
+- Efficiency scoring (€ / total door-to-door hour).
+- Uses OSRM (driving) + Transitous (public transit) + haversine fallback.
+- Total time = air time + ground + buffer.
+
+Example:
+`flight-deals search --category seaside --connections --max-ground-minutes 90 --ground-prefer public --sort-by total-time`
+
+See docs/ for full research and design.
