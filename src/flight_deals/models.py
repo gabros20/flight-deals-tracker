@@ -1,7 +1,6 @@
+from typing import Literal, Union, List, Optional, Dict, Any
 from datetime import datetime
-from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, Field
-
 
 class Airport(BaseModel):
     iata: str = Field(..., min_length=3, max_length=3)
@@ -12,6 +11,29 @@ class Airport(BaseModel):
     tags: list[str] = Field(default_factory=list)
     is_ryanair_base: bool = False
     is_wizz_base: bool = False
+
+class FlightLeg(BaseModel):
+    type: Literal["flight"] = "flight"
+    origin: str
+    destination: str
+    price: float
+    duration_minutes: Optional[int] = None
+    source: str
+    departure_date: Optional[str] = None
+
+class GroundLeg(BaseModel):
+    """Represents a ground transport leg between two airports."""
+    type: Literal["ground"] = "ground"
+    from_iata: str
+    to_iata: str
+    mode: str  # "driving", "public_transit"
+    duration_minutes: int
+    distance_km: float
+    estimated_cost_eur: Optional[float] = None
+    notes: str = ""
+    options: List[str] = Field(default_factory=list)
+
+Leg = Union[FlightLeg, GroundLeg]
 
 
 class FlightDeal(BaseModel):

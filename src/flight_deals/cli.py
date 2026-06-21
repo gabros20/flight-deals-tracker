@@ -72,25 +72,37 @@ def search(
     table.add_column("Eff €/h", style="yellow")
 
     for deal in deals[:25]:
+
         route = f"{deal.origin} → {deal.destination}"
-        if getattr(deal, "connection_path", None) and len(deal.connection_path) > 1:
+        if getattr(deal, "legs", None) and len(deal.legs) > 1:
+            parts = []
+            for leg in deal.legs:
+                if hasattr(leg, "type") and leg.type == "flight":
+                    parts.append(f"{leg.origin}→{leg.destination}")
+                elif hasattr(leg, "type") and leg.type == "ground":
+                    parts.append(f"ground {leg.duration_minutes}m")
+                elif isinstance(leg, dict):
+                    if leg.get("type") == "flight":
+                        parts.append(f'{leg.get("from", leg.get("origin", "?"))}→{leg.get("to", leg.get("destination", "?"))}')
+                    elif leg.get("type") == "ground":
+                        parts.append(f"ground {leg.get('duration_minutes', '?')}m")
+            if parts:
+                route = " + ".join(parts)
+        elif getattr(deal, "connection_path", None) and len(deal.connection_path) > 1:
+            # fallback
             parts = []
             for leg in deal.connection_path:
                 if leg.get("type") == "flight":
                     parts.append(f'{leg.get("from")}→{leg.get("to")}')
                 elif leg.get("type") == "ground":
                     parts.append(f'ground {leg.get("duration_minutes", "?")}m')
-            if parts:
-                route = " + ".join(parts)
-        if getattr(deal, "connection_path", None) and len(deal.connection_path) > 1:
-            path_parts = []
-            for leg in deal.connection_path:
-                if leg.get("type") == "flight":
-                    path_parts.append(f'{leg["from"]}→{leg["to"]}')
-                elif leg.get("type") == "ground":
-                    path_parts.append(f'ground {leg.get("duration_minutes", "?")}m')
-            if path_parts:
-                route = " + ".join(path_parts)
+            route = " + ".join(parts) if parts else route
+
+        # Add notes if composite
+        extra_info = ""
+        if getattr(deal, "notes", ""):
+            extra_info = f" | {deal.notes}"
+
         stops_str = str(getattr(deal, "stops", 0)) if getattr(deal, "stops", 0) > 0 else "direct"
         if getattr(deal, "connection_path", None) and len(getattr(deal, "connection_path", [])) > 2:
             stops_str = "self-xfer"

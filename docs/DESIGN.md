@@ -148,3 +148,67 @@ This makes connection searches "efficient" by surfacing realistic options and al
 - Registry's MULTI_AIRPORT_CITIES drives the logic.
 - CLI renders path when present (e.g. "BUD→BGY + 79m ground + MXP→TFS").
 - Backward compatible: direct deals unchanged.
+
+
+## Improvement Suggestions for Multi-Airport Self-Transfer Engine (Phase 8+)
+
+### Current State Assessment (as of latest implementation)
+- Multi-airport cities are registered and ground calculations work.
+- `_build_multi_airport_composites` exists but produces few/no results in practice (provider data for future dates + limited LCC routes from exit airports).
+- Ground enrichment triggers rarely for island destinations.
+- `connection_path` is basic dict list; no rich leg model.
+- CLI shows basic table; no per-leg breakdown or full itinerary view.
+- Apify is used but not optimized for self-transfer detection.
+- History and tracking not yet aware of composite paths.
+
+### Key Improvement Suggestions
+
+1. **Stronger Composite Generation Strategy**
+   - Proactive fetching: Always query Ryanair/Wizz/Apify for BUD → entry_airport (e.g. BGY, STN, SAW) separately when connections=True.
+   - Then query exit_airport → target_island.
+   - Combine only if both legs exist + ground is reasonable.
+   - Add fallback to "virtual" self-transfer deals when Apify returns `isSelfTransfer=True` or similar.
+
+2. **Richer Leg Model**
+   - Create `Leg` base + `FlightLeg` and `GroundLeg` subclasses (or use Pydantic models).
+   - `FlightDeal` should have `legs: List[Leg]` instead of (or in addition to) flat fields + `connection_path`.
+   - This enables proper serialization, history, and display of price/time per segment.
+
+3. **Dedicated Self-Transfer Mode**
+   - Add `--self-transfer` or enhance `--connections` with `multi_airport_only` option.
+   - Registry should have `get_self_transfer_candidates(origin, category)` that prioritizes multi-airport hubs.
+
+4. **Improved CLI Output for Complex Routes**
+   - When a deal has multiple legs, show:
+     - Summary row
+     - Or use `--detail` flag for expanded view (leg1 price/time, ground, leg2 price/time, total).
+   - Add columns or sections for "Via" (e.g. "Via Milan (BGY-MXP)").
+
+5. **Apify Optimization for Self-Transfers**
+   - When calling Apify, pass hints like "self transfer" or specific multi-airport pairs.
+   - Parse Apify results for `isSelfTransfer` or airport change indicators.
+   - Prefer Apify for composite routes when available (more realistic interlining/self-transfer data).
+
+6. **Ground + Total Time Realism**
+   - Always separate air time from ground.
+   - Add "buffer" config and "comfort factor" for efficiency scoring (e.g. penalize very short ground buffers).
+   - Precompute a full "BUD multi-airport matrix" (all reasonable entry/exit pairs + estimated total for common islands).
+
+7. **History & Tracking for Composites**
+   - Extend `PriceHistoryStore` to store `path_signature` (e.g. "BUD-BGY-ground-MXP-TFS").
+   - Track price changes on the full composite, not just single legs.
+   - In cron/alerts, report "good self-transfer via Milan appeared at €XX".
+
+8. **Testing & Visibility**
+   - Add synthetic test deals for multi-airport paths.
+   - CLI flag `--debug-connections` to force some composite examples.
+   - Better error messages when no composites found.
+
+### Recommended Priority Order for Implementation
+High impact / feasible now:
+- 1 + 2 + 4 (better composites + model + display)
+- 3 + 6 (dedicated mode + realism)
+- 5 + 7 (Apify + history)
+- 8 (testing)
+
+This will make `--connections` actually surface usable BUD → Canary/Madeira self-transfer deals with accurate total time and breakdown.
