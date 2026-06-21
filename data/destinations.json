@@ -1,5 +1,35 @@
 [
   {"iata": "BUD", "city": "Budapest", "country": "Hungary", "lat": 47.4369, "lon": 19.2556, "tags": ["hub"], "is_ryanair_base": true, "is_wizz_base": true},
-  {"iata": "ALC", "city": "Alicante", "country": "Spain", "lat": 38.2822, "lon": -0.5581, "tags": ["seaside", "european-islands"], "is_ryanair_base": true, "is_wizz_base": true},
-  {"iata": "CFU", "city": "Corfu", "country": "Greece", "lat": 39.6019, "lon": 19.9117, "tags": ["european-islands", "seaside"], "is_ryanair_base": false, "is_wizz_base": true}
+  
+  {"iata": "PMI", "city": "Palma de Mallorca", "country": "Spain", "lat": 39.5517, "lon": 2.7388, "tags": ["european-islands", "seaside"], "is_ryanair_base": true, "is_wizz_base": true},
+  {"iata": "IBZ", "city": "Ibiza", "country": "Spain", "lat": 38.8729, "lon": 1.3731, "tags": ["european-islands", "seaside"], "is_ryanair_base": true, "is_wizz_base": false},
+  {"iata": "CFU", "city": "Corfu", "country": "Greece", "lat": 39.6019, "lon": 19.9117, "tags": ["european-islands", "seaside"], "is_ryanair_base": false, "is_wizz_base": true},
+  {"iata": "HER", "city": "Heraklion (Crete)", "country": "Greece", "lat": 35.3397, "lon": 25.1803, "tags": ["european-islands", "seaside"], "is_ryanair_base": true, "is_wizz_base": true},
+  {"iata": "ZTH", "city": "Zakynthos", "country": "Greece", "lat": 37.7509, "lon": 20.8843, "tags": ["european-islands", "seaside"], "is_ryanair_base": false, "is_wizz_base": true},
+  {"iata": "CHQ", "city": "Chania (Crete)", "country": "Greece", "lat": 35.5317, "lon": 24.1497, "tags": ["european-islands", "seaside"], "is_ryanair_base": true, "is_wizz_base": true},
+  {"iata": "JTR", "city": "Santorini", "country": "Greece", "lat": 36.3992, "lon": 25.4793, "tags": ["european-islands", "seaside"], "is_ryanair_base": false, "is_wizz_base": true},
+  {"iata": "CTA", "city": "Catania (Sicily)", "country": "Italy", "lat": 37.4668, "lon": 15.0664, "tags": ["european-islands", "seaside", "italian-gems"], "is_ryanair_base": true, "is_wizz_base": true},
+  {"iata": "PMO", "city": "Palermo (Sicily)", "country": "Italy", "lat": 38.1759, "lon": 13.091, "tags": ["european-islands", "seaside", "italian-gems"], "is_ryanair_base": true, "is_wizz_base": true},
+  {"iata": "CAG", "city": "Cagliari (Sardinia)", "country": "Italy", "lat": 39.2517, "lon": 9.0544, "tags": ["european-islands", "seaside", "italian-gems"], "is_ryanair_base": true, "is_wizz_base": true},
+  {"iata": "OLB", "city": "Olbia (Sardinia)", "country": "Italy", "lat": 40.8987, "lon": 9.5176, "tags": ["european-islands", "seaside", "italian-gems"], "is_ryanair_base": true, "is_wizz_base": true},
+  
+  {"iata": "ALC", "city": "Alicante", "country": "Spain", "lat": 38.2822, "lon": -0.5581, "tags": ["seaside"], "is_ryanair_base": true, "is_wizz_base": true},
+  {"iata": "AGP", "city": "Malaga", "country": "Spain", "lat": 36.6749, "lon": -4.4991, "tags": ["seaside"], "is_ryanair_base": true, "is_wizz_base": true},
+  {"iata": "FAO", "city": "Faro (Algarve)", "country": "Portugal", "lat": 37.0144, "lon": -7.9659, "tags": ["seaside"], "is_ryanair_base": true, "is_wizz_base": true},
+  {"iata": "LPA", "city": "Las Palmas (Gran Canaria)", "country": "Spain", "lat": 27.9319, "lon": -15.3866, "tags": ["european-islands", "seaside"], "is_ryanair_base": true, "is_wizz_base": true},
+  {"iata": "TFS", "city": "Tenerife South", "country": "Spain", "lat": 28.0445, "lon": -16.5725, "tags": ["european-islands", "seaside"], "is_ryanair_base": true, "is_wizz_base": true},
+  {"iata": "FUE", "city": "Fuerteventura", "country": "Spain", "lat": 28.4527, "lon": -13.8638, "tags": ["european-islands", "seaside"], "is_ryanair_base": true, "is_wizz_base": true},
+  
+  {"iata": "BRI", "city": "Bari (Puglia)", "country": "Italy", "lat": 41.1389, "lon": 16.7606, "tags": ["seaside", "italian-gems"], "is_ryanair_base": true, "is_wizz_base": true},
+  {"iata": "SUF", "city": "Lamezia Terme (Calabria)", "country": "Italy", "lat": 38.9054, "lon": 16.2423, "tags": ["seaside", "italian-gems"], "is_ryanair_base": true, "is_wizz_base": true},
+  {"iata": "BDS", "city": "Brindisi", "country": "Italy", "lat": 40.6576, "lon": 17.947, "tags": ["seaside", "italian-gems"], "is_ryanair_base": true, "is_wizz_base": true},
+  
+  {"iata": "BGY", "city": "Milan Bergamo", "country": "Italy", "lat": 45.6739, "lon": 9.7042, "tags": ["hub", "shopping"], "is_ryanair_base": true, "is_wizz_base": true},
+  {"iata": "BCN", "city": "Barcelona", "country": "Spain", "lat": 41.2971, "lon": 2.0785, "tags": ["shopping", "seaside"], "is_ryanair_base": true, "is_wizz_base": true},
+  {"iata": "MAD", "city": "Madrid", "country": "Spain", "lat": 40.4719, "lon": -3.5626, "tags": ["shopping", "hub"], "is_ryanair_base": true, "is_wizz_base": true},
+  {"iata": "STN", "city": "London Stansted", "country": "UK", "lat": 51.885, "lon": 0.235, "tags": ["hub", "shopping"], "is_ryanair_base": true, "is_wizz_base": false},
+  {"iata": "EDI", "city": "Edinburgh", "country": "UK", "lat": 55.95, "lon": -3.3725, "tags": ["shopping"], "is_ryanair_base": true, "is_wizz_base": true},
+  
+  {"iata": "DUB", "city": "Dublin", "country": "Ireland", "lat": 53.4213, "lon": -6.2701, "tags": ["hub"], "is_ryanair_base": true, "is_wizz_base": true},
+  {"iata": "VIE", "city": "Vienna", "country": "Austria", "lat": 48.1103, "lon": 16.5697, "tags": ["hub"], "is_ryanair_base": true, "is_wizz_base": true}
 ]

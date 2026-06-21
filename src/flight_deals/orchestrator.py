@@ -3,13 +3,16 @@ from flight_deals.providers.wizz import WizzProvider
 from flight_deals.registry.destinations import DestinationRegistry
 from flight_deals.models import FlightDeal
 from typing import List, Optional, Tuple
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import os
 
 
 class DealOrchestrator:
-    def __init__(self):
+    def __init__(self, max_workers: int = 6):
         self.ryanair = RyanairProvider()
         self.wizz = WizzProvider()
         self.registry = DestinationRegistry()
+        self.max_workers = max_workers
 
     def search_by_category(
         self,
@@ -24,17 +27,41 @@ class DealOrchestrator:
         candidates = self.registry.get_by_tag(category)
         results: List[FlightDeal] = []
 
-        for dest in candidates:
+        def fetch_for_dest(dest):
+            local_results = []
             # Outbound
-            ryanair_out = self.ryanair.get_cheapest_flights(origin, date_from, date_to, dest.iata)
-            wizz_out = self.wizz.get_cheapest_flights(origin, date_from, date_to, dest.iata)
-            results.extend(ryanair_out + wizz_out)
+            try:
+                ryanair_out = self.ryanair.get_cheapest_flights(origin, date_from, date_to, dest.iata)
+                local_results.extend(ryanair_out)
+            except Exception:
+                pass
+            try:
+                wizz_out = self.wizz.get_cheapest_flights(origin, date_from, date_to, dest.iata)
+                local_results.extend(wizz_out)
+            except Exception:
+                pass
 
-            # Return (if requested)
+            # Return legs
             if return_date_from and return_date_to:
-                ryanair_ret = self.ryanair.get_cheapest_flights(dest.iata, return_date_from, return_date_to, origin)
-                wizz_ret = self.wizz.get_cheapest_flights(dest.iata, return_date_from, return_date_to, origin)
-                results.extend(ryanair_ret + wizz_ret)
+                try:
+                    ryanair_ret = self.ryanair.get_cheapest_flights(dest.iata, return_date_from, return_date_to, origin)
+                    local_results.extend(ryanair_ret)
+                except Exception:
+                    pass
+                try:
+                    wizz_ret = self.wizz.get_cheapest_flights(dest.iata, return_date_from, return_date_to, origin)
+                    local_results.extend(wizz_ret)
+                except Exception:
+                    pass
+            return local_results
+
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            future_to_dest = {executor.submit(fetch_for_dest, dest): dest for dest in candidates}
+            for future in as_completed(future_to_dest):
+                try:
+                    results.extend(future.result())
+                except Exception:
+                    continue
 
         if max_price:
             results = [d for d in results if d.price <= max_price]
