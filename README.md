@@ -17,7 +17,7 @@ Track Ryanair and Wizz Air flight deals by broad categories such as:
 - Full **configuration system**
 - Cache management commands
 - Proper Hermes skill for natural language use
-- Cron-ready daily tracking script (local only)
+- Hermes-managed cron jobs (via `cronjob` tool) for daily tracking and broad searches
 
 ## Installation
 
@@ -59,30 +59,21 @@ flight-deals cache list
 flight-deals cache clear
 ```
 
-## Local Cron / Scheduled Tracking (runs on your machine only)
+## Scheduled Tracking (managed by Hermes)
 
-**Important**: This tool is designed to run **locally only**. No GitHub Actions, no cloud schedulers.
+Crons are set up using Hermes' own `cronjob` system (as per Hermes SOP for assistant tasks). Hermes will manage and run the tracking autonomously.
 
-Use the included script:
+Jobs currently configured:
+- Daily at 9am: Run tracking script + summarize price changes/alerts (delivered here)
+- Mondays at 10am: Broad search for new deals across categories
 
-```bash
-# Run manually
-python scripts/daily_track.py
-```
+To manage:
+- `hermes cron list`
+- `hermes cron pause <id>` etc.
 
-### Setting up local cron (macOS / Linux)
+You can still run manually: `python scripts/daily_track.py`
 
-```bash
-# Edit your crontab
-crontab -e
-
-# Add a line like this (runs every day at 9:00 AM):
-0 9 * * * cd /Users/macmini/Documents/flight-deals-tracker && /Users/macmini/Documents/flight-deals-tracker/.venv/bin/python scripts/daily_track.py >> ~/flight-deals-cron.log 2>&1
-```
-
-You can customize the routes inside `scripts/daily_track.py` or pass them via arguments.
-
-On macOS you can also use `launchd` for more reliable scheduling if cron is disabled.
+The daily_track.py script is the execution engine that Hermes calls.
 
 ## Hermes Skill
 
