@@ -146,10 +146,31 @@ def destinations(tag: str = typer.Option(None, "--tag")):
 
 
 @app.command()
+def history(
+    origin: str = typer.Option(None, "--origin"),
+    destination: str = typer.Option(None, "--destination"),
+    limit: int = typer.Option(10, "--limit"),
+):
+    """Show price history for a route"""
+    snapshots = history_store.get_history(origin, destination, limit)
+    if not snapshots:
+        console.print("[yellow]No history found[/yellow]")
+        return
+    table = Table(title="Price History")
+    table.add_column("Date", style="green")
+    table.add_column("Route", style="cyan")
+    table.add_column("Price", style="magenta")
+    for s in snapshots:
+        table.add_row(s.departure_date, f"{s.origin}-{s.destination}", f"{s.price} {s.currency}")
+    console.print(table)
+
+
+@app.command()
 def version():
     """Show version"""
-    typer.echo("Flight Deals Tracker v0.2.0")
+    typer.echo("Flight Deals Tracker v0.3.1")
 
 
 if __name__ == "__main__":
+    app()
     app()
