@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-06-21T17:07:29.186324",
+  "provider": "ryanair",
+  "origin": "BUD",
+  "destination": "TIA",
+  "date_from": "2026-08-01",
+  "date_to": "2026-08-10",
+  "deals": [
+    {
+      "origin": "BUD",
+      "destination": "TIA",
+      "departure_date": "2026-08-05",
+      "return_date": null,
+      "price": 33.89,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 6887",
+      "duration_minutes": null
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-06-21T17:07:29.123075",
+  "provider": "ryanair",
+  "origin": "BUD",
+  "destination": "BOJ",
+  "date_from": "2026-08-01",
+  "date_to": "2026-08-10",
+  "deals": [
+    {
+      "origin": "BUD",
+      "destination": "BOJ",
+      "departure_date": "2026-08-05",
+      "return_date": null,
+      "price": 48.99,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 7432",
+      "duration_minutes": null
+    }
+  ]
+}

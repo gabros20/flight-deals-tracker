@@ -46,6 +46,8 @@ Sample config is available at `data/config.example.json`. Copy to `~/.config/fli
 ```bash
 # Search with reachability + cache
 flight-deals search --category european-islands --from BUD --date-from 2026-08-01 --date-to 2026-08-10 --max-price 120
+# With 1-stop connections:
+flight-deals search --category italian-gems --connections
 
 # Track with alerts
 flight-deals track --origin BUD --destination CAG --date-out 2026-08-12 --threshold 10

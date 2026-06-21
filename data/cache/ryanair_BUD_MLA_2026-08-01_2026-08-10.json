@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-06-21T17:07:15.104923",
+  "provider": "ryanair",
+  "origin": "BUD",
+  "destination": "MLA",
+  "date_from": "2026-08-01",
+  "date_to": "2026-08-10",
+  "deals": [
+    {
+      "origin": "BUD",
+      "destination": "MLA",
+      "departure_date": "2026-08-05",
+      "return_date": null,
+      "price": 42.21,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 2277",
+      "duration_minutes": null
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-06-21T17:07:14.921497",
+  "provider": "ryanair",
+  "origin": "BUD",
+  "destination": "JMK",
+  "date_from": "2026-08-01",
+  "date_to": "2026-08-10",
+  "deals": [
+    {
+      "origin": "BUD",
+      "destination": "JMK",
+      "departure_date": "2026-08-08",
+      "return_date": null,
+      "price": 47.82,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 1910",
+      "duration_minutes": null
+    }
+  ]
+}

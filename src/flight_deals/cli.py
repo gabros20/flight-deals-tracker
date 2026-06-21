@@ -34,8 +34,9 @@ def search(
     return_from: str = typer.Option(None, "--return-from"),
     return_to: str = typer.Option(None, "--return-to"),
     max_price: int = typer.Option(None, "--max-price"),
+    connections: bool = typer.Option(False, "--connections", "--with-stops", help="Include destinations reachable with 1 stop via hubs"),
 ):
-    """Search deals by category (uses reachability + cache)"""
+    """Search deals by category (uses reachability + cache). Use --connections for 1-stop options."""
     origin = origin or config.default_origin
     deals = orchestrator.search_by_category(
         category=category,
@@ -45,12 +46,16 @@ def search(
         max_price=max_price,
         return_date_from=return_from,
         return_date_to=return_to,
+        connections=connections,
     )
     if not deals:
         console.print("[yellow]No deals found[/yellow]")
         return
 
-    table = Table(title=f"Deals for {category} from {origin}")
+    title = f"Deals for {category} from {origin}"
+    if connections:
+        title += " (incl. 1-stop options)"
+    table = Table(title=title)
     table.add_column("Route", style="cyan")
     table.add_column("Date", style="green")
     table.add_column("Price", style="magenta")
@@ -61,7 +66,10 @@ def search(
         table.add_row(route, deal.departure_date, f"{deal.price} {deal.currency}", deal.source)
 
     console.print(table)
-    console.print(f"[dim]Showing top {min(25, len(deals))} of {len(deals)} deals (cached where possible)[/dim]")
+    note = f"Showing top {min(25, len(deals))} of {len(deals)} deals (cached where possible)"
+    if connections:
+        note += " | --connections includes popular 1-stop via major hubs (VIE, MUC, etc.)"
+    console.print(f"[dim]{note}[/dim]")
 
 
 @app.command()

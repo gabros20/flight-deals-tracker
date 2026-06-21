@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-06-21T17:07:28.807315",
+  "provider": "ryanair",
+  "origin": "BUD",
+  "destination": "NAP",
+  "date_from": "2026-08-01",
+  "date_to": "2026-08-10",
+  "deals": [
+    {
+      "origin": "BUD",
+      "destination": "NAP",
+      "departure_date": "2026-08-02",
+      "return_date": null,
+      "price": 19.99,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 4090",
+      "duration_minutes": null
+    }
+  ]
+}

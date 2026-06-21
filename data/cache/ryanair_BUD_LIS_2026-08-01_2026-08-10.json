@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-06-21T17:07:29.043402",
+  "provider": "ryanair",
+  "origin": "BUD",
+  "destination": "LIS",
+  "date_from": "2026-08-01",
+  "date_to": "2026-08-10",
+  "deals": [
+    {
+      "origin": "BUD",
+      "destination": "LIS",
+      "departure_date": "2026-08-04",
+      "return_date": null,
+      "price": 69.99,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 8859",
+      "duration_minutes": null
+    }
+  ]
+}

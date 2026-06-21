@@ -24,14 +24,18 @@ class DealOrchestrator:
         max_price: Optional[int] = None,
         return_date_from: Optional[str] = None,
         return_date_to: Optional[str] = None,
+        connections: bool = False,
     ) -> List[FlightDeal]:
-        # Use reachability filtering
-        candidates = self.registry.get_reachable(origin, category)
+        if connections:
+            candidates = self.registry.get_reachable_with_connections(origin, category)
+        else:
+            candidates = self.registry.get_reachable(origin, category)
+
         results: List[FlightDeal] = []
 
         def fetch_for_dest(dest):
             local_results = []
-            # Outbound
+            # Outbound direct
             try:
                 ryanair_out = self.ryanair.get_cheapest_flights(origin, date_from, date_to, dest.iata)
                 local_results.extend(ryanair_out)
