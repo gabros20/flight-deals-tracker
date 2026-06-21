@@ -60,7 +60,7 @@ def search(
 
     title = f"Deals for {category} from {origin}"
     if connections:
-        title += " (incl. 1-stop options)"
+        title += " (incl. 1-stop + multi-airport self-transfers (Milan BGY-MXP, Istanbul IST-SAW, London))"
     table = Table(title=title)
     table.add_column("Route", style="cyan")
     table.add_column("Date", style="green")
@@ -84,7 +84,7 @@ def search(
     console.print(table)
     note = f"Showing top {min(25, len(deals))} of {len(deals)} deals (cached where possible)"
     if connections:
-        note += " | --connections includes popular 1-stop via major hubs (VIE, MUC, etc.)"
+        note += " | --connections includes multi-airport cities (Milan BGY/MXP, Istanbul IST/SAW, London STN/LGW/LTN, Rome etc.) + ground calc"
     console.print(f"[dim]{note}[/dim]")
     if hasattr(orchestrator, "apify") and orchestrator.apify.is_available:
         console.print("[yellow]Note: Apify multi-source used (~/bin/bash.0003/search). Results may include self-transfers.[/yellow]")

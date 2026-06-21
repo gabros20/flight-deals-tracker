@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-21T16:00:04.932797",
+  "timestamp": "2026-06-21T22:00:19.994055",
   "provider": "ryanair",
   "origin": "BUD",
   "destination": "ANY",
@@ -15,29 +15,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 3165",
-      "duration_minutes": null
-    },
-    {
-      "origin": "BUD",
-      "destination": "CIA",
-      "departure_date": "2026-07-02",
-      "return_date": null,
-      "price": 14.98,
-      "currency": "EUR",
-      "source": "ryanair",
-      "flight_number": "FR 6515",
-      "duration_minutes": null
-    },
-    {
-      "origin": "BUD",
-      "destination": "SOF",
-      "departure_date": "2026-07-09",
-      "return_date": null,
-      "price": 14.98,
-      "currency": "EUR",
-      "source": "ryanair",
-      "flight_number": "FR 5642",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -48,18 +32,30 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 6521",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
-      "destination": "MXP",
-      "departure_date": "2026-07-01",
+      "destination": "SOF",
+      "departure_date": "2026-07-09",
       "return_date": null,
-      "price": 15.44,
+      "price": 15.88,
       "currency": "EUR",
       "source": "ryanair",
-      "flight_number": "FR 8325",
-      "duration_minutes": null
+      "flight_number": "FR 5642",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -70,7 +66,30 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 4305",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
+    },
+    {
+      "origin": "BUD",
+      "destination": "MXP",
+      "departure_date": "2026-07-01",
+      "return_date": null,
+      "price": 16.14,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 8325",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -81,7 +100,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 1923",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -92,7 +117,30 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 9785",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
+    },
+    {
+      "origin": "BUD",
+      "destination": "CIA",
+      "departure_date": "2026-07-06",
+      "return_date": null,
+      "price": 16.99,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 8260",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -103,7 +151,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 6240",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -114,7 +168,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 2488",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -124,41 +184,65 @@
       "price": 21.98,
       "currency": "EUR",
       "source": "ryanair",
-      "flight_number": "FR 54",
-      "duration_minutes": null
-    },
-    {
-      "origin": "BUD",
-      "destination": "BER",
-      "departure_date": "2026-07-10",
-      "return_date": null,
-      "price": 21.99,
-      "currency": "EUR",
-      "source": "ryanair",
-      "flight_number": "FR 197",
-      "duration_minutes": null
+      "flight_number": "FR 4263",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
       "destination": "BHX",
       "departure_date": "2026-07-10",
       "return_date": null,
-      "price": 21.99,
+      "price": 22.99,
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 9934",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
+    },
+    {
+      "origin": "BUD",
+      "destination": "BER",
+      "departure_date": "2026-07-10",
+      "return_date": null,
+      "price": 23.99,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 197",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
       "destination": "KRK",
       "departure_date": "2026-07-02",
       "return_date": null,
-      "price": 24.04,
+      "price": 24.11,
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 9752",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -169,7 +253,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 80",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -180,29 +270,30 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 221",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
       "destination": "STN",
-      "departure_date": "2026-07-08",
+      "departure_date": "2026-07-09",
       "return_date": null,
       "price": 24.91,
       "currency": "EUR",
       "source": "ryanair",
-      "flight_number": "FR 2517",
-      "duration_minutes": null
-    },
-    {
-      "origin": "BUD",
-      "destination": "BVA",
-      "departure_date": "2026-07-08",
-      "return_date": null,
-      "price": 24.98,
-      "currency": "EUR",
-      "source": "ryanair",
-      "flight_number": "FR 4229",
-      "duration_minutes": null
+      "flight_number": "FR 1659",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -213,7 +304,47 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 5212",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
+    },
+    {
+      "origin": "BUD",
+      "destination": "BVA",
+      "departure_date": "2026-07-08",
+      "return_date": null,
+      "price": 25.68,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 4229",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
+    },
+    {
+      "origin": "BUD",
+      "destination": "BLQ",
+      "departure_date": "2026-07-07",
+      "return_date": null,
+      "price": 25.99,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 3827",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -224,7 +355,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 6748",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -235,29 +372,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 5712",
-      "duration_minutes": null
-    },
-    {
-      "origin": "BUD",
-      "destination": "BLQ",
-      "departure_date": "2026-07-07",
-      "return_date": null,
-      "price": 26.99,
-      "currency": "EUR",
-      "source": "ryanair",
-      "flight_number": "FR 3827",
-      "duration_minutes": null
-    },
-    {
-      "origin": "BUD",
-      "destination": "TIA",
-      "departure_date": "2026-07-05",
-      "return_date": null,
-      "price": 27.22,
-      "currency": "EUR",
-      "source": "ryanair",
-      "flight_number": "FR 6887",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -268,7 +389,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 5248",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -279,7 +406,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 4034",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -290,18 +423,30 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 1650",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
-      "destination": "NAP",
-      "departure_date": "2026-07-06",
+      "destination": "TIA",
+      "departure_date": "2026-07-05",
       "return_date": null,
-      "price": 30.99,
+      "price": 31.92,
       "currency": "EUR",
       "source": "ryanair",
-      "flight_number": "FR 4090",
-      "duration_minutes": null
+      "flight_number": "FR 6887",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -312,7 +457,30 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 1646",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
+    },
+    {
+      "origin": "BUD",
+      "destination": "ARN",
+      "departure_date": "2026-07-06",
+      "return_date": null,
+      "price": 34.99,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 7599",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -323,51 +491,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 5254",
-      "duration_minutes": null
-    },
-    {
-      "origin": "BUD",
-      "destination": "MLA",
-      "departure_date": "2026-07-07",
-      "return_date": null,
-      "price": 36.09,
-      "currency": "EUR",
-      "source": "ryanair",
-      "flight_number": "FR 2204",
-      "duration_minutes": null
-    },
-    {
-      "origin": "BUD",
-      "destination": "ARN",
-      "departure_date": "2026-07-06",
-      "return_date": null,
-      "price": 36.99,
-      "currency": "EUR",
-      "source": "ryanair",
-      "flight_number": "FR 7599",
-      "duration_minutes": null
-    },
-    {
-      "origin": "BUD",
-      "destination": "BRS",
-      "departure_date": "2026-07-08",
-      "return_date": null,
-      "price": 38.33,
-      "currency": "EUR",
-      "source": "ryanair",
-      "flight_number": "FR 624",
-      "duration_minutes": null
-    },
-    {
-      "origin": "BUD",
-      "destination": "CTA",
-      "departure_date": "2026-07-08",
-      "return_date": null,
-      "price": 38.9,
-      "currency": "EUR",
-      "source": "ryanair",
-      "flight_number": "FR 6068",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -378,18 +508,81 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 1018",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
+    },
+    {
+      "origin": "BUD",
+      "destination": "NAP",
+      "departure_date": "2026-07-06",
+      "return_date": null,
+      "price": 38.99,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 4090",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
+    },
+    {
+      "origin": "BUD",
+      "destination": "CTA",
+      "departure_date": "2026-07-07",
+      "return_date": null,
+      "price": 40.02,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 6068",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
       "destination": "VLC",
-      "departure_date": "2026-07-03",
+      "departure_date": "2026-07-09",
       "return_date": null,
       "price": 40.99,
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 2301",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
+    },
+    {
+      "origin": "BUD",
+      "destination": "MLA",
+      "departure_date": "2026-07-07",
+      "return_date": null,
+      "price": 43.54,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 2204",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -400,18 +593,47 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 5023",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
-      "destination": "BOJ",
-      "departure_date": "2026-07-01",
+      "destination": "BRS",
+      "departure_date": "2026-07-08",
       "return_date": null,
-      "price": 47.04,
+      "price": 45.26,
       "currency": "EUR",
       "source": "ryanair",
-      "flight_number": "FR 7432",
-      "duration_minutes": null
+      "flight_number": "FR 624",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
+    },
+    {
+      "origin": "BUD",
+      "destination": "CFU",
+      "departure_date": "2026-07-06",
+      "return_date": null,
+      "price": 45.99,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 8054",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -422,18 +644,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 7368",
-      "duration_minutes": null
-    },
-    {
-      "origin": "BUD",
-      "destination": "CFU",
-      "departure_date": "2026-07-06",
-      "return_date": null,
-      "price": 47.99,
-      "currency": "EUR",
-      "source": "ryanair",
-      "flight_number": "FR 8054",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -444,7 +661,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 4752",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -455,7 +678,30 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 1243",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
+    },
+    {
+      "origin": "BUD",
+      "destination": "BOJ",
+      "departure_date": "2026-07-08",
+      "return_date": null,
+      "price": 48.99,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 7432",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -466,7 +712,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 9621",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -477,7 +729,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 4656",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -488,7 +746,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 1668",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -499,7 +763,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 2273",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -510,7 +780,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 7770",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -521,7 +797,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 4255",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -532,18 +814,30 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 4216",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
       "destination": "SKG",
-      "departure_date": "2026-07-10",
+      "departure_date": "2026-07-05",
       "return_date": null,
-      "price": 55.99,
+      "price": 56.85,
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 4277",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -554,40 +848,47 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 516",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
       "destination": "BCN",
-      "departure_date": "2026-07-01",
+      "departure_date": "2026-07-06",
       "return_date": null,
       "price": 57.99,
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 8393",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
       "destination": "ALC",
       "departure_date": "2026-07-02",
       "return_date": null,
-      "price": 62.99,
-      "currency": "EUR",
-      "source": "ryanair",
-      "flight_number": "FR 8012",
-      "duration_minutes": null
-    },
-    {
-      "origin": "BUD",
-      "destination": "SVQ",
-      "departure_date": "2026-07-02",
-      "return_date": null,
       "price": 65.99,
       "currency": "EUR",
       "source": "ryanair",
-      "flight_number": "FR 9894",
-      "duration_minutes": null
+      "flight_number": "FR 8012",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -598,7 +899,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 2855",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -609,7 +916,30 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 3110",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
+    },
+    {
+      "origin": "BUD",
+      "destination": "SVQ",
+      "departure_date": "2026-07-02",
+      "return_date": null,
+      "price": 67.99,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 9894",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -620,18 +950,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 4329",
-      "duration_minutes": null
-    },
-    {
-      "origin": "BUD",
-      "destination": "LIS",
-      "departure_date": "2026-07-03",
-      "return_date": null,
-      "price": 73.74,
-      "currency": "EUR",
-      "source": "ryanair",
-      "flight_number": "FR 8859",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -642,40 +967,81 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 1910",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
       "destination": "MAN",
-      "departure_date": "2026-07-06",
+      "departure_date": "2026-07-03",
       "return_date": null,
-      "price": 77.99,
+      "price": 76.99,
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 8357",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
       "destination": "PMO",
       "departure_date": "2026-07-01",
       "return_date": null,
-      "price": 79.99,
+      "price": 80.99,
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 2020",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
+    },
+    {
+      "origin": "BUD",
+      "destination": "LIS",
+      "departure_date": "2026-07-03",
+      "return_date": null,
+      "price": 83.99,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 8859",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
       "destination": "OPO",
       "departure_date": "2026-07-06",
       "return_date": null,
-      "price": 84.14,
+      "price": 95.39,
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 4243",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -686,7 +1052,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 3330",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -697,7 +1069,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 1026",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -708,7 +1086,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 4275",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -719,7 +1103,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 9943",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     },
     {
       "origin": "BUD",
@@ -730,7 +1120,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 2968",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     }
   ]
 }

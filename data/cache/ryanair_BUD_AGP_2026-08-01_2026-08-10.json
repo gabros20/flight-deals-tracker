@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-21T16:00:02.650707",
+  "timestamp": "2026-06-21T22:00:16.605893",
   "provider": "ryanair",
   "origin": "BUD",
   "destination": "AGP",
@@ -11,11 +11,17 @@
       "destination": "AGP",
       "departure_date": "2026-08-05",
       "return_date": null,
-      "price": 43.59,
+      "price": 50.63,
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 2273",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     }
   ]
 }

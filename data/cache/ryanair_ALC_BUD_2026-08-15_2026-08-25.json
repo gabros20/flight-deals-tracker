@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-21T16:00:05.391004",
+  "timestamp": "2026-06-21T22:00:20.361858",
   "provider": "ryanair",
   "origin": "ALC",
   "destination": "BUD",
@@ -9,13 +9,19 @@
     {
       "origin": "ALC",
       "destination": "BUD",
-      "departure_date": "2026-08-20",
+      "departure_date": "2026-08-25",
       "return_date": null,
       "price": 111.99,
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 8011",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     }
   ]
 }

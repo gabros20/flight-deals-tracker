@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-21T16:00:02.449027",
+  "timestamp": "2026-06-21T22:00:16.310456",
   "provider": "ryanair",
   "origin": "BUD",
   "destination": "PMI",
@@ -15,7 +15,13 @@
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 3110",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null
     }
   ]
 }

@@ -7,6 +7,7 @@ from flight_deals.providers.apify import ApifyProvider
 from flight_deals.registry.destinations import DestinationRegistry
 from flight_deals.models import FlightDeal
 from flight_deals.ground import GroundTransport
+from flight_deals.registry.destinations import DestinationRegistry
 from flight_deals.config import get_config
 
 
