@@ -1,0 +1,19 @@
+[project]
+name = "flight-deals"
+version = "0.1.0"
+description = "Track Ryanair and Wizz Air flight deals by category"
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.9",
+    "rich>=13",
+    "pydantic>=2.0",
+    "requests>=2.31",
+    "backoff>=2.2",
+    "python-dateutil>=2.8",
+]
+
+[project.scripts]
+flight-deals = "flight_deals.cli:app"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

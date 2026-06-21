@@ -1,0 +1,5 @@
+[
+  {"iata": "BUD", "city": "Budapest", "country": "Hungary", "lat": 47.4369, "lon": 19.2556, "tags": ["hub"], "is_ryanair_base": true, "is_wizz_base": true},
+  {"iata": "ALC", "city": "Alicante", "country": "Spain", "lat": 38.2822, "lon": -0.5581, "tags": ["seaside", "european-islands"], "is_ryanair_base": true, "is_wizz_base": true},
+  {"iata": "CFU", "city": "Corfu", "country": "Greece", "lat": 39.6019, "lon": 19.9117, "tags": ["european-islands", "seaside"], "is_ryanair_base": false, "is_wizz_base": true}
+]

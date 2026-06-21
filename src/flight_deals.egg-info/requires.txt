@@ -1,0 +1,6 @@
+typer>=0.9
+rich>=13
+pydantic>=2.0
+requests>=2.31
+backoff>=2.2
+python-dateutil>=2.8
