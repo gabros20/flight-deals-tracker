@@ -213,5 +213,49 @@ def version():
     typer.echo("Flight Deals Tracker v0.4.0 (config + cache + real Telegram + reachability)")
 
 
+
+@app.command()
+def cache(
+    action: str = typer.Argument(..., help="clear | stats | list"),
+    provider: str = typer.Option(None, "--provider"),
+    origin: str = typer.Option(None, "--origin"),
+    older_than: int = typer.Option(None, "--older-than", help="Hours"),
+):
+    """Manage the flight search cache"""
+    from flight_deals.cache import FlightCache
+    c = FlightCache()
+
+    if action == "clear":
+        count = c.clear()
+        console.print(f"[green]Cleared {count} cache entries[/green]")
+    elif action == "stats":
+        stats = c.stats()
+        console.print("Cache Statistics:")
+        for k, v in stats.items():
+            console.print(f"  {k}: {v}")
+    elif action == "list":
+        entries = c.list_entries()
+        if not entries:
+            console.print("[yellow]Cache is empty[/yellow]")
+            return
+        table = Table(title="Cache Entries")
+        table.add_column("File")
+        table.add_column("Provider")
+        table.add_column("Route")
+        table.add_column("Dates")
+        table.add_column("Deals")
+        for e in entries[:20]:
+            table.add_row(
+                e.get("file", ""),
+                e.get("provider", ""),
+                f"{e.get('origin','')}→{e.get('destination','')}",
+                f"{e.get('date_from','')}..{e.get('date_to','')}",
+                str(e.get("num_deals", 0))
+            )
+        console.print(table)
+    else:
+        console.print("[red]Unknown action. Use: clear, stats, list[/red]")
+
+
 if __name__ == "__main__":
     app()

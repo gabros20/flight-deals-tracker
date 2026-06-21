@@ -4,14 +4,33 @@ from typing import List, Optional, Set
 from flight_deals.models import Airport
 
 
-# Basic known direct connections from popular origins (can be expanded)
-# Format: origin -> set of known destinations
+# Known direct connections from popular Ryanair & Wizz bases (easily extendable)
+# Format: origin -> set of common direct destinations
+# Sources: Common routes from airline route maps (updated 2026)
 KNOWN_DIRECT_ROUTES = {
-    "BUD": {"PMI", "IBZ", "CFU", "HER", "ZTH", "CHQ", "CTA", "PMO", "CAG", "OLB", "ALC", "AGP", "FAO", "LPA", "TFS", "FUE", "BRI", "SUF", "BDS", "BGY", "BCN", "MAD", "VIE"},
-    "STN": {"PMI", "IBZ", "CFU", "HER", "CTA", "PMO", "ALC", "AGP", "FAO", "LPA", "TFS", "BGY", "BCN", "MAD"},
-    "BGY": {"PMI", "IBZ", "CFU", "HER", "ZTH", "CTA", "PMO", "CAG", "OLB", "ALC", "AGP", "FAO", "BRI", "SUF", "BDS"},
-    "DUB": {"PMI", "IBZ", "CFU", "HER", "ALC", "AGP", "FAO", "LPA", "TFS", "BGY", "BCN"},
-    "VIE": {"PMI", "IBZ", "CFU", "HER", "ZTH", "CTA", "PMO", "ALC", "AGP", "FAO", "BRI", "SUF"},
+    # Major hubs
+    "BUD": {"PMI", "IBZ", "CFU", "HER", "ZTH", "CHQ", "JTR", "CTA", "PMO", "CAG", "OLB", "ALC", "AGP", "FAO", "LPA", "TFS", "FUE", "BRI", "SUF", "BDS", "BGY", "BCN", "MAD", "VIE", "EDI", "STN"},
+    "STN": {"PMI", "IBZ", "CFU", "HER", "ZTH", "CHQ", "CTA", "PMO", "CAG", "OLB", "ALC", "AGP", "FAO", "LPA", "TFS", "FUE", "BRI", "SUF", "BDS", "BGY", "BCN", "MAD", "VIE", "DUB"},
+    "BGY": {"PMI", "IBZ", "CFU", "HER", "ZTH", "CHQ", "JTR", "CTA", "PMO", "CAG", "OLB", "ALC", "AGP", "FAO", "LPA", "TFS", "FUE", "BRI", "SUF", "BDS", "BCN", "MAD"},
+    "DUB": {"PMI", "IBZ", "CFU", "HER", "ZTH", "CHQ", "CTA", "PMO", "ALC", "AGP", "FAO", "LPA", "TFS", "FUE", "BRI", "BGY", "BCN", "MAD", "STN", "EDI"},
+    "VIE": {"PMI", "IBZ", "CFU", "HER", "ZTH", "CHQ", "CTA", "PMO", "ALC", "AGP", "FAO", "BRI", "SUF", "BDS", "BGY"},
+    
+    # UK & Ireland
+    "EDI": {"PMI", "IBZ", "CFU", "HER", "ALC", "AGP", "FAO", "LPA", "TFS", "BGY", "BCN", "MAD", "BUD"},
+    "MAN": {"PMI", "IBZ", "CFU", "HER", "ALC", "AGP", "FAO", "LPA", "TFS", "BGY", "BCN"},
+    
+    # Spain & Italy bases
+    "BCN": {"PMI", "IBZ", "CFU", "HER", "ZTH", "CTA", "PMO", "CAG", "OLB", "ALC", "AGP", "FAO", "BRI", "SUF", "BDS", "BUD", "VIE"},
+    "MAD": {"PMI", "IBZ", "CFU", "HER", "CTA", "PMO", "CAG", "OLB", "ALC", "AGP", "FAO", "LPA", "TFS", "FUE", "BRI", "BUD"},
+    "BRI": {"PMI", "IBZ", "CFU", "HER", "ZTH", "CHQ", "CTA", "PMO", "CAG", "OLB", "ALC", "AGP", "FAO", "BGY", "BCN"},
+    
+    # Canary Islands as origins (seasonal)
+    "LPA": {"BUD", "STN", "BGY", "DUB", "EDI", "MAD", "BCN"},
+    "TFS": {"BUD", "STN", "BGY", "DUB", "EDI", "MAD", "BCN"},
+    
+    # Others
+    "VLC": {"PMI", "IBZ", "CFU", "HER", "BUD", "BGY"},
+    "FAO": {"BUD", "STN", "BGY", "DUB", "EDI"},
 }
 
 
