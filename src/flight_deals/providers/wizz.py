@@ -34,9 +34,10 @@ class WizzProvider:
         date_from: str,
         date_to: str,
         destination_airport: Optional[str] = None,
+        use_cache: bool = True,
     ) -> List[FlightDeal]:
         # Check cache first
-        if self._cache:
+        if self._cache and use_cache:
             cached = self._cache.get(self.name, origin, date_from, date_to, destination_airport)
             if cached is not None:
                 return cached

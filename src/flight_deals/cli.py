@@ -39,12 +39,14 @@ def search(
     ground_prefer: str = typer.Option("any", "--ground-prefer", help="driving|public|any"),
     sort_by: str = typer.Option("price", "--sort-by", help="price|total-time|efficiency"),
     history_window: int = typer.Option(None, "--history-window", help="Days of history to use for comparisons (default from config)"),
+    fresh: bool = typer.Option(False, "--fresh", help="Bypass cache and fetch fresh prices"),
 ):
     """Search deals by category (uses reachability + cache). Use --connections for 1-stop options."""
     origin = origin or config.default_origin
     deals = orchestrator.search_by_category(
         category=category,
         origin=origin,
+        fresh=fresh,
         date_from=date_from,
         date_to=date_to,
         max_price=max_price,
@@ -118,10 +120,36 @@ def search(
     if len(hist) > 40: hist = hist[:37] + "..."
     table.add_row(route, deal.departure_date, f"{deal.price} {deal.currency}", deal.source, stops_str, ground_str, total_str, eff_str, hist)
 
-    console.print(table)
+    # New standard format with links
+    import urllib.parse
+
+    def _make_links(origin_code: str, dest_code: str, date_out: str, date_ret: str = None):
+        maps_url = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(dest_code + ' airport')}"
+        images_url = "https://images.google.com/search?q=" + urllib.parse.quote(dest_code + " beach seaside")
+        if date_ret:
+            flights_url = f"https://www.google.com/travel/flights?q=Flights+from+{origin_code}+to+{dest_code}+on+{date_out}+through+{date_ret}"
+        else:
+            flights_url = f"https://www.google.com/travel/flights?q=Flights+from+{origin_code}+to+{dest_code}+on+{date_out}"
+        return maps_url, images_url, flights_url
+
+    for i, deal in enumerate(deals[:25], 1):
+        dest = getattr(deal, 'destination', '')
+        date_out = getattr(deal, 'departure_date', '')
+        date_ret = getattr(deal, 'return_date', None) or return_to or None
+
+        maps_url, images_url, flights_url = _make_links(origin, dest, date_out, date_ret)
+
+        line = (
+            f"**{i}. {deal.origin} → {dest} – {deal.price} {deal.currency}**\n"
+            f"📍 [Google Maps]({maps_url})\n"
+            f"🏞️ [Google Images]({images_url})\n"
+            f"✈️ [View & Book on Google Flights]({flights_url})\n"
+        )
+        console.print(line)
+
     note = f"Showing top {min(25, len(deals))} of {len(deals)} deals (cached where possible)"
     if connections:
-        note += " | --connections includes multi-airport cities (Milan BGY/MXP, Istanbul IST/SAW, London STN/LGW/LTN, Rome etc.) + ground calc"
+        note += " | --connections includes multi-airport cities (Milan BGY-MXP, Istanbul IST-SAW, London STN/LGW/LTN, Rome etc.) + ground calc"
     console.print(f"[dim]{note}[/dim]")
     if hasattr(orchestrator, "apify") and orchestrator.apify.is_available:
         console.print("[yellow]Note: Apify multi-source used (~/bin/bash.0003/search). Results may include self-transfers.[/yellow]")
@@ -335,6 +363,7 @@ def collect(
     deals = orchestrator.search_by_category(
         category=category,
         origin=origin,
+        fresh=fresh,
         date_from=date_from,
         date_to=date_to,
         connections=connections,

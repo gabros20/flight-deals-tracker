@@ -16,7 +16,7 @@ class FlightDealsConfig(BaseModel):
     currency: str = Field(default="EUR")
     telegram_bot_token: Optional[str] = None
     telegram_chat_id: Optional[str] = None
-    cache_ttl_hours: int = Field(default=6, ge=0)
+    cache_ttl_hours: int = Field(default=0.25, ge=0)  # 15 minutes
     max_workers: int = Field(default=8, ge=1, le=20)
     history_min_points_for_badge: int = Field(default=3, ge=1)
     history_window_days: int = Field(default=365, ge=7, description="Default window for historical comparisons and best-this-month")

@@ -36,6 +36,7 @@ class DealOrchestrator:
         ground_prefer: str = "any",
         sort_by: str = "price",
         history_window_days: int = None,
+        fresh: bool = False,
     ) -> List[FlightDeal]:
         origin = origin or self.config.default_origin
         max_ground = max_ground_minutes or getattr(self.config, "max_ground_minutes", 180)
@@ -50,12 +51,12 @@ class DealOrchestrator:
         def fetch_for_dest(dest):
             local_results = []
             try:
-                ryanair_out = self.ryanair.get_cheapest_flights(origin, date_from, date_to, dest.iata)
+                ryanair_out = self.ryanair.get_cheapest_flights(origin, date_from, date_to, dest.iata, use_cache=not fresh)
                 local_results.extend(ryanair_out)
             except Exception:
                 pass
             try:
-                wizz_out = self.wizz.get_cheapest_flights(origin, date_from, date_to, dest.iata)
+                wizz_out = self.wizz.get_cheapest_flights(origin, date_from, date_to, dest.iata, use_cache=not fresh)
                 local_results.extend(wizz_out)
             except Exception:
                 pass
