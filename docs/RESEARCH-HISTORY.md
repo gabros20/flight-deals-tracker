@@ -87,6 +87,16 @@ From web + Kaggle searches:
 5. Cron-friendly collection.
 6. Percentiles + "best of month/year".
 
+
+## 4b. Optimizations Implemented (file-based focus)
+- **Robust date-window filtering**: get_route_stats now parses departure_dates and filters to last N days (configurable via --history-window or config.history_window_days). "Best this month" uses actual 30-day recent data.
+- **File-based storage optimized**: Pure CSV with in-memory row cache for repeated queries (no DuckDB; user specified file-based + git committed). Fast append + filter. Alerts also logged to separate price_alerts.csv (still file-based, git friendly).
+- **Cron collection jobs**: New scripts/collect_deals.py (standalone, argparse) + enhanced `flight-deals collect`. Ready for Hermes cronjob or crontab (e.g. 0 9 * * * cd ... && python scripts/collect_deals.py ...). Supports categories, connections, window.
+- **Price-drop alerts below historical avg**: detect_price_drops() in history, integrated into collect. Logs to CSV + sends via TelegramNotifier when configured. Threshold in config (default 15%).
+- All remains local file-based (CSV primary) for simplicity, versioning, and no external DB deps.
+
+Updated 2026-06-22.
+
 ## Sources (Key Links from Research)
 - ryanair_timecapsule: https://github.com/mbalos16/ryanair_timecapsule
 - ryantrak: https://github.com/thomasdstewart/ryantrak

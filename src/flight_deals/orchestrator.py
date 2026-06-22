@@ -35,6 +35,7 @@ class DealOrchestrator:
         max_ground_minutes: Optional[int] = None,
         ground_prefer: str = "any",
         sort_by: str = "price",
+        history_window_days: int = None,
     ) -> List[FlightDeal]:
         origin = origin or self.config.default_origin
         max_ground = max_ground_minutes or getattr(self.config, "max_ground_minutes", 180)
@@ -206,9 +207,9 @@ class DealOrchestrator:
         else:
             deduped.sort(key=lambda x: x.price)
 
-        # Phase 9: Enrich with historical price comparisons and badges
+        # Phase 9+: Enrich with historical price comparisons and badges (with window filtering)
         try:
-            self.history.enrich_deals(deduped)
+            self.history.enrich_deals(deduped, window_days=history_window_days)
         except Exception as e:
             pass  # history optional
         return deduped

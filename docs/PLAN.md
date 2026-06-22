@@ -211,3 +211,26 @@ Added support for calculating connections via cities with multiple airports:
 - Structured legs for future history/display.
 
 This covers all requested areas with working code + suggestions for further real-data improvement.
+
+## Phase 10: Further Optimizations (file-based, windows, cron, alerts) - Completed 2026-06-22
+
+### Objectives
+- More robust date-window filtering in all history queries and badges.
+- Keep/optimize pure file-based CSV storage (no DuckDB; git-committable).
+- Cron collection jobs support (script + CLI).
+- Price-drop alerts below historical average with logging + Telegram prep.
+
+### Tasks
+- [x] Enhance PriceHistoryStore: _filter_by_window, cache, detect_price_drops, _log_alert.
+- [x] Config: history_window_days, price_drop_threshold, alerts_path.
+- [x] Orchestrator + CLI: pass window, integrate detect in collect, new `alerts` cmd, history-stats --window.
+- [x] scripts/collect_deals.py for cron (Hermes or crontab).
+- [x] Update docs, tests verification, git commit.
+
+### Success Criteria
+- `history-stats --window 30` returns different filtered stats.
+- `collect` auto logs drops and attempts Telegram if configured.
+- `scripts/collect_deals.py --category ...` works standalone.
+- All data in CSV files (price_history.csv + price_alerts.csv).
+- Version v0.6.0.
+

@@ -234,3 +234,28 @@ Search → Providers/Composites → Ground → History.enrich_deals() → CLI di
 - Ready for cron alerts on "below historical average".
 
 See docs/RESEARCH-HISTORY.md and PLAN.md Phase 9 for details and sources.
+
+## Phase 10 Additions: Date Windows, File-based Optimizations, Cron & Alerts
+
+**Date-window filtering**
+- All stats/enrich use departure_date parsing + cutoff = today - window_days.
+- Improves "best this month" accuracy and allows user-controlled comparisons (e.g. summer 2026 vs full year).
+
+**File-based storage (explicit requirement)**
+- CSV primary (append-only, easy git).
+- In-memory _cached_rows for query speed without loading disk every time.
+- Separate price_alerts.csv for audit of drops.
+- No external DB; pure stdlib + pydantic.
+
+**Cron collection**
+- scripts/collect_deals.py is self-contained CLI script for scheduling.
+- Example Hermes cron: use cronjob create with prompt calling the script or flight-deals collect.
+- Supports all existing flags (--connections etc).
+
+**Price-drop alerts**
+- Threshold-driven (config + param).
+- Auto-called from collect.
+- Structured alerts + notifier.send_price_alert.
+- Can be extended for "below avg for this route/date window".
+
+All changes maintain compatibility with multi-airport connections and ground transport.

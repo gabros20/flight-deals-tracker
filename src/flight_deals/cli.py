@@ -38,6 +38,7 @@ def search(
     max_ground_minutes: int = typer.Option(180, "--max-ground-minutes", help="Filter connections with ground time > this (minutes)"),
     ground_prefer: str = typer.Option("any", "--ground-prefer", help="driving|public|any"),
     sort_by: str = typer.Option("price", "--sort-by", help="price|total-time|efficiency"),
+    history_window: int = typer.Option(None, "--history-window", help="Days of history to use for comparisons (default from config)"),
 ):
     """Search deals by category (uses reachability + cache). Use --connections for 1-stop options."""
     origin = origin or config.default_origin
@@ -53,6 +54,7 @@ def search(
         max_ground_minutes=max_ground_minutes,
         ground_prefer=ground_prefer,
         sort_by=sort_by,
+        history_window_days=history_window,
     )
     if not deals:
         console.print("[yellow]No deals found[/yellow]")
@@ -271,7 +273,7 @@ def config_cmd(
 @app.command()
 def version():
     """Show version"""
-    typer.echo("Flight Deals Tracker v0.5.0 (history comparisons + collect) (config + cache + real Telegram + reachability)")
+    typer.echo("Flight Deals Tracker v0.6.0 (robust date windows + file-based CSV + cron-ready + price-drop alerts below avg)")
 
 
 
@@ -345,24 +347,70 @@ def collect(
         except Exception:
             pass
     console.print(f"[green]Logged {count} price snapshots to history[/green]")
-    console.print("Use 'flight-deals search' later to see comparisons and badges.")
 
-if __name__ == "__main__":
-    app()
+    # Price-drop alerts below historical avg (file-based + Telegram ready)
+    try:
+        alerts = history_store.detect_price_drops(deals)
+        if alerts:
+            console.print(f"[bold red]🚨 {len(alerts)} price drops below historical avg detected![/bold red]")
+            for a in alerts[:3]:
+                console.print(f"   {a["message"]}")
+                if hasattr(notifier, "send_price_alert"):
+                    notifier.send_price_alert(a["origin"], a["destination"], a["departure_date"], a["current_price"], "EUR", -a.get("pct_below_avg", 0))
+        else:
+            console.print("[dim]No significant drops vs historical avg.[/dim]")
+    except Exception as e:
+        console.print(f"[yellow]Drop detection note: {e}[/yellow]")
+    console.print("Use 'flight-deals search' or 'flight-deals alerts' to view comparisons/badges.")
+
+
+@app.command()
+def alerts(
+    origin: str = typer.Option(None, "--origin"),
+    limit: int = typer.Option(20, "--limit"),
+):
+    """Show logged price-drop alerts (below historical avg)."""
+    alerts_path = config.data_path / "price_alerts.csv"
+    if not alerts_path.exists():
+        console.print("[yellow]No alerts file yet. Run collect first.[/yellow]")
+        return
+    import csv
+    rows = []
+    with open(alerts_path) as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)[-limit:]
+    if not rows:
+        console.print("[yellow]No alerts logged yet.[/yellow]")
+        return
+    table = Table(title="Recent Price Drop Alerts (below historical avg)")
+    table.add_column("When")
+    table.add_column("Route")
+    table.add_column("Price")
+    table.add_column("% Below Hist Avg")
+    for r in rows:
+        table.add_row(r.get("timestamp_utc","")[:16], f"{r.get('origin')}-{r.get('destination')}", 
+                      str(r.get("current_price")), f"{r.get('pct_below_avg')}%")
+    console.print(table)
 
 @app.command("history-stats")
 def history_stats(
     origin: str = typer.Option(None, "--origin"),
     destination: str = typer.Option(None, "--destination"),
+    window: int = typer.Option(None, "--window", help="History window in days for robust filtering"),
 ):
-    """Show aggregate historical stats for a route."""
-    stats = history_store.get_route_stats(origin or config.default_origin, destination or "")
+    """Show aggregate historical stats for a route (supports --window for date filtering)."""
+    stats = history_store.get_route_stats(origin or config.default_origin, destination or "", window_days=window)
     if not stats or stats.get("count", 0) == 0:
         console.print("[yellow]No history for this route yet. Use 'collect' first.[/yellow]")
         return
-    console.print(f"[bold]History Stats for {origin or config.default_origin} → {destination or 'any'}[/bold]")
+    w = stats.get("window_days_used", "default")
+    console.print(f"[bold]History Stats for {origin or config.default_origin} → {destination or 'any'} (window={w}d)[/bold]")
     for k, v in stats.items():
         console.print(f"  {k}: {v}")
+
+if __name__ == "__main__":
+    app()
+
 
 
 @app.command()
@@ -375,3 +423,34 @@ def multi_airports():
         airports = reg.get_airports_for_multi_city(city)
         console.print(f"  {city}: {', '.join(airports)}")
     console.print("\nUse with: flight-deals search --connections ...")
+
+
+if __name__ == "__main__":
+    app()
+@app.command()
+def alerts(
+    origin: str = typer.Option(None, "--origin"),
+    limit: int = typer.Option(20, "--limit"),
+):
+    """Show logged price-drop alerts (below historical avg). Run collect to populate."""
+    alerts_path = config.data_path / "price_alerts.csv"
+    if not alerts_path.exists():
+        console.print("[yellow]No alerts file yet. Run collect first to generate data.[/yellow]")
+        return
+    import csv
+    rows = []
+    with open(alerts_path) as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)[-limit:]
+    if not rows:
+        console.print("[yellow]No alerts logged yet.[/yellow]")
+        return
+    table = Table(title="Recent Price Drop Alerts (below historical avg)")
+    table.add_column("When")
+    table.add_column("Route")
+    table.add_column("Price")
+    table.add_column("% Below Hist Avg")
+    for r in rows:
+        table.add_row(r.get("timestamp_utc","")[:16], f"{r.get('origin')}-{r.get('destination')}", 
+                      str(r.get("current_price")), f"{r.get('pct_below_avg')}%")
+    console.print(table)

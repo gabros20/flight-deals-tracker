@@ -15,3 +15,13 @@ This is the in-repo version of the skill. The canonical installed version lives 
 - Searches now return badges and notes comparing to your historical data for the route.
 - Commands: `collect`, `history-stats`.
 
+## New in v0.6.0: Optimizations
+- Robust date-window filtering via --history-window or config.
+- Pure file-based CSV storage (git committed, with cache).
+- Cron-ready collection script + alerts on drops below historical avg.
+- `flight-deals alerts`, `history-stats --window`, auto-alerts in collect.
+- All data stays in data/*.csv files.
+
+Hermes cron example (add via Hermes CLI):
+Use cronjob to run the collect script periodically and deliver alerts to Telegram.
+

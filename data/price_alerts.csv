@@ -1,0 +1,2 @@
+timestamp_utc,origin,destination,departure_date,current_price,historical_avg,pct_below_avg,threshold,message
+2026-06-22T08:24:29.347659,BUD,CAG,2026-08-12,20.0,57.44,65.2,0.1,Great deal! BUD-CAG on 2026-08-12 at €20.0 is 65% below historical avg (€57.44)

@@ -19,8 +19,11 @@ class FlightDealsConfig(BaseModel):
     cache_ttl_hours: int = Field(default=6, ge=0)
     max_workers: int = Field(default=8, ge=1, le=20)
     history_min_points_for_badge: int = Field(default=3, ge=1)
+    history_window_days: int = Field(default=365, ge=7, description="Default window for historical comparisons and best-this-month")
+    price_drop_threshold: float = Field(default=0.15, ge=0.0, le=0.5, description="Alert if price is this fraction below historical avg")
     data_dir: str = Field(default="data")
     enable_cache: bool = True
+    alerts_log_path: str = Field(default="data/price_alerts.csv")
 
     # Apify multi-source config (for connections + broader coverage)
     apify_token: Optional[str] = None
@@ -41,6 +44,10 @@ class FlightDealsConfig(BaseModel):
     @property
     def history_path(self) -> Path:
         return self.data_path / "price_history.csv"
+
+    @property
+    def alerts_path(self) -> Path:
+        return self.data_path / "price_alerts.csv"
 
     @property
     def has_apify(self) -> bool:

@@ -161,3 +161,15 @@ Ground times are calculated using OSRM + public transit data and precomputed for
 - `flight-deals history-stats --destination PMI`
 - Own data collection powers accurate "great deal" detection for your routes.
 
+
+## New in v0.6.0 (Optimizations)
+- **Robust date-window filtering**: `--history-window 90` or config `history_window_days`. Accurate "best this month", filtered stats.
+- **File-based only**: Pure CSV (price_history.csv + price_alerts.csv) with in-memory caching. Git-friendly, no DuckDB.
+- **Cron collection**: `scripts/collect_deals.py` + `flight-deals collect`. Schedule via Hermes `cronjob` or crontab.
+- **Price-drop alerts below historical avg**: Auto in collect. `flight-deals alerts` to view. Telegram via notifier when configured (threshold in config).
+- `history-stats --window N` and enhanced badges.
+
+Example cron collection:
+```
+python scripts/collect_deals.py --category european-islands --date-from 2026-08-01 --date-to 2026-08-20 --connections
+```
