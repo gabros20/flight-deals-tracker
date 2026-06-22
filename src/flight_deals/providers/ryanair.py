@@ -57,3 +57,31 @@ class RyanairProvider:
             return deals
         except Exception:
             return []
+
+    def get_roundtrip_price(self, origin: str, destination: str, 
+                            outbound_from: str, outbound_to: str,
+                            return_from: str, return_to: str,
+                            use_cache: bool = True) -> Optional[dict]:
+        """Get cheapest round-trip price by combining outbound + return"""
+        try:
+            outbound = self.get_cheapest_flights(origin, outbound_from, outbound_to, destination, use_cache=use_cache)
+            if not outbound:
+                return None
+                
+            return_legs = self.get_cheapest_flights(destination, return_from, return_to, origin, use_cache=use_cache)
+            if not return_legs:
+                return None
+
+            cheapest_out = min(outbound, key=lambda x: x.price)
+            cheapest_ret = min(return_legs, key=lambda x: x.price)
+            
+            return {
+                "total_price": cheapest_out.price + cheapest_ret.price,
+                "currency": cheapest_out.currency,
+                "outbound_price": cheapest_out.price,
+                "return_price": cheapest_ret.price,
+                "outbound_date": cheapest_out.departure_date,
+                "return_date": cheapest_ret.departure_date,
+            }
+        except Exception:
+            return None

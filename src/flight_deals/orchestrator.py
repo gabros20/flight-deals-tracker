@@ -50,16 +50,62 @@ class DealOrchestrator:
 
         def fetch_for_dest(dest):
             local_results = []
-            try:
-                ryanair_out = self.ryanair.get_cheapest_flights(origin, date_from, date_to, dest.iata, use_cache=not fresh)
-                local_results.extend(ryanair_out)
-            except Exception:
-                pass
-            try:
-                wizz_out = self.wizz.get_cheapest_flights(origin, date_from, date_to, dest.iata, use_cache=not fresh)
-                local_results.extend(wizz_out)
-            except Exception:
-                pass
+            
+            # Round-trip mode
+            if return_date_from and return_date_to:
+                try:
+                    rt = self.ryanair.get_roundtrip_price(
+                        origin, dest.iata,
+                        date_from, date_to,
+                        return_date_from, return_date_to,
+                        use_cache=not fresh
+                    )
+                    if rt:
+                        deal = FlightDeal(
+                            origin=origin,
+                            destination=dest.iata,
+                            departure_date=date_from,
+                            price=rt["total_price"],
+                            currency=rt["currency"],
+                            source="ryanair",
+                            notes=f"Round-trip (out {rt['outbound_price']} + ret {rt['return_price']})"
+                        )
+                        local_results.append(deal)
+                except Exception:
+                    pass
+                    
+                try:
+                    rt = self.wizz.get_roundtrip_price(
+                        origin, dest.iata,
+                        date_from, date_to,
+                        return_date_from, return_date_to,
+                        use_cache=not fresh
+                    )
+                    if rt:
+                        deal = FlightDeal(
+                            origin=origin,
+                            destination=dest.iata,
+                            departure_date=date_from,
+                            price=rt["total_price"],
+                            currency=rt["currency"],
+                            source="wizz",
+                            notes=f"Round-trip (out {rt['outbound_price']} + ret {rt['return_price']})"
+                        )
+                        local_results.append(deal)
+                except Exception:
+                    pass
+            else:
+                # One-way mode
+                try:
+                    ryanair_out = self.ryanair.get_cheapest_flights(origin, date_from, date_to, dest.iata, use_cache=not fresh)
+                    local_results.extend(ryanair_out)
+                except Exception:
+                    pass
+                try:
+                    wizz_out = self.wizz.get_cheapest_flights(origin, date_from, date_to, dest.iata, use_cache=not fresh)
+                    local_results.extend(wizz_out)
+                except Exception:
+                    pass
 
             if connections and self.apify.is_available:
                 try:
