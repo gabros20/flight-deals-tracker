@@ -8,6 +8,7 @@ from flight_deals.registry.destinations import DestinationRegistry
 from flight_deals.models import FlightDeal, FlightLeg
 from flight_deals.ground import GroundTransport
 from flight_deals.config import get_config
+from flight_deals.history import PriceHistoryStore
 
 
 class DealOrchestrator:
@@ -19,6 +20,7 @@ class DealOrchestrator:
         self.apify = ApifyProvider()
         self.max_workers = self.config.max_workers
         self.ground = GroundTransport()
+        self.history = PriceHistoryStore()
 
     def search_by_category(
         self,
@@ -204,125 +206,9 @@ class DealOrchestrator:
         else:
             deduped.sort(key=lambda x: x.price)
 
+        # Phase 9: Enrich with historical price comparisons and badges
+        try:
+            self.history.enrich_deals(deduped)
+        except Exception as e:
+            pass  # history optional
         return deduped
-
-    def find_roundtrip_deals(
-        self,
-        origin: str,
-        destination: str,
-        outbound_from: str,
-        outbound_to: str,
-        return_from: str,
-        return_to: str,
-        max_price: Optional[int] = None,
-    ) -> List[Tuple[FlightDeal, FlightDeal]]:
-        """Find paired round-trip deals"""
-        out_deals = self.ryanair.get_cheapest_flights(origin, outbound_from, outbound_to, destination)
-        out_deals += self.wizz.get_cheapest_flights(origin, outbound_from, outbound_to, destination)
-
-        ret_deals = self.ryanair.get_cheapest_flights(destination, return_from, return_to, origin)
-        ret_deals += self.wizz.get_cheapest_flights(destination, return_from, return_to, origin)
-
-        roundtrips = []
-        for out in out_deals:
-            for ret in ret_deals:
-                total = out.price + ret.price
-                if max_price is None or total <= max_price:
-                    roundtrips.append((out, ret))
-
-        roundtrips.sort(key=lambda x: x[0].price + x[1].price)
-        return roundtrips[:10]
-
-
-    def _fetch_legs_to_entry(self, origin: str, entry: str, date_from: str, date_to: str) -> List[FlightDeal]:
-        legs = []
-        try:
-            legs += self.ryanair.get_cheapest_flights(origin, date_from, date_to, entry)
-        except: pass
-        try:
-            legs += self.wizz.get_cheapest_flights(origin, date_from, date_to, entry)
-        except: pass
-        if self.apify.is_available:
-            try:
-                legs += self.apify.get_cheapest_flights(origin, date_from, date_to, entry)
-            except: pass
-        return legs
-
-    def _fetch_legs_from_exit(self, exit_air: str, dest: str, date_from: str, date_to: str) -> List[FlightDeal]:
-        legs = []
-        try:
-            legs += self.ryanair.get_cheapest_flights(exit_air, date_from, date_to, dest)
-        except: pass
-        try:
-            legs += self.wizz.get_cheapest_flights(exit_air, date_from, date_to, dest)
-        except: pass
-        return legs
-
-    def _build_multi_airport_composites(
-        self,
-        origin: str,
-        candidates: List,
-        date_from: str,
-        date_to: str,
-        max_ground: int,
-        ground_prefer: str,
-        connections: bool
-    ) -> List[FlightDeal]:
-        """Phase 8+: Strong proactive composite generation for multi-airport self-transfers."""
-        composites = []
-        multi_cities = getattr(self.registry, "MULTI_AIRPORT_CITIES", {})
-
-        entry_airports = []
-        for city, iatas in multi_cities.items():
-            for iata in iatas:
-                if iata in [d.iata for d in self.registry.get_reachable(origin)]:
-                    entry_airports.append((city, iata))
-
-        for city, entry in entry_airports[:4]:
-            entry_deals = self._fetch_legs_to_entry(origin, entry, date_from, date_to)
-            exit_airports = [x for x in multi_cities.get(city, []) if x != entry]
-
-            for entry_deal in entry_deals[:2]:
-                for exit_air in exit_airports:
-                    for dest in candidates[:5]:
-                        onward = self._fetch_legs_from_exit(exit_air, dest.iata, date_from, date_to)
-                        for on in onward[:1]:
-                            gopts = self.ground.get_ground_options(entry, exit_air, prefer=ground_prefer, max_km=400)
-                            if not gopts:
-                                continue
-                            ground = gopts[0]
-                            if ground.duration_minutes > max_ground:
-                                continue
-
-                            total_price = entry_deal.price + on.price
-                            air_dur = (entry_deal.duration_minutes or 90) + (on.duration_minutes or 120)
-                            total_dur = air_dur + ground.duration_minutes + 90
-
-                            legs = [
-                                FlightLeg(origin=origin, destination=entry, price=entry_deal.price,
-                                          duration_minutes=entry_deal.duration_minutes, source=entry_deal.source,
-                                          departure_date=getattr(entry_deal, 'departure_date', None)),
-                                ground,
-                                FlightLeg(origin=exit_air, destination=dest.iata, price=on.price,
-                                          duration_minutes=on.duration_minutes, source=on.source)
-                            ]
-
-                            composite = FlightDeal(
-                                origin=origin,
-                                destination=dest.iata,
-                                departure_date=getattr(entry_deal, 'departure_date', date_from),
-                                price=total_price,
-                                currency=getattr(entry_deal, 'currency', 'EUR'),
-                                source=f"self-transfer:{city}",
-                                stops=1,
-                                duration_minutes=air_dur,
-                                total_duration_minutes=total_dur,
-                                efficiency_score=self.ground.compute_efficiency_score(total_price, total_dur),
-                                ground_leg=ground,
-                                legs=legs,
-                                connection_path=[leg.model_dump() if hasattr(leg, 'model_dump') else dict(leg) for leg in legs],
-                                notes=f"Self-transfer via {city} ({entry}→{exit_air})"
-                            )
-                            composites.append(composite)
-        return composites
-

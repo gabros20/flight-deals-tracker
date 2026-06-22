@@ -1,6 +1,7 @@
 {
   "BUD-VIE": [
     {
+      "type": "ground",
       "from_iata": "BUD",
       "to_iata": "VIE",
       "mode": "driving",
@@ -11,6 +12,7 @@
       "options": []
     },
     {
+      "type": "ground",
       "from_iata": "BUD",
       "to_iata": "VIE",
       "mode": "airplane,walk",
@@ -21,6 +23,7 @@
       "options": []
     },
     {
+      "type": "ground",
       "from_iata": "BUD",
       "to_iata": "VIE",
       "mode": "airplane,walk",

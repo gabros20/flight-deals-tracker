@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-21T23:14:54.552109",
+  "timestamp": "2026-06-22T08:41:44.589010",
   "provider": "ryanair",
   "origin": "BUD",
   "destination": "JMK",
@@ -23,7 +23,10 @@
       "total_duration_minutes": null,
       "efficiency_score": null,
       "connection_path": [],
-      "notes": ""
+      "legs": [],
+      "notes": "",
+      "historical_comparison": null,
+      "comparison_note": ""
     }
   ]
 }

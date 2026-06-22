@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-06-22T08:42:23.938207",
+  "provider": "ryanair",
+  "origin": "BUD",
+  "destination": "TFS",
+  "date_from": "2026-08-05",
+  "date_to": "2026-08-25",
+  "deals": [
+    {
+      "origin": "BUD",
+      "destination": "TFS",
+      "departure_date": "2026-08-25",
+      "return_date": null,
+      "price": 95.79,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 9943",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null,
+      "connection_path": [],
+      "legs": [],
+      "notes": "",
+      "historical_comparison": null,
+      "comparison_note": ""
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-21T23:14:55.449944",
+  "timestamp": "2026-06-22T08:41:45.337075",
   "provider": "ryanair",
   "origin": "BUD",
   "destination": "LIS",
@@ -11,7 +11,7 @@
       "destination": "LIS",
       "departure_date": "2026-08-07",
       "return_date": null,
-      "price": 75.62,
+      "price": 71.87,
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 8859",
@@ -23,7 +23,10 @@
       "total_duration_minutes": null,
       "efficiency_score": null,
       "connection_path": [],
-      "notes": ""
+      "legs": [],
+      "notes": "",
+      "historical_comparison": null,
+      "comparison_note": ""
     }
   ]
 }

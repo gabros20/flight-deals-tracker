@@ -1,7 +1,7 @@
 # Flight Deals Tracker — Implementation Plan (Updated)
 
-**Update Date**: 2026-06-21
-**Focus**: Phase 7 Enhancements - Ground Transport Efficiency Additions (Option A)
+**Update Date**: 2026-06-22
+**Focus**: Phase 9 - Historical Price Data, Comparisons, Badges & Collection (full design + implementation)
 
 ## Phases Completed
 - Phase 0-6: Foundation, Providers (Ryanair/Wizz/Apify), Registry, Orchestrator, Config/Cache, Hermes skill, Connections + Apify.

@@ -35,6 +35,19 @@ class GroundLeg(BaseModel):
 
 Leg = Union[FlightLeg, GroundLeg]
 
+class HistoricalComparison(BaseModel):
+    """Historical price comparison for a route/date."""
+    count: int = 0
+    min_price: Optional[float] = None
+    avg_price: Optional[float] = None
+    median_price: Optional[float] = None
+    max_price: Optional[float] = None
+    best_this_month: bool = False
+    best_this_year: bool = False
+    percentile_25: Optional[float] = None
+    percentile_75: Optional[float] = None
+    comparison_note: str = ""
+    last_collected: Optional[str] = None
 
 class FlightDeal(BaseModel):
     origin: str
@@ -43,22 +56,23 @@ class FlightDeal(BaseModel):
     return_date: Optional[str] = None
     price: float
     currency: str
-    source: str  # "ryanair", "wizz", "apify:google_flights", "apify:kiwi" etc.
+    source: str  # "ryanair", "wizz", "apify:google_flights", "self-transfer:Milan" etc.
     flight_number: Optional[str] = None
     duration_minutes: Optional[int] = None
-    # New fields for connections / multi-source
+    # Connection fields
     stops: int = 0
     source_details: Dict[str, Any] = Field(default_factory=dict)
     booking_url: Optional[str] = None
-    # Ground transport enrichment for connections
-    ground_leg: Optional["GroundLeg"] = None
+    # Ground / connections
+    ground_leg: Optional[GroundLeg] = None
     total_duration_minutes: Optional[int] = None
     efficiency_score: Optional[float] = None
-    # Phase 8: Full connection path support
-    connection_path: List[Dict[str, Any]] = Field(default_factory=list)  # e.g. [{"type": "flight", "from": "BUD", "to": "BGY", ...}, {"type": "ground", ...}, ...]
+    connection_path: List[Dict[str, Any]] = Field(default_factory=list)
+    legs: List[Leg] = Field(default_factory=list)
     notes: str = ""
-
-
+    # Historical price data (Phase 9)
+    historical_comparison: Optional[HistoricalComparison] = None
+    comparison_note: str = ""
 
 class PriceSnapshot(BaseModel):
     timestamp_utc: datetime
@@ -69,15 +83,18 @@ class PriceSnapshot(BaseModel):
     price: float
     currency: str
     source: str
+    # Optional full context for composites
+    connection_path: List[Dict[str, Any]] = Field(default_factory=list)
+    total_price: Optional[float] = None  # for composites
 
-
-class GroundLeg(BaseModel):
-    """Represents a ground transport leg between two airports or airport and destination."""
+# Keep legacy GroundLeg definition for compatibility (if needed)
+class GroundLegLegacy(BaseModel):
+    """Legacy ground leg for backward compat."""
     from_iata: str
     to_iata: str
-    mode: str  # "driving", "train", "bus", "taxi", "public_transit"
+    mode: str
     duration_minutes: int
     distance_km: float
     estimated_cost_eur: Optional[float] = None
     notes: str = ""
-    options: List[str] = Field(default_factory=list)  # e.g. ["train", "bus"] for multi
+    options: List[str] = Field(default_factory=list)

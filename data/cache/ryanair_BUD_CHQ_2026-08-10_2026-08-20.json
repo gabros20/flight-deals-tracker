@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-06-22T08:41:36.677375",
+  "provider": "ryanair",
+  "origin": "BUD",
+  "destination": "CHQ",
+  "date_from": "2026-08-10",
+  "date_to": "2026-08-20",
+  "deals": [
+    {
+      "origin": "BUD",
+      "destination": "CHQ",
+      "departure_date": "2026-08-16",
+      "return_date": null,
+      "price": 59.49,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 516",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null,
+      "connection_path": [],
+      "legs": [],
+      "notes": "",
+      "historical_comparison": null,
+      "comparison_note": ""
+    }
+  ]
+}

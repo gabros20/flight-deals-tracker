@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-21T23:14:54.839302",
+  "timestamp": "2026-06-22T08:41:44.788045",
   "provider": "ryanair",
   "origin": "BUD",
   "destination": "VLC",
@@ -9,9 +9,9 @@
     {
       "origin": "BUD",
       "destination": "VLC",
-      "departure_date": "2026-08-07",
+      "departure_date": "2026-08-01",
       "return_date": null,
-      "price": 58.75,
+      "price": 59.99,
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 2301",
@@ -23,7 +23,10 @@
       "total_duration_minutes": null,
       "efficiency_score": null,
       "connection_path": [],
-      "notes": ""
+      "legs": [],
+      "notes": "",
+      "historical_comparison": null,
+      "comparison_note": ""
     }
   ]
 }

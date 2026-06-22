@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-21T22:00:16.702719",
+  "timestamp": "2026-06-22T08:41:44.873780",
   "provider": "ryanair",
   "origin": "BUD",
   "destination": "LPA",
@@ -11,7 +11,7 @@
       "destination": "LPA",
       "departure_date": "2026-08-07",
       "return_date": null,
-      "price": 158.45,
+      "price": 170.18,
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 2968",
@@ -21,7 +21,12 @@
       "booking_url": null,
       "ground_leg": null,
       "total_duration_minutes": null,
-      "efficiency_score": null
+      "efficiency_score": null,
+      "connection_path": [],
+      "legs": [],
+      "notes": "",
+      "historical_comparison": null,
+      "comparison_note": ""
     }
   ]
 }

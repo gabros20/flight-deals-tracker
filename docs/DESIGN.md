@@ -212,3 +212,25 @@ High impact / feasible now:
 - 8 (testing)
 
 This will make `--connections` actually surface usable BUD → Canary/Madeira self-transfer deals with accurate total time and breakdown.
+
+
+## Phase 9: History & Price Comparison Layer (Added 2026-06-22)
+
+**New Component**: PriceHistoryStore (enhanced) + HistoricalComparison model
+
+- CSV append for snapshots (supports full connection_path for composites).
+- On-the-fly stats: min/avg/percentiles, best-month/year detection.
+- Orchestrator enrichment: every search result gets `historical_comparison` + `comparison_note`.
+- CLI: "History" column + badges in notes (e.g. "Best this month! | Hist: min €48 avg €92 (n=12)").
+- Collection: `collect` command snapshots current category results.
+- `history-stats` for quick aggregates.
+
+**Data Flow**:
+Search → Providers/Composites → Ground → History.enrich_deals() → CLI display with badges
+
+**Benefits**:
+- Immediate "is this a good deal?" context without external tools.
+- Own data beats public datasets for LCCs.
+- Ready for cron alerts on "below historical average".
+
+See docs/RESEARCH-HISTORY.md and PLAN.md Phase 9 for details and sources.

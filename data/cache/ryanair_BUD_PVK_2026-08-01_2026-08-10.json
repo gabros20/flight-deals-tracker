@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-21T23:14:54.490987",
+  "timestamp": "2026-06-22T08:41:44.586403",
   "provider": "ryanair",
   "origin": "BUD",
   "destination": "PVK",
@@ -11,7 +11,7 @@
       "destination": "PVK",
       "departure_date": "2026-08-09",
       "return_date": null,
-      "price": 50.63,
+      "price": 48.8,
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 7770",
@@ -23,7 +23,10 @@
       "total_duration_minutes": null,
       "efficiency_score": null,
       "connection_path": [],
-      "notes": ""
+      "legs": [],
+      "notes": "",
+      "historical_comparison": null,
+      "comparison_note": ""
     }
   ]
 }

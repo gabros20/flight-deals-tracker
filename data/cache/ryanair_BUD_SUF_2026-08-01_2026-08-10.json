@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-21T22:00:16.940003",
+  "timestamp": "2026-06-22T08:41:45.052568",
   "provider": "ryanair",
   "origin": "BUD",
   "destination": "SUF",
@@ -9,9 +9,9 @@
     {
       "origin": "BUD",
       "destination": "SUF",
-      "departure_date": "2026-08-09",
+      "departure_date": "2026-08-06",
       "return_date": null,
-      "price": 24.59,
+      "price": 25.47,
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 9621",
@@ -21,7 +21,12 @@
       "booking_url": null,
       "ground_leg": null,
       "total_duration_minutes": null,
-      "efficiency_score": null
+      "efficiency_score": null,
+      "connection_path": [],
+      "legs": [],
+      "notes": "",
+      "historical_comparison": null,
+      "comparison_note": ""
     }
   ]
 }

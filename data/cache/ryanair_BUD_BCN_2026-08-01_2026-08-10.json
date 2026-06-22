@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-21T22:00:17.319554",
+  "timestamp": "2026-06-22T08:41:45.411656",
   "provider": "ryanair",
   "origin": "BUD",
   "destination": "BCN",
@@ -9,19 +9,24 @@
     {
       "origin": "BUD",
       "destination": "BCN",
-      "departure_date": "2026-08-02",
+      "departure_date": "2026-08-04",
       "return_date": null,
       "price": 50.63,
       "currency": "EUR",
       "source": "ryanair",
-      "flight_number": "FR 8393",
+      "flight_number": "FR 8385",
       "duration_minutes": null,
       "stops": 0,
       "source_details": {},
       "booking_url": null,
       "ground_leg": null,
       "total_duration_minutes": null,
-      "efficiency_score": null
+      "efficiency_score": null,
+      "connection_path": [],
+      "legs": [],
+      "notes": "",
+      "historical_comparison": null,
+      "comparison_note": ""
     }
   ]
 }

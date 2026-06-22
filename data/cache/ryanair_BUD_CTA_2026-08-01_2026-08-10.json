@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-21T22:00:16.509995",
+  "timestamp": "2026-06-22T08:41:44.603879",
   "provider": "ryanair",
   "origin": "BUD",
   "destination": "CTA",
@@ -21,7 +21,12 @@
       "booking_url": null,
       "ground_leg": null,
       "total_duration_minutes": null,
-      "efficiency_score": null
+      "efficiency_score": null,
+      "connection_path": [],
+      "legs": [],
+      "notes": "",
+      "historical_comparison": null,
+      "comparison_note": ""
     }
   ]
 }

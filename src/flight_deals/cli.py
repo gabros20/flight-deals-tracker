@@ -70,6 +70,7 @@ def search(
     table.add_column("Ground", style="blue")
     table.add_column("Total", style="green")
     table.add_column("Eff €/h", style="yellow")
+    table.add_column("History", style="green")
 
     for deal in deals[:25]:
 
@@ -111,7 +112,9 @@ def search(
         total_str = f"{getattr(deal, "total_duration_minutes", "-")}m" if getattr(deal, "total_duration_minutes", None) else "-"
         eff = getattr(deal, "efficiency_score", None)
         eff_str = f"{eff}" if eff else "-"
-        table.add_row(route, deal.departure_date, f"{deal.price} {deal.currency}", deal.source, stops_str, ground_str, total_str, eff_str)
+        hist = getattr(deal, "comparison_note", "") or ""
+    if len(hist) > 40: hist = hist[:37] + "..."
+    table.add_row(route, deal.departure_date, f"{deal.price} {deal.currency}", deal.source, stops_str, ground_str, total_str, eff_str, hist)
 
     console.print(table)
     note = f"Showing top {min(25, len(deals))} of {len(deals)} deals (cached where possible)"
@@ -268,7 +271,7 @@ def config_cmd(
 @app.command()
 def version():
     """Show version"""
-    typer.echo("Flight Deals Tracker v0.4.0 (config + cache + real Telegram + reachability)")
+    typer.echo("Flight Deals Tracker v0.5.0 (history comparisons + collect) (config + cache + real Telegram + reachability)")
 
 
 
@@ -315,8 +318,53 @@ def cache(
         console.print("[red]Unknown action. Use: clear, stats, list[/red]")
 
 
+
+@app.command()
+def collect(
+    category: str = typer.Option(..., "--category", "-c"),
+    origin: str = typer.Option(None, "--from", "-f"),
+    date_from: str = typer.Option(..., "--date-from"),
+    date_to: str = typer.Option(..., "--date-to"),
+    connections: bool = typer.Option(False, "--connections"),
+):
+    """Collect current prices for a category into history (for future comparisons)."""
+    origin = origin or config.default_origin
+    console.print(f"[cyan]Collecting deals for {category} from {origin}...[/cyan]")
+    deals = orchestrator.search_by_category(
+        category=category,
+        origin=origin,
+        date_from=date_from,
+        date_to=date_to,
+        connections=connections,
+    )
+    count = 0
+    for deal in deals:
+        try:
+            history_store.append_from_deal(deal)
+            count += 1
+        except Exception:
+            pass
+    console.print(f"[green]Logged {count} price snapshots to history[/green]")
+    console.print("Use 'flight-deals search' later to see comparisons and badges.")
+
 if __name__ == "__main__":
     app()
+
+@app.command("history-stats")
+def history_stats(
+    origin: str = typer.Option(None, "--origin"),
+    destination: str = typer.Option(None, "--destination"),
+):
+    """Show aggregate historical stats for a route."""
+    stats = history_store.get_route_stats(origin or config.default_origin, destination or "")
+    if not stats or stats.get("count", 0) == 0:
+        console.print("[yellow]No history for this route yet. Use 'collect' first.[/yellow]")
+        return
+    console.print(f"[bold]History Stats for {origin or config.default_origin} → {destination or 'any'}[/bold]")
+    for k, v in stats.items():
+        console.print(f"  {k}: {v}")
+
+
 @app.command()
 def multi_airports():
     """List multi-airport self-transfer hubs supported for --connections."""

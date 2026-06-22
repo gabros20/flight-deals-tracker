@@ -18,6 +18,7 @@ class FlightDealsConfig(BaseModel):
     telegram_chat_id: Optional[str] = None
     cache_ttl_hours: int = Field(default=6, ge=0)
     max_workers: int = Field(default=8, ge=1, le=20)
+    history_min_points_for_badge: int = Field(default=3, ge=1)
     data_dir: str = Field(default="data")
     enable_cache: bool = True
 

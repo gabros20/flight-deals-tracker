@@ -154,3 +154,10 @@ flight-deals multi-airports
 ```
 
 Ground times are calculated using OSRM + public transit data and precomputed for speed.
+
+## History & Price Comparisons (Phase 9)
+- `flight-deals collect --category european-islands --date-from 2026-08-01 --date-to 2026-08-30` — logs prices.
+- Searches automatically show historical badges: "Best this month!", "Great deal (30% below avg)", min/avg.
+- `flight-deals history-stats --destination PMI`
+- Own data collection powers accurate "great deal" detection for your routes.
+

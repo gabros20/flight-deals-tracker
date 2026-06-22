@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-21T22:00:16.554617",
+  "timestamp": "2026-06-22T08:41:44.751870",
   "provider": "ryanair",
   "origin": "BUD",
   "destination": "CAG",
@@ -11,7 +11,7 @@
       "destination": "CAG",
       "departure_date": "2026-08-07",
       "return_date": null,
-      "price": 31.03,
+      "price": 24.69,
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 5248",
@@ -21,7 +21,12 @@
       "booking_url": null,
       "ground_leg": null,
       "total_duration_minutes": null,
-      "efficiency_score": null
+      "efficiency_score": null,
+      "connection_path": [],
+      "legs": [],
+      "notes": "",
+      "historical_comparison": null,
+      "comparison_note": ""
     }
   ]
 }
