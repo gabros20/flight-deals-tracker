@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-06-22T22:19:39.492554",
+  "provider": "ryanair",
+  "origin": "BUD",
+  "destination": "BRI",
+  "date_from": "2026-07-05",
+  "date_to": "2026-07-12",
+  "deals": [
+    {
+      "origin": "BUD",
+      "destination": "BRI",
+      "departure_date": "2026-07-10",
+      "return_date": null,
+      "price": 37.96,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 5212",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null,
+      "connection_path": [],
+      "legs": [],
+      "notes": "",
+      "historical_comparison": null,
+      "comparison_note": ""
+    }
+  ]
+}

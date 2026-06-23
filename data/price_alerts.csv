@@ -1,2 +1,7 @@
 timestamp_utc,origin,destination,departure_date,current_price,historical_avg,pct_below_avg,threshold,message
 2026-06-22T08:24:29.347659,BUD,CAG,2026-08-12,20.0,57.44,65.2,0.1,Great deal! BUD-CAG on 2026-08-12 at €20.0 is 65% below historical avg (€57.44)
+2026-06-22T08:30:58.400199,BUD,CAG,2026-08-14,29.79,51.91,42.6,0.15,Great deal! BUD-CAG on 2026-08-14 at €29.79 is 42% below historical avg (€51.91)
+2026-06-22T08:30:58.400588,BUD,PMI,2026-08-10,61.0,85.1,28.3,0.15,Great deal! BUD-PMI on 2026-08-10 at €61.0 is 28% below historical avg (€85.1)
+2026-06-22T08:30:58.400758,BUD,PMI,2026-08-12,64.74,85.1,23.9,0.15,Great deal! BUD-PMI on 2026-08-12 at €64.74 is 23% below historical avg (€85.1)
+2026-06-22T08:31:05.758321,BUD,CAG,2026-08-14,29.79,48.22,38.2,0.15,Great deal! BUD-CAG on 2026-08-14 at €29.79 is 38% below historical avg (€48.22)
+2026-06-22T08:31:05.759348,BUD,PMI,2026-08-12,64.74,81.03,20.1,0.15,Great deal! BUD-PMI on 2026-08-12 at €64.74 is 20% below historical avg (€81.03)

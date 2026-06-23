@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-06-22T22:14:29.866488",
+  "provider": "ryanair",
+  "origin": "AGP",
+  "destination": "BUD",
+  "date_from": "2026-07-08",
+  "date_to": "2026-07-19",
+  "deals": [
+    {
+      "origin": "AGP",
+      "destination": "BUD",
+      "departure_date": "2026-07-16",
+      "return_date": null,
+      "price": 69.89,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 3572",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null,
+      "connection_path": [],
+      "legs": [],
+      "notes": "",
+      "historical_comparison": null,
+      "comparison_note": ""
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+--- a/src/flight_deals/orchestrator.py
++++ b/src/flight_deals/orchestrator.py
+@@ -54,6 +55,18 @@ class DealOrchestrator:
+             local_results = []
+ 
+             # Round-trip mode - smart per-outbound return search
++            if return_date_from and return_date_to:
++                # Try Farepy first (best round-trip support from research)
++                try:
++                    rt = self.farepy.get_roundtrip_price(
++                        origin, dest.iata,
++                        datetime.strptime(date_from, "%Y-%m-%d").date(),
++                        datetime.strptime(return_date_from, "%Y-%m-%d").date()
++                    )
++                    if rt:
++                        deal = FlightDeal(origin=origin, destination=dest.iata,
++                                          departure_date=date_from, price=rt["price"],
++                                          currency=rt["currency"], source="farepy")
++                        local_results.append(deal)
++                        return local_results  # Farepy succeeded
++                except Exception:
++                    pass
++
+             if return_date_from and return_date_to:
+                 try:
+                     rt = self.ryanair.get_roundtrip_price(

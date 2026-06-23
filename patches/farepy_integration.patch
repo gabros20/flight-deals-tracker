@@ -1,0 +1,20 @@
+--- a/src/flight_deals/orchestrator.py
++++ b/src/flight_deals/orchestrator.py
+@@ -4,7 +4,8 @@ from typing import List, Optional, Tuple, Dict, Any
+ from flight_deals.providers.ryanair import RyanairProvider
+ from flight_deals.providers.wizz import WizzProvider
+ from flight_deals.providers.apify import ApifyProvider
++from flight_deals.providers.farepy_provider import FarepyProvider
+ from flight_deals.registry.destinations import DestinationRegistry
+ 
+ class DealOrchestrator:
+     def __init__(self):
+         self.config = get_config()
+         self.registry = DestinationRegistry()
+         self.ryanair = RyanairProvider()
+         self.wizz = WizzProvider()
+         self.apify = ApifyProvider()
++        self.farepy = FarepyProvider()  # Primary round-trip provider (from research)
+         self.max_workers = self.config.max_workers
+         self.ground = GroundTransport()
+         self.history = PriceHistoryStore()

@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-06-22T22:19:40.180405",
+  "provider": "ryanair",
+  "origin": "OPO",
+  "destination": "BUD",
+  "date_from": "2026-07-10",
+  "date_to": "2026-07-10",
+  "deals": [
+    {
+      "origin": "OPO",
+      "destination": "BUD",
+      "departure_date": "2026-07-10",
+      "return_date": null,
+      "price": 130.99,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 4244",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null,
+      "connection_path": [],
+      "legs": [],
+      "notes": "",
+      "historical_comparison": null,
+      "comparison_note": ""
+    }
+  ]
+}

@@ -64,15 +64,6 @@ class WizzProvider:
             if resp.status_code != 200:
                 return []
 
-    def get_roundtrip_price(self, origin: str, destination: str, 
-                            outbound_from: str, outbound_to: str,
-                            return_from: str, return_to: str,
-                            use_cache: bool = True) -> Optional[dict]:
-        """Get cheapest round-trip price"""
-        try:
-            outbound = self.get_cheapest_flights(origin, outbound_from, outbound_to, destination, use_cache=use_cache)
-            if not outbound:
-                return None
                 
             return_legs = self.get_cheapest_flights(destination, return_from, return_to, origin, use_cache=use_cache)
             if not return_legs:
@@ -117,15 +108,6 @@ class WizzProvider:
         except Exception:
             return []
 
-    def get_roundtrip_price(self, origin: str, destination: str, 
-                            outbound_from: str, outbound_to: str,
-                            return_from: str, return_to: str,
-                            use_cache: bool = True) -> Optional[dict]:
-        """Get cheapest round-trip price"""
-        try:
-            outbound = self.get_cheapest_flights(origin, outbound_from, outbound_to, destination, use_cache=use_cache)
-            if not outbound:
-                return None
                 
             return_legs = self.get_cheapest_flights(destination, return_from, return_to, origin, use_cache=use_cache)
             if not return_legs:

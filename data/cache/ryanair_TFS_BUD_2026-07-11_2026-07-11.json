@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-06-22T22:19:39.424671",
+  "provider": "ryanair",
+  "origin": "TFS",
+  "destination": "BUD",
+  "date_from": "2026-07-11",
+  "date_to": "2026-07-11",
+  "deals": [
+    {
+      "origin": "TFS",
+      "destination": "BUD",
+      "departure_date": "2026-07-11",
+      "return_date": null,
+      "price": 184.79,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 9944",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null,
+      "connection_path": [],
+      "legs": [],
+      "notes": "",
+      "historical_comparison": null,
+      "comparison_note": ""
+    }
+  ]
+}

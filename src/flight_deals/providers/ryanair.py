@@ -85,3 +85,46 @@ class RyanairProvider:
             }
         except Exception:
             return None
+    def get_roundtrip_price(self, origin: str, destination: str,
+                            outbound_from: str, outbound_to: str,
+                            return_from: str, return_to: str,
+                            use_cache: bool = True) -> Optional[dict]:
+        """
+        Smart round-trip price finder.
+        For each outbound flight, searches for return flights 3-8 days later.
+        """
+        from datetime import datetime, timedelta
+        
+        try:
+            outbounds = self.get_cheapest_flights(origin, outbound_from, outbound_to, destination, use_cache=use_cache) or []
+            if not outbounds:
+                return None
+            
+            best = None
+            for out in sorted(outbounds, key=lambda x: x.price)[:10]:
+                out_date = datetime.fromisoformat(out.departure_date)
+                
+                # Try return 3-8 days later
+                for days_after in range(3, 9):
+                    ret_date = (out_date + timedelta(days=days_after)).strftime("%Y-%m-%d")
+                    rets = self.get_cheapest_flights(destination, ret_date, ret_date, origin, use_cache=use_cache) or []
+                    
+                    if rets:
+                        ret = min(rets, key=lambda x: x.price)
+                        total = round(out.price + ret.price, 2)
+                        
+                        if best is None or total < best["total_price"]:
+                            best = {
+                                "total_price": total,
+                                "currency": out.currency,
+                                "outbound_price": out.price,
+                                "return_price": ret.price,
+                                "outbound_date": out.departure_date,
+                                "return_date": ret.departure_date,
+                            }
+                        break  # Found a return for this outbound, move to next
+            
+            return best
+        except Exception:
+            return None
+

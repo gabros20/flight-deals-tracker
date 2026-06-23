@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-06-22T22:14:30.366604",
+  "provider": "ryanair",
+  "origin": "DBV",
+  "destination": "BUD",
+  "date_from": "2026-07-08",
+  "date_to": "2026-07-19",
+  "deals": [
+    {
+      "origin": "DBV",
+      "destination": "BUD",
+      "departure_date": "2026-07-14",
+      "return_date": null,
+      "price": 16.98,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 2489",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null,
+      "connection_path": [],
+      "legs": [],
+      "notes": "",
+      "historical_comparison": null,
+      "comparison_note": ""
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-06-22T22:19:39.871761",
+  "provider": "ryanair",
+  "origin": "ZAD",
+  "destination": "BUD",
+  "date_from": "2026-07-15",
+  "date_to": "2026-07-15",
+  "deals": [
+    {
+      "origin": "ZAD",
+      "destination": "BUD",
+      "departure_date": "2026-07-15",
+      "return_date": null,
+      "price": 14.98,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 6522",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null,
+      "connection_path": [],
+      "legs": [],
+      "notes": "",
+      "historical_comparison": null,
+      "comparison_note": ""
+    }
+  ]
+}

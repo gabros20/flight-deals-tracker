@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional, Tuple, Dict, Any
 
 from flight_deals.providers.ryanair import RyanairProvider
+from flight_deals.providers.ryanair_direct import RyanairDirectProvider
 from flight_deals.providers.wizz import WizzProvider
 from flight_deals.providers.apify import ApifyProvider
 from flight_deals.registry.destinations import DestinationRegistry
@@ -16,6 +17,7 @@ class DealOrchestrator:
         self.config = get_config()
         self.registry = DestinationRegistry()
         self.ryanair = RyanairProvider()
+        self.ryanair_direct = RyanairDirectProvider()
         self.wizz = WizzProvider()
         self.apify = ApifyProvider()
         self.max_workers = self.config.max_workers
@@ -51,45 +53,20 @@ class DealOrchestrator:
         def fetch_for_dest(dest):
             local_results = []
             
-            # Round-trip mode
+            # Round-trip mode - smart per-outbound return search
             if return_date_from and return_date_to:
                 try:
                     rt = self.ryanair.get_roundtrip_price(
-                        origin, dest.iata,
-                        date_from, date_to,
-                        return_date_from, return_date_to,
-                        use_cache=not fresh
+                        origin, dest.iata, date_from, date_to,
+                        return_date_from, return_date_to, use_cache=not fresh
                     )
                     if rt:
                         deal = FlightDeal(
-                            origin=origin,
-                            destination=dest.iata,
-                            departure_date=date_from,
-                            price=rt["total_price"],
-                            currency=rt["currency"],
+                            origin=origin, destination=dest.iata,
+                            departure_date=rt["outbound_date"],
+                            price=rt["total_price"], currency=rt["currency"],
                             source="ryanair",
-                            notes=f"Round-trip (out {rt['outbound_price']} + ret {rt['return_price']})"
-                        )
-                        local_results.append(deal)
-                except Exception:
-                    pass
-                    
-                try:
-                    rt = self.wizz.get_roundtrip_price(
-                        origin, dest.iata,
-                        date_from, date_to,
-                        return_date_from, return_date_to,
-                        use_cache=not fresh
-                    )
-                    if rt:
-                        deal = FlightDeal(
-                            origin=origin,
-                            destination=dest.iata,
-                            departure_date=date_from,
-                            price=rt["total_price"],
-                            currency=rt["currency"],
-                            source="wizz",
-                            notes=f"Round-trip (out {rt['outbound_price']} + ret {rt['return_price']})"
+                            notes=f"Round-trip (€{rt['outbound_price']} + €{rt['return_price']})"
                         )
                         local_results.append(deal)
                 except Exception:
@@ -97,12 +74,12 @@ class DealOrchestrator:
             else:
                 # One-way mode
                 try:
-                    ryanair_out = self.ryanair.get_cheapest_flights(origin, date_from, date_to, dest.iata, use_cache=not fresh)
+                    ryanair_out = self.ryanair.get_cheapest_flights(origin, date_from, date_to, dest.iata, use_cache=not fresh) or []
                     local_results.extend(ryanair_out)
                 except Exception:
                     pass
                 try:
-                    wizz_out = self.wizz.get_cheapest_flights(origin, date_from, date_to, dest.iata, use_cache=not fresh)
+                    wizz_out = self.wizz.get_cheapest_flights(origin, date_from, date_to, dest.iata, use_cache=not fresh) or []
                     local_results.extend(wizz_out)
                 except Exception:
                     pass

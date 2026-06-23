@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-06-23T09:00:49.290366",
+  "provider": "ryanair",
+  "origin": "BUD",
+  "destination": "ZTH",
+  "date_from": "2026-08-01",
+  "date_to": "2026-08-20",
+  "deals": [
+    {
+      "origin": "BUD",
+      "destination": "ZTH",
+      "departure_date": "2026-08-06",
+      "return_date": null,
+      "price": 61.59,
+      "currency": "EUR",
+      "source": "ryanair",
+      "flight_number": "FR 2855",
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null,
+      "connection_path": [],
+      "legs": [],
+      "notes": "",
+      "historical_comparison": null,
+      "comparison_note": ""
+    }
+  ]
+}

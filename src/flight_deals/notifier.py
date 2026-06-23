@@ -2,6 +2,7 @@ import os
 import requests
 from typing import Optional
 from flight_deals.config import get_config, FlightDealsConfig
+from flight_deals.formatters import format_results
 
 
 class TelegramNotifier:
@@ -35,6 +36,12 @@ class TelegramNotifier:
         except Exception as e:
             print(f"[Telegram] Error sending message: {e}")
             return False
+
+
+    def send_deals(self, deals: list, title: str = "Flight Deals") -> bool:
+        """Send a list of deals using the enforced emoji + link format"""
+        formatted = format_results(deals, title)
+        return self.send_deal(formatted)
 
     def send_price_alert(self, origin: str, destination: str, date: str, price: float, currency: str, change_pct: float, booking_link: str = ""):
         """Convenience method for price drop alerts"""

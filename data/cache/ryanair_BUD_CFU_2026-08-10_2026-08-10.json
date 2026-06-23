@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-21T16:32:31.351234",
+  "timestamp": "2026-06-23T09:00:34.814748",
   "provider": "ryanair",
   "origin": "BUD",
   "destination": "CFU",
@@ -11,11 +11,22 @@
       "destination": "CFU",
       "departure_date": "2026-08-10",
       "return_date": null,
-      "price": 48.99,
+      "price": 45.99,
       "currency": "EUR",
       "source": "ryanair",
       "flight_number": "FR 8054",
-      "duration_minutes": null
+      "duration_minutes": null,
+      "stops": 0,
+      "source_details": {},
+      "booking_url": null,
+      "ground_leg": null,
+      "total_duration_minutes": null,
+      "efficiency_score": null,
+      "connection_path": [],
+      "legs": [],
+      "notes": "",
+      "historical_comparison": null,
+      "comparison_note": ""
     }
   ]
 }

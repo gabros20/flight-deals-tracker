@@ -7,6 +7,7 @@ from flight_deals.history import PriceHistoryStore
 from flight_deals.notifier import TelegramNotifier
 from flight_deals.models import PriceSnapshot
 from flight_deals.registry.destinations import DestinationRegistry
+from flight_deals.formatters import format_results
 from flight_deals.config import get_config, save_user_config, FlightDealsConfig
 
 
@@ -65,91 +66,23 @@ def search(
     title = f"Deals for {category} from {origin}"
     if connections:
         title += " (incl. 1-stop + multi-airport self-transfers (Milan BGY-MXP, Istanbul IST-SAW, London))"
-    table = Table(title=title)
-    table.add_column("Route", style="cyan")
-    table.add_column("Date", style="green")
-    table.add_column("Price", style="magenta")
-    table.add_column("Source", style="yellow")
-    table.add_column("Stops", style="dim")
-    table.add_column("Ground", style="blue")
-    table.add_column("Total", style="green")
-    table.add_column("Eff €/h", style="yellow")
-    table.add_column("History", style="green")
-
+    # TABLE REMOVED - enforced emoji + link format via formatters.py for all outputs including cron
+    # Enforce shared formatter (emoji + links) for CLI + cron
+    deal_dicts = []
     for deal in deals[:25]:
-
-        route = f"{deal.origin} → {deal.destination}"
-        if getattr(deal, "legs", None) and len(deal.legs) > 1:
-            parts = []
-            for leg in deal.legs:
-                if hasattr(leg, "type") and leg.type == "flight":
-                    parts.append(f"{leg.origin}→{leg.destination}")
-                elif hasattr(leg, "type") and leg.type == "ground":
-                    parts.append(f"ground {leg.duration_minutes}m")
-                elif isinstance(leg, dict):
-                    if leg.get("type") == "flight":
-                        parts.append(f'{leg.get("from", leg.get("origin", "?"))}→{leg.get("to", leg.get("destination", "?"))}')
-                    elif leg.get("type") == "ground":
-                        parts.append(f"ground {leg.get('duration_minutes', '?')}m")
-            if parts:
-                route = " + ".join(parts)
-        elif getattr(deal, "connection_path", None) and len(deal.connection_path) > 1:
-            # fallback
-            parts = []
-            for leg in deal.connection_path:
-                if leg.get("type") == "flight":
-                    parts.append(f'{leg.get("from")}→{leg.get("to")}')
-                elif leg.get("type") == "ground":
-                    parts.append(f'ground {leg.get("duration_minutes", "?")}m')
-            route = " + ".join(parts) if parts else route
-
-        # Add notes if composite
-        extra_info = ""
-        if getattr(deal, "notes", ""):
-            extra_info = f" | {deal.notes}"
-
-        stops_str = str(getattr(deal, "stops", 0)) if getattr(deal, "stops", 0) > 0 else "direct"
-        if getattr(deal, "connection_path", None) and len(getattr(deal, "connection_path", [])) > 2:
-            stops_str = "self-xfer"
-        g = getattr(deal, "ground_leg", None)
-        ground_str = f"{g.duration_minutes}m" if g else "-"
-        total_str = f"{getattr(deal, "total_duration_minutes", "-")}m" if getattr(deal, "total_duration_minutes", None) else "-"
-        eff = getattr(deal, "efficiency_score", None)
-        eff_str = f"{eff}" if eff else "-"
-        hist = getattr(deal, "comparison_note", "") or ""
-    if len(hist) > 40: hist = hist[:37] + "..."
-    table.add_row(route, deal.departure_date, f"{deal.price} {deal.currency}", deal.source, stops_str, ground_str, total_str, eff_str, hist)
-
-    # New standard format with links
-    import urllib.parse
-
-    def _make_links(origin_code: str, dest_code: str, date_out: str, date_ret: str = None):
-        maps_url = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(dest_code + ' airport')}"
-        images_url = "https://images.google.com/search?q=" + urllib.parse.quote(dest_code + " beach seaside")
-        if date_ret:
-            flights_url = f"https://www.google.com/travel/flights?q=Flights+from+{origin_code}+to+{dest_code}+on+{date_out}+through+{date_ret}"
-        else:
-            flights_url = f"https://www.google.com/travel/flights?q=Flights+from+{origin_code}+to+{dest_code}+on+{date_out}"
-        return maps_url, images_url, flights_url
-
-    for i, deal in enumerate(deals[:25], 1):
-        dest = getattr(deal, 'destination', '')
-        date_out = getattr(deal, 'departure_date', '')
-        date_ret = getattr(deal, 'return_date', None) or return_to or None
-
-        maps_url, images_url, flights_url = _make_links(origin, dest, date_out, date_ret)
-
-        line = (
-            f"**{i}. {deal.origin} → {dest} – {deal.price} {deal.currency}**\n"
-            f"📍 [Google Maps]({maps_url})\n"
-            f"🏞️ [Google Images]({images_url})\n"
-            f"✈️ [View & Book on Google Flights]({flights_url})\n"
-        )
-        console.print(line)
-
-    note = f"Showing top {min(25, len(deals))} of {len(deals)} deals (cached where possible)"
-    if connections:
-        note += " | --connections includes multi-airport cities (Milan BGY-MXP, Istanbul IST-SAW, London STN/LGW/LTN, Rome etc.) + ground calc"
+        d = {
+            "origin": getattr(deal, "origin", ""),
+            "destination": getattr(deal, "destination", ""),
+            "price": getattr(deal, "price", 0),
+            "currency": getattr(deal, "currency", "EUR"),
+            "outbound_date": getattr(deal, "departure_date", ""),
+            "return_date": getattr(deal, "return_date", return_to or ""),
+            "source": getattr(deal, "source", ""),
+        }
+        deal_dicts.append(d)
+    formatted = format_results(deal_dicts, title)
+    console.print(formatted)
+    note = f"Showing top {min(25, len(deals))} of {len(deals)} deals"
     console.print(f"[dim]{note}[/dim]")
     if hasattr(orchestrator, "apify") and orchestrator.apify.is_available:
         console.print("[yellow]Note: Apify multi-source used (~/bin/bash.0003/search). Results may include self-transfers.[/yellow]")
@@ -174,19 +107,22 @@ def roundtrip(
         console.print("[yellow]No roundtrips found[/yellow]")
         return
 
-    table = Table(title="Roundtrip Deals")
-    table.add_column("Outbound", style="cyan")
-    table.add_column("Return", style="green")
-    table.add_column("Total", style="magenta")
-
+    # Use enforced formatter instead of table
+    deal_dicts = []
     for out, ret in pairs:
-        total = out.price + ret.price
-        table.add_row(
-            f"{out.departure_date} {out.price}{out.currency}",
-            f"{ret.departure_date} {ret.price}{ret.currency}",
-            f"{total}{out.currency}"
-        )
-    console.print(table)
+        total = getattr(out, 'price', 0) + getattr(ret, 'price', 0)
+        d = {
+            "origin": origin,
+            "destination": destination,
+            "price": total,
+            "currency": getattr(out, 'currency', 'EUR'),
+            "outbound_date": getattr(out, 'departure_date', ''),
+            "return_date": getattr(ret, 'departure_date', ''),
+            "source": 'roundtrip',
+        }
+        deal_dicts.append(d)
+    formatted = format_results(deal_dicts, f'Roundtrip Deals {origin}→{destination}')
+    console.print(formatted)
 
 
 @app.command()
@@ -256,13 +192,8 @@ def history(
     if not snapshots:
         console.print("[yellow]No history found[/yellow]")
         return
-    table = Table(title="Price History")
-    table.add_column("Date", style="green")
-    table.add_column("Route", style="cyan")
-    table.add_column("Price", style="magenta")
     for s in snapshots:
-        table.add_row(s.departure_date, f"{s.origin}-{s.destination}", f"{s.price} {s.currency}")
-    console.print(table)
+        console.print(f"{s.date}: {s.price} {s.currency}")
 
 
 @app.command("config")
@@ -295,7 +226,8 @@ def config_cmd(
         console.print(f"  Telegram configured: {bool(config.telegram_bot_token and config.telegram_chat_id)}")
         console.print(f"  Cache TTL: {config.cache_ttl_hours}h")
         console.print(f"  Max workers: {config.max_workers}")
-        console.print(f"  Config file: {save_user_config(config)}")  # this also saves current state
+        save_user_config(config)
+    console.print("  Config file: updated")
 
 
 @app.command()
@@ -329,21 +261,8 @@ def cache(
         if not entries:
             console.print("[yellow]Cache is empty[/yellow]")
             return
-        table = Table(title="Cache Entries")
-        table.add_column("File")
-        table.add_column("Provider")
-        table.add_column("Route")
-        table.add_column("Dates")
-        table.add_column("Deals")
         for e in entries[:20]:
-            table.add_row(
-                e.get("file", ""),
-                e.get("provider", ""),
-                f"{e.get('origin','')}→{e.get('destination','')}",
-                f"{e.get('date_from','')}..{e.get('date_to','')}",
-                str(e.get("num_deals", 0))
-            )
-        console.print(table)
+            console.print(f"  {e.get('origin','?')} → {e.get('destination','?')} {e.get('price', '?')} {e.get('currency','EUR')}")
     else:
         console.print("[red]Unknown action. Use: clear, stats, list[/red]")
 
@@ -383,7 +302,7 @@ def collect(
         if alerts:
             console.print(f"[bold red]🚨 {len(alerts)} price drops below historical avg detected![/bold red]")
             for a in alerts[:3]:
-                console.print(f"   {a["message"]}")
+                console.print("   " + str(a.get("message", a)))
                 if hasattr(notifier, "send_price_alert"):
                     notifier.send_price_alert(a["origin"], a["destination"], a["departure_date"], a["current_price"], "EUR", -a.get("pct_below_avg", 0))
         else:
@@ -411,15 +330,9 @@ def alerts(
     if not rows:
         console.print("[yellow]No alerts logged yet.[/yellow]")
         return
-    table = Table(title="Recent Price Drop Alerts (below historical avg)")
-    table.add_column("When")
-    table.add_column("Route")
-    table.add_column("Price")
-    table.add_column("% Below Hist Avg")
     for r in rows:
-        table.add_row(r.get("timestamp_utc","")[:16], f"{r.get('origin')}-{r.get('destination')}", 
-                      str(r.get("current_price")), f"{r.get('pct_below_avg')}%")
-    console.print(table)
+                      console.print(f"  {r.get(current_price)} {r.get(pct_below_avg)}% below avg")
+    pass  # table removed
 
 @app.command("history-stats")
 def history_stats(
@@ -474,12 +387,6 @@ def alerts(
     if not rows:
         console.print("[yellow]No alerts logged yet.[/yellow]")
         return
-    table = Table(title="Recent Price Drop Alerts (below historical avg)")
-    table.add_column("When")
-    table.add_column("Route")
-    table.add_column("Price")
-    table.add_column("% Below Hist Avg")
     for r in rows:
-        table.add_row(r.get("timestamp_utc","")[:16], f"{r.get('origin')}-{r.get('destination')}", 
-                      str(r.get("current_price")), f"{r.get('pct_below_avg')}%")
-    console.print(table)
+                      console.print(f"  {r.get(current_price)} {r.get(pct_below_avg)}% below avg")
+    pass  # table removed
