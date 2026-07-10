@@ -96,6 +96,34 @@ def test_compare_and_enrich_groups(tmp_path):
 
 
 @freeze_time("2026-07-01T12:00:00+00:00")
+def test_enrich_skips_percentile_for_s4_composite(tmp_path):
+    """An S4 open-jaw composite must NOT get a percentile/standout group scored
+    against DIRECT-route fare history (controller ruling): even with a rich,
+    cheap-looking direct-route history it stays ``baseline`` with no
+    "% below typical" clause, while keeping its ground/hop suffix."""
+    prices = [200, 180, 160, 140, 120, 100]  # median 150, ≥5 obs => "sufficient"
+    rows = "".join(
+        f"2026-06-2{i}T00:00:00+00:00,BUD,CFU,2026-08-23,2026-08-29,{p}.0,EUR,ryanair,,{p}.0\n"
+        for i, p in enumerate(prices)
+    )
+    store = _store(tmp_path, rows)
+    deal = {
+        "origin": "BUD", "destination": "CFU", "price_eur": 90.0,
+        "price_confidence": "exact", "return_date": "2026-08-29", "shape": "S4",
+        "ground": {"duration_minutes": 240, "cost_eur": 35.0, "mode": "train"},
+        "legs": [
+            {"type": "flight", "origin": "BUD", "destination": "CFU"},
+            {"type": "ground"},
+            {"type": "flight", "origin": "CHQ", "destination": "BUD"},
+        ],
+    }
+    combine.enrich([deal], store)
+    assert deal["group"] == "baseline"
+    assert "below" not in deal["why"] and "typical" not in deal["why"]
+    assert "fly into CFU" in deal["why"]  # ground/hop suffix preserved
+
+
+@freeze_time("2026-07-01T12:00:00+00:00")
 def test_enrich_insufficient_history_is_honest(tmp_path):
     store = _store(tmp_path)  # CAG/PMI only, CFU has 0 observations
     deals = [{"origin": "BUD", "destination": "CFU", "price_eur": 99.0,

@@ -146,9 +146,10 @@ def ground_why_suffix(deal: Dict[str, Any]) -> str:
     """The honest ground-transfer clause appended to a shaped deal's ``why``
     (SEARCH-DESIGN §2). Empty for S1/S2 (no ground). For S3 it names the
     round-trip bus/train to the extended origin ("incl. ~€42 bus BUD⇄VIE,
-    2×2h45m"); for S4 the open-jaw hop ("fly into NAP, train ~4h €35, fly home
-    from BRI"). Derived from the deal's own ``ground``/``legs`` so it can never
-    drift from the priced legs."""
+    2×2h45m"); for S4 the open-jaw hop ("fly into NAP, train ~4h ~€35, fly home
+    from BRI"). Both cost figures carry the ``~`` estimate marker (ground costs
+    are static-curated estimates). Derived from the deal's own ``ground``/
+    ``legs`` so it can never drift from the priced legs."""
     shape = deal.get("shape")
     g = deal.get("ground")
     if not g:
@@ -168,7 +169,7 @@ def ground_why_suffix(deal: Dict[str, Any]) -> str:
         d1 = deal["destination"]
         d2 = flight_legs[-1]["origin"] if flight_legs else "?"
         dur = _fmt_hm(g.get("duration_minutes"))
-        hop = " ".join(p for p in (mode, f"~{dur}" if dur else "", cost_str) if p)
+        hop = " ".join(p for p in (mode, f"~{dur}" if dur else "", f"~{cost_str}" if cost_str else "") if p)
         return f" (fly into {d1}, {hop}, fly home from {d2})"
     return ""
 

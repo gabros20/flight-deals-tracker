@@ -175,6 +175,8 @@ def test_s4_ground_math_and_legs():
     assert d["ground"]["cost_eur"] == 35.0 and d["ground"]["mode"] == "train"
     assert d["price_eur"] == 90.0
     assert "fly into NAP" in d["why"] and "fly home from BRI" in d["why"]
+    # The S4 ground cost carries the ``~`` estimate marker (like S3's).
+    assert "~€35" in d["why"]
     assert d["price_confidence"] == "exact"
 
 

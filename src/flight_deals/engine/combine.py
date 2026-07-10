@@ -60,6 +60,19 @@ def enrich(deals: List[Dict[str, Any]], history_store, *, window_days: Optional[
     list. A history-store failure degrades a single deal to its factual
     fallback rather than aborting the whole response."""
     for d in deals:
+        # S3/S4 composites are priced as a whole (fare + ground) but the history
+        # store only holds DIRECT-route fares — comparing a composite total to
+        # that history would fabricate a percentile against the wrong baseline
+        # (controller ruling). Refuse it: force group=baseline and a
+        # non-comparative why (no "% below typical"), keeping only the honest
+        # ground/hop suffix so the shaped detail survives.
+        if d.get("shape") in ("S3", "S4"):
+            base = output.why_string(
+                d["price_eur"], d["price_confidence"], round_trip=d.get("return_date") is not None
+            )
+            d["why"] = base + output.ground_why_suffix(d)
+            d["group"] = "baseline"
+            continue
         try:
             cmp = history_store.compare(d["origin"], d["destination"], d["price_eur"], window_days=window_days)
         except Exception:
