@@ -1,0 +1,310 @@
+"""THE renderer (Global Constraint 2 / CONTRACT §1-6).
+
+One module owns every byte that reaches a user or an agent:
+
+* ``deal_id`` — the frozen id derivation (CONTRACT §5);
+* ``build_deal`` — a Deal object (CONTRACT §2) from resolved fare data;
+* ``envelope`` — the top-level object (CONTRACT §1);
+* ``render`` — JSON (canonical) or ``--pretty`` human text from the SAME fields
+  (no second data path);
+* ``telegram_text`` — the digest string Task 8 sends, built from the same
+  envelope;
+* ``build_summary`` / ``build_next`` — the honest one-sentence summary and the
+  at-most-one widening move (CONTRACT / UPGRADE-PLAN §4).
+
+Nothing here touches the network or invents data.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+from typing import Any, Dict, List, Optional
+
+# --------------------------------------------------------------------------- #
+# deal_id (CONTRACT §5, frozen — pinned by the golden vector test)            #
+# --------------------------------------------------------------------------- #
+def deal_id(
+    origin: str,
+    destination: str,
+    out_date: str,
+    return_date: Optional[str],
+    shape: str,
+    carriers: List[str],
+) -> str:
+    key = "|".join([
+        origin.upper(),
+        destination.upper(),
+        out_date,
+        return_date or "",  # "" for one-way, never the string "None"
+        shape,
+        "+".join(sorted(c.lower() for c in carriers)),
+    ])
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()[:10]
+
+
+# --------------------------------------------------------------------------- #
+# Booking deep links                                                          #
+# --------------------------------------------------------------------------- #
+def _ryanair_link(origin: str, dest: str, out_date: str, return_date: Optional[str]) -> str:
+    base = (
+        "https://www.ryanair.com/gb/en/trip/flights/select"
+        f"?originIata={origin}&destinationIata={dest}&dateOut={out_date}&adults=1"
+    )
+    if return_date:
+        base += f"&dateIn={return_date}"
+    return base
+
+
+def _wizzair_link(origin: str, dest: str, out_date: str, return_date: Optional[str]) -> str:
+    if return_date:
+        return f"https://wizzair.com/en-gb/booking/select-flight/{origin}/{dest}/{out_date}/{return_date}"
+    return f"https://wizzair.com/en-gb/booking/select-flight/{origin}/{dest}/{out_date}"
+
+
+def _links(carriers: List[str], origin: str, dest: str, out_date: str, return_date: Optional[str]) -> Dict[str, str]:
+    out: Dict[str, str] = {}
+    for c in carriers:
+        if c == "ryanair":
+            out["ryanair"] = _ryanair_link(origin, dest, out_date, return_date)
+        elif c == "wizzair":
+            out["wizzair"] = _wizzair_link(origin, dest, out_date, return_date)
+    return out
+
+
+# --------------------------------------------------------------------------- #
+# Deal object (CONTRACT §2)                                                    #
+# --------------------------------------------------------------------------- #
+def flight_leg(
+    origin: str,
+    destination: str,
+    carrier: str,
+    departure_date: str,
+    price_eur: float,
+    *,
+    departure_time: Optional[str] = None,
+    flight_number: Optional[str] = None,
+    duration_minutes: Optional[int] = None,
+) -> Dict[str, Any]:
+    return {
+        "type": "flight",
+        "origin": origin,
+        "destination": destination,
+        "carrier": carrier,
+        "departure_date": departure_date,
+        "departure_time": departure_time,
+        "flight_number": flight_number,
+        "price_eur": round(float(price_eur), 2),
+        "duration_minutes": duration_minutes,
+    }
+
+
+def build_deal(
+    *,
+    shape: str,
+    origin: str,
+    destination: str,
+    out_date: str,
+    return_date: Optional[str],
+    price_eur: float,
+    price_confidence: str,
+    carriers: List[str],
+    legs: List[Dict[str, Any]],
+    why: str,
+    ground: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Assemble one Deal dict per CONTRACT §2. ``carriers`` is sorted (feeds the
+    frozen ``deal_id``); ``nights`` is computed from the dates so it can never
+    disagree with them."""
+    carriers = sorted(c.lower() for c in carriers)
+    from datetime import date as _date
+
+    nights: Optional[int] = None
+    if return_date:
+        nights = (_date.fromisoformat(return_date) - _date.fromisoformat(out_date)).days
+    return {
+        "deal_id": deal_id(origin, destination, out_date, return_date, shape, carriers),
+        "shape": shape,
+        "origin": origin,
+        "destination": destination,
+        "out_date": out_date,
+        "return_date": return_date,
+        "nights": nights,
+        "price_eur": round(float(price_eur), 2),
+        "price_confidence": price_confidence,
+        "carriers": carriers,
+        "legs": legs,
+        "ground": ground,
+        "why": why,
+        "links": _links(carriers, origin, destination, out_date, return_date),
+    }
+
+
+def standout_group(deal: Dict[str, Any], history: Optional[Dict[str, Any]] = None) -> str:
+    """Grouping hook (SEARCH-DESIGN §2): ``standout`` (>=25% below typical) /
+    ``solid`` / ``baseline``. Task 7 wires real history; until then, with no
+    comparison basis, everything is honestly ``baseline`` — this is the seam
+    Task 7 fills, not a fabricated percentile."""
+    if not history or history.get("count", 0) < 5:
+        return "baseline"
+    typical = history.get("median_price")
+    if typical and deal["price_eur"] <= 0.75 * typical:
+        return "standout"
+    if typical and deal["price_eur"] < typical:
+        return "solid"
+    return "baseline"
+
+
+def why_string(price_eur: float, price_confidence: str, round_trip: bool) -> str:
+    """A minimal, factual, non-comparative ``why`` (CONTRACT §2 — history
+    enrichment upgrades this in Task 7)."""
+    trip = "round-trip" if round_trip else "one-way"
+    if price_confidence == "exact":
+        return f"€{price_eur:.0f} {trip}, exact Ryanair fare"
+    return f"~€{price_eur:.0f} {trip} estimate, Wizz timetable (approximate)"
+
+
+# --------------------------------------------------------------------------- #
+# sources projection (single status representation -> frozen sources map)      #
+# --------------------------------------------------------------------------- #
+def project_sources(aggregated: Dict[str, Dict[str, Any]]) -> Dict[str, str]:
+    """Project ``orchestrator.aggregate_status`` output ({provider:{ok,status,
+    ...}}) down to the frozen ``sources`` map ({provider: status_string},
+    CONTRACT §1). Deterministic key order."""
+    return {name: entry.get("status", "ok" if entry.get("ok") else "error")
+            for name, entry in sorted(aggregated.items())}
+
+
+# --------------------------------------------------------------------------- #
+# summary + next                                                              #
+# --------------------------------------------------------------------------- #
+_ROUTE_STATUS_PROSE = {
+    "no_service": "no scheduled service was found for this search in the window",
+    "no_match": "service exists but nothing matched the budget/constraints",
+    "provider_error": "a provider failed, so this run could not confirm what's available",
+}
+
+
+def build_summary(results: List[Dict[str, Any]], origins: List[str], route_status: Optional[str]) -> str:
+    """One honest sentence, safe to paste into Telegram (CONTRACT §1)."""
+    origin_str = "/".join(origins)
+    if not results:
+        return _ROUTE_STATUS_PROSE.get(route_status or "no_service", "no deals found")
+    cheapest = results[0]
+    conf = "exact" if cheapest["price_confidence"] == "exact" else "approx"
+    dates = cheapest["out_date"]
+    if cheapest.get("return_date"):
+        dates += f"-{cheapest['return_date']}"
+    n = len(results)
+    plural = "deal" if n == 1 else "deals"
+    return (
+        f"Found {n} {plural} from {origin_str}, cheapest {cheapest['destination']} "
+        f"€{cheapest['price_eur']:.0f} rt {dates} ({conf})"
+    )
+
+
+def build_next(spec: Any, results: List[Dict[str, Any]], route_status: Optional[str]) -> List[str]:
+    """At most ONE widening move (CONTRACT / UPGRADE-PLAN §4). Copy-pasteable
+    command strings only. Empty when there is nothing sensible to suggest."""
+    suggestions: List[str] = []
+    if results:
+        # A single, useful follow-up: check the cheapest deal's history/current price.
+        suggestions.append(f"flight-deals check {results[0]['deal_id']}")
+        return suggestions[:1]
+    # Empty result: offer exactly one widening move.
+    depart = getattr(spec, "depart", None)
+    where = getattr(spec, "where", None) or "seaside"
+    if route_status == "no_match" and getattr(spec, "budget", None):
+        new_budget = int(round(float(spec.budget) * 1.2))
+        suggestions.append(
+            f'flight-deals run --spec \'{{"origins":{json.dumps(spec.origins)},'
+            f'"where":{json.dumps(where)},"depart":{json.dumps(depart)},'
+            f'"nights":{json.dumps(spec.nights)},"budget":{new_budget}}}\''
+        )
+    return suggestions[:1]
+
+
+# --------------------------------------------------------------------------- #
+# envelope + render                                                           #
+# --------------------------------------------------------------------------- #
+def envelope(
+    results: List[Dict[str, Any]],
+    summary: str,
+    sources: Dict[str, str],
+    next: List[str],
+    *,
+    route_status: Optional[str] = None,
+    error: Optional[str] = None,
+    hint: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Assemble the top-level envelope (CONTRACT §1). ``route_status`` is only
+    attached when ``results`` is empty (frozen invariant); ``error``/``hint`` are
+    attached together only when present."""
+    env: Dict[str, Any] = {
+        "results": results,
+        "summary": summary,
+        "sources": sources,
+        "next": next,
+    }
+    if not results and route_status is not None:
+        env["route_status"] = route_status
+    if error is not None:
+        env["error"] = error
+        env["hint"] = hint or ""
+    return env
+
+
+def error_envelope(error: str, hint: str) -> Dict[str, Any]:
+    """The exit-2 shape: structured failure, empty results, paired error/hint."""
+    return {
+        "results": [],
+        "summary": hint or error,
+        "sources": {},
+        "next": [],
+        "error": error,
+        "hint": hint,
+    }
+
+
+def render(env: Dict[str, Any], pretty: bool = False) -> str:
+    """Canonical JSON (default) or human text (``--pretty``) from the SAME
+    fields. JSON keys are NOT sorted so ``results`` keeps rank order."""
+    if not pretty:
+        return json.dumps(env, ensure_ascii=False)
+    return _pretty(env)
+
+
+def _pretty(env: Dict[str, Any]) -> str:
+    lines: List[str] = []
+    lines.append(env.get("summary", ""))
+    for i, d in enumerate(env.get("results", []), 1):
+        dates = d["out_date"] + (f" -> {d['return_date']}" if d.get("return_date") else "")
+        lines.append(
+            f"  {i}. {d['origin']}->{d['destination']}  €{d['price_eur']:.2f} "
+            f"{dates}  [{d['price_confidence']}, {'+'.join(d['carriers'])}]  {d['deal_id']}"
+        )
+        lines.append(f"       {d['why']}")
+    src = env.get("sources", {})
+    if src:
+        lines.append("  sources: " + ", ".join(f"{k}={v}" for k, v in src.items()))
+    if env.get("route_status"):
+        lines.append(f"  route_status: {env['route_status']}")
+    if env.get("error"):
+        lines.append(f"  error: {env['error']}")
+        lines.append(f"  hint: {env['hint']}")
+    for nxt in env.get("next", []):
+        lines.append(f"  next: {nxt}")
+    return "\n".join(lines)
+
+
+def telegram_text(env: Dict[str, Any]) -> str:
+    """A digest string built from the SAME envelope (used by Task 8's notifier).
+    Plain text, safe as a Telegram message body."""
+    lines = [env.get("summary", "")]
+    for i, d in enumerate(env.get("results", [])[:10], 1):
+        dates = d["out_date"] + (f"–{d['return_date']}" if d.get("return_date") else "")
+        conf = "" if d["price_confidence"] == "exact" else " ~"
+        lines.append(
+            f"{i}. {d['origin']}→{d['destination']} €{d['price_eur']:.0f}{conf} {dates}"
+        )
+    return "\n".join(lines)
