@@ -404,6 +404,42 @@ def test_check_roundtrip_reports_delta(tmp_path, monkeypatch):
     assert len(snapshots.records(deal["deal_id"])) == 2
 
 
+def test_check_declines_s4_composite(tmp_path, monkeypatch):
+    """S3/S4 composites don't have a single bookable route to re-price exactly
+    yet; check_deal must decline honestly (exit 0, empty results, no_match
+    route_status, explanatory summary) rather than treat them as direct
+    routes (Task 10 review gap)."""
+    from flight_deals.state import snapshots
+    from flight_deals.output import build_deal, flight_leg, ground_leg, ground_summary
+
+    monkeypatch.setattr(snapshots, "_deals_dir", lambda: tmp_path)
+    deal = build_deal(
+        shape="S4", origin="BUD", destination="NAP", out_date="2026-08-22",
+        return_date="2026-08-27", price_eur=90.0, price_confidence="exact",
+        carriers=["ryanair"],
+        legs=[
+            flight_leg("BUD", "NAP", "ryanair", "2026-08-22", 30.0),
+            ground_leg("NAP", "BRI", "train", 240, cost_eur=35.0),
+            flight_leg("BRI", "BUD", "ryanair", "2026-08-27", 25.0),
+        ],
+        ground=ground_summary(240, 35.0, "train"), why="x",
+    )
+    snapshots.snapshot(deal, now=datetime(2026, 6, 1, tzinfo=timezone.utc))
+
+    env, code = check_deal(deal["deal_id"], today=FIXED_TODAY)
+
+    assert code == 0
+    assert env == {
+        "results": [],
+        "summary": f"deal {deal['deal_id']} is a S4 composite trip — "
+                   "re-check it by re-running the getaway that found it "
+                   "(--shapes ...); per-shape re-check isn't wired into `check` yet",
+        "sources": {},
+        "next": [],
+        "route_status": "no_match",
+    }
+
+
 def test_check_past_dated_deal_exits_2(tmp_path, monkeypatch):
     from flight_deals.state import snapshots
     from flight_deals.output import build_deal

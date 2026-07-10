@@ -98,7 +98,7 @@ class GroundLeg(BaseModel):
     to_iata: str
     mode: str  # "driving", "public_transit", "train", "bus"
     duration_minutes: int
-    distance_km: float
+    distance_km: Optional[float] = None
     cost_eur: Optional[float] = Field(
         default=None,
         validation_alias=AliasChoices("cost_eur", "estimated_cost_eur"),
