@@ -31,6 +31,7 @@ often ``brief`` is invoked.
 
 from __future__ import annotations
 
+import logging
 import re
 from datetime import datetime, time, timedelta, timezone
 from pathlib import Path
@@ -39,6 +40,8 @@ from typing import Any, Dict, List, Optional
 from flight_deals.engine.spec import SpecError, parse_spec
 from flight_deals.paths import resolve_path
 from flight_deals.state import store
+
+logger = logging.getLogger(__name__)
 
 SCHEMA_VERSION = 1
 SEARCHES_SUBDIR = "data/searches"
@@ -133,14 +136,29 @@ def exists(name: str) -> bool:
     return _path(name).exists()
 
 
-def list_all() -> List[Dict[str, Any]]:
-    """All saved searches, sorted by name (deterministic order for the CLI)."""
+def list_all(*, skipped: Optional[List[Dict[str, str]]] = None) -> List[Dict[str, Any]]:
+    """All saved searches, sorted by name (deterministic order for the CLI).
+
+    SEARCH-DESIGN invites hand-editing, so a single corrupt/unparseable file must
+    never abort the whole listing (and therefore never abort a brief run). A file
+    that fails to load — bad YAML, a schema mismatch, or a record missing its
+    ``name`` — is skipped with a logged warning; when ``skipped`` is provided each
+    skip is appended as ``{"file": ..., "reason": ...}`` so the caller (brief) can
+    surface it in the envelope."""
     d = searches_dir()
     if not d.exists():
         return []
     out: List[Dict[str, Any]] = []
     for f in sorted(d.glob("*.yaml")):
-        rec = store.read_versioned(f, current=SCHEMA_VERSION)
+        try:
+            rec = store.read_versioned(f, current=SCHEMA_VERSION)
+            if rec is not None and "name" not in rec:
+                raise ValueError("saved search is missing its 'name' field")
+        except Exception as e:  # noqa: BLE001 — one bad file must not sink the loop
+            logger.warning("searches: skipping unreadable saved search %s: %s", f.name, e)
+            if skipped is not None:
+                skipped.append({"file": f.name, "reason": str(e)})
+            continue
         if rec is not None:
             out.append(rec)
     return out
@@ -185,7 +203,13 @@ def _validate_alert(alert: Dict[str, Any]) -> None:
 # run stamps (.runs.json)                                                      #
 # --------------------------------------------------------------------------- #
 def _load_runs() -> Dict[str, Any]:
-    data = store.read_versioned(_runs_path(), current=SCHEMA_VERSION)
+    try:
+        data = store.read_versioned(_runs_path(), current=SCHEMA_VERSION)
+    except store.MigrationError as e:
+        # A corrupt .runs.json is only a scheduling cache: treat it as empty
+        # (every search simply looks never-run) rather than crashing the loop.
+        logger.warning("searches: %s unreadable (%s) — treating as empty", RUNS_FILENAME, e)
+        return {"schema_version": SCHEMA_VERSION, "runs": {}}
     if data is None:
         return {"schema_version": SCHEMA_VERSION, "runs": {}}
     data.setdefault("runs", {})
@@ -324,10 +348,28 @@ def is_due(record: Dict[str, Any], now: datetime) -> bool:
     return schedule.is_due(last_run_at(record["name"]), now)
 
 
-def due(now: datetime, *, force_all: bool = False) -> List[Dict[str, Any]]:
+def due(
+    now: datetime,
+    *,
+    force_all: bool = False,
+    skipped: Optional[List[Dict[str, str]]] = None,
+) -> List[Dict[str, Any]]:
     """Saved searches due to run at ``now`` (sorted by name). ``force_all``
-    returns every saved search regardless of schedule (``brief --all``)."""
-    records = list_all()
+    returns every saved search regardless of schedule (``brief --all``).
+
+    A search whose ``schedule`` string is malformed is skipped (logged + surfaced
+    via ``skipped``) rather than aborting the whole due-check, so one hand-edited
+    typo never silences every other watch."""
+    records = list_all(skipped=skipped)
     if force_all:
         return records
-    return [r for r in records if is_due(r, now)]
+    out: List[Dict[str, Any]] = []
+    for r in records:
+        try:
+            if is_due(r, now):
+                out.append(r)
+        except SearchError as e:
+            logger.warning("searches: %r has an invalid schedule, skipping: %s", r.get("name"), e.message)
+            if skipped is not None:
+                skipped.append({"file": f"{r.get('name')}.yaml", "reason": e.message})
+    return out

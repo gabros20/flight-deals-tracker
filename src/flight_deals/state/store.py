@@ -79,10 +79,18 @@ def read_versioned(
     if not path.exists():
         return default
     text = path.read_text()
-    if path.suffix in (".yaml", ".yml"):
-        data = yaml.safe_load(text)
-    else:
-        data = json.loads(text)
+    is_yaml = path.suffix in (".yaml", ".yml")
+    try:
+        data = yaml.safe_load(text) if is_yaml else json.loads(text)
+    except (yaml.YAMLError, json.JSONDecodeError, ValueError) as e:
+        # A hand-edited or half-written file is corrupt: surface the same
+        # friendly, typed error as a version mismatch rather than letting a raw
+        # parse exception abort a caller (e.g. brief's whole loop). Callers that
+        # can tolerate a missing file (like .runs.json) catch this and reset.
+        raise MigrationError(
+            f"{path.name} is not valid {'YAML' if is_yaml else 'JSON'} ({e}). "
+            f"Back up and remove the file to let it be recreated."
+        ) from e
     if not isinstance(data, dict):
         raise MigrationError(f"{path} is not a mapping — cannot read as versioned state")
     version = data.get("schema_version", current)
