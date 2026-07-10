@@ -162,6 +162,16 @@ def test_provider_failure_on_empty_is_provider_error_exit_1():
     assert out["route_status"] == "provider_error"
     assert out["exit_code"] == 1
 
+    # CONTRACT §3: exit 1 MUST carry error+hint on the envelope `run()` builds
+    # (execute()'s raw outcome dict above has no error/hint of its own — those
+    # are attached at the envelope layer, asserted here).
+    env, exit_code = pl.run(spec)
+    assert exit_code == 1
+    assert env["results"] == []
+    assert env["route_status"] == "provider_error"
+    assert env["error"] == "provider_error"
+    assert env["hint"]
+
 
 # --- session-lifecycle regression (Task 3 carry-over, binding) ------------- #
 def test_execute_reuses_pool_and_does_not_leak_sessions():
@@ -181,10 +191,19 @@ def test_execute_reuses_pool_and_does_not_leak_sessions():
 
     first_executor = http.get_executor(pl.config.max_workers)
     threads_before = threading.active_count()
+    sessions_before = http.session_count()
     for _ in range(6):
         pl.execute(compile_plan(spec), spec)
 
     assert http.get_executor(pl.config.max_workers) is first_executor  # reused, not per-search
-    assert http.session_count() <= pl.config.max_workers  # bounded, not 6*N
+    # Sessions created by THIS repeated execution must be bounded by the shared
+    # pool's own worker count, not 6x (one set per search). Measured as growth
+    # from this test's own baseline — not an absolute count — because
+    # `http.session_count()` is a process-wide registry shared with unrelated
+    # tests (e.g. test_http.py's own per-thread test creates sessions on
+    # threads outside this pool); an absolute bound would make this
+    # assertion depend on suite-wide test order/timing instead of on the
+    # invariant this test actually exercises.
+    assert http.session_count() - sessions_before <= pl.config.max_workers
     # No unbounded thread growth either.
     assert threading.active_count() <= threads_before + pl.config.max_workers

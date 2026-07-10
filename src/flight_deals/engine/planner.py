@@ -422,11 +422,22 @@ class Planner:
         plan = self.compile(spec)
         check_max_calls(plan, max_calls)
         outcome = self.execute(plan, spec, fresh=fresh)
+        # CONTRACT §3: exit 1 is ONLY reached when results == [] AND a needed
+        # provider failed (route_status == "provider_error") — see execute()
+        # above and the "Partial coverage" note (a provider failing while
+        # another still produced results stays exit 0). error/hint are
+        # therefore paired with exit 1 unconditionally here.
+        error = hint = None
+        if outcome["exit_code"] == 1:
+            error = "provider_error"
+            hint = "the next scheduled run will retry; or re-run with --fresh"
         env = output.envelope(
             results=outcome["results"],
             summary=output.build_summary(outcome["results"], spec.origins, outcome["route_status"]),
             sources=outcome["sources"],
             next=output.build_next(spec, outcome["results"], outcome["route_status"]),
             route_status=outcome["route_status"],
+            error=error,
+            hint=hint,
         )
         return env, outcome["exit_code"]

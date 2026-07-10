@@ -67,6 +67,10 @@ def test_run_provider_error_exits_1_with_route_status(monkeypatch):
     env = json.loads(result.output)
     assert env["results"] == []
     assert env["route_status"] == "provider_error"
+    # CONTRACT §1/§3: exit 1 MUST carry error+hint (violation this test used
+    # to miss — it only checked route_status).
+    assert env["error"] == "provider_error"
+    assert env["hint"]
 
 
 # --- run: empty-but-ok stays exit 0 with a typed empty state --------------- #
@@ -96,6 +100,7 @@ def test_run_disabled_shape_exits_2_with_hint():
                                  '"nights":"5-8","shapes":["via-hub"]}'])
     assert result.exit_code == 2
     env = json.loads(result.output)
+    assert env["error"]
     assert "not yet enabled" in env["hint"]
 
 
@@ -106,7 +111,27 @@ def test_run_over_max_calls_exits_2_with_narrow_hint():
                                  "--max-calls", "5"])
     assert result.exit_code == 2
     env = json.loads(result.output)
+    assert env["error"]
     assert "--max-calls" in env["hint"]
+
+
+# --- where-parse errors through plan/run -> exit 2 + error/hint ----------- #
+def test_plan_invalid_where_exits_2_with_error_and_hint():
+    result = runner.invoke(app, ["plan", "--spec",
+                                 '{"origins":["BUD"],"where":"seasid & (",'
+                                 '"depart":"2026-08-22..2026-08-24","nights":"5-8"}'])
+    assert result.exit_code == 2
+    env = json.loads(result.output)
+    assert env["error"] and env["hint"]
+
+
+def test_run_invalid_where_exits_2_with_error_and_hint():
+    result = runner.invoke(app, ["run", "--spec",
+                                 '{"origins":["BUD"],"where":"seasid & (",'
+                                 '"depart":"2026-08-22..2026-08-24","nights":"5-8"}'])
+    assert result.exit_code == 2
+    env = json.loads(result.output)
+    assert env["error"] and env["hint"]
 
 
 def test_plan_inline_and_stdin_equivalent(monkeypatch):
