@@ -1,0 +1,12 @@
+id: 01-basic-getaway
+utterance: "Best deals departing Aug 22-24, seaside or italian or spanish, about a week"
+expected_command: >-
+  flight-deals getaway --depart 2026-08-22..2026-08-24 --where "seaside | italy | spain" --nights 5-8
+notes: >-
+  The worked example SEARCH-DESIGN §5 leads with. "about a week" -> nights
+  5-8 (not a single value); "seaside or italian or spanish" -> the OR
+  expression "seaside | italy | spain", not the alias "italian-gems" (that
+  alias means "italy", dropping "seaside"/"spain"). A relative year may
+  differ if replayed on a different "today" — the month/day pattern and
+  flags must still match exactly.
+source: "docs/SEARCH-DESIGN.md §5"

@@ -1,0 +1,13 @@
+id: 03-oneway-budget
+utterance: "Find cheap European island flights from Budapest in August under €120"
+expected_command: >-
+  flight-deals oneway --depart 2026-08 --where island --budget 120 --from BUD
+notes: >-
+  No return date is mentioned, so this is `oneway`, not `getaway` — a common
+  weak-model mistake is to default to a round trip. "European island" maps
+  to the tag `island` (a bare tag is a valid --where expression); do not
+  invent a compound tag like "european-island" that doesn't exist in the
+  taxonomy (the old v1 alias "european-islands" happens to expand to
+  `island`, but the router doesn't need the alias — the bare tag is enough).
+  `--from BUD` may be omitted if BUD is already the configured default origin.
+source: "hermes-skill/flight-deals/skill.md 'Hermes Natural Language Examples' (one of the two required old-doc workflows)"

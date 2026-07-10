@@ -1,3 +1,14 @@
+> **Superseded by the router.** This document predates the agent-first
+> rewrite (`docs/UPGRADE-PLAN.md`) and describes a CLI surface that no
+> longer exists — `roundtrip`, `collect`, `--connections`, `multi_airports`,
+> `history --limit` were all removed pending rebuild (Phase 0) and the
+> "creative usage" strategies it taught (broad→narrow flag juggling,
+> propose-2-3-combinations, anti-stuck flag toggling) now live INSIDE the
+> engine — the planner, estimate→confirm pipeline, and `next` field do this
+> automatically. Kept for historical reference only. Current usage:
+> `SKILL.md` (router) and `references/spec-guide.md` (strong-agent spec
+> layer).
+
 # Flight Deals Tracker - Creative Usage Skill
 
 **Skill for Hermes Agent**: How to use `flight-deals` CLI creatively, flexibly, and without getting stuck. Focus on flag combinations, search strategies, and adaptive workflows for finding the best Ryanair & Wizz Air deals from BUD (or other origins).

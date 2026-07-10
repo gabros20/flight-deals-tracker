@@ -1,0 +1,10 @@
+id: 05-category-watch
+utterance: "Watch seaside getaways for August, tell me if anything drops under €150"
+expected_command: >-
+  flight-deals watch add --where seaside --month 2026-08 --nights 5-8 --budget 150
+notes: >-
+  A category watch (no single route named) — `--where`/`--month`/`--budget`,
+  not the route form (`ORIGIN-DEST --months ... --max-price`). "getaways"
+  implies a round trip, so `--nights` should be present with a reasonable
+  default range if the user didn't give one explicitly.
+source: "made up for coverage (category-watch shape, the second common monitoring pattern)"

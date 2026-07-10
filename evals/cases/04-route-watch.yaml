@@ -1,0 +1,17 @@
+id: 04-route-watch
+utterance: "Track BUD to CFU for late August, about a week, and alert me if it drops under 150"
+expected_command: >-
+  flight-deals watch add BUD-CFU --months 2026-08 --nights 5-8 --max-price 150
+notes: >-
+  The old `track --threshold <percent>` command was removed (UPGRADE-PLAN
+  Phase 0) — there is no percentage-drop tracking anymore, only an absolute
+  `--max-price` alert threshold evaluated by the deterministic `brief` loop.
+  The correct translation is `watch add`, not a raw `track`/`search` call.
+  If the user's phrasing gives a percentage instead of a price ("alert if it
+  drops 10%"), the agent should ask for or estimate a EUR threshold rather
+  than inventing a flag that no longer exists.
+source: >-
+  Adapted from docs/FLIGHT-DEALS-CREATIVE-USAGE-SKILL.md (archived at
+  skills/flight-deals/references/advanced.md) Strategy 4 "History-Driven
+  Hunting" / the old `track --threshold` workflow — one of the two required
+  old-doc workflows.
