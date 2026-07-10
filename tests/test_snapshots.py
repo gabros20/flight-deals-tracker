@@ -53,3 +53,34 @@ def test_snapshot_explicit_now_wins(tmp_path, monkeypatch):
     when = datetime(2026, 7, 1, tzinfo=timezone.utc)
     rec = snapshots.snapshot(_deal(50.0), now=when)
     assert rec["seen_at"] == when.isoformat()
+
+
+def test_snapshot_same_day_same_price_dedups_to_one_line(tmp_path, monkeypatch):
+    """Two displays of the identical deal on the same UTC calendar day are not
+    two observations — the second is a no-op append."""
+    monkeypatch.setattr(snapshots, "_deals_dir", lambda: tmp_path)
+
+    with freeze_time("2026-06-01T09:00:00+00:00"):
+        snapshots.snapshot(_deal(100.0))
+    with freeze_time("2026-06-01T21:00:00+00:00"):  # same UTC day, same price
+        second = snapshots.snapshot(_deal(100.0))
+
+    recs = snapshots.records("abc1234567")
+    assert len(recs) == 1
+    assert recs[0]["seen_at"] == "2026-06-01T09:00:00+00:00"  # untouched, no rewrite
+    assert second["seen_at"] == "2026-06-01T09:00:00+00:00"  # returns the existing record
+
+
+def test_snapshot_same_day_price_change_appends_a_second_line(tmp_path, monkeypatch):
+    """A genuine price change on the same UTC calendar day still gets its own
+    observation — dedup is price+day, not day alone."""
+    monkeypatch.setattr(snapshots, "_deals_dir", lambda: tmp_path)
+
+    with freeze_time("2026-06-01T09:00:00+00:00"):
+        snapshots.snapshot(_deal(100.0))
+    with freeze_time("2026-06-01T21:00:00+00:00"):  # same UTC day, different price
+        snapshots.snapshot(_deal(85.0))
+
+    recs = snapshots.records("abc1234567")
+    assert len(recs) == 2
+    assert [r["price_eur"] for r in recs] == [100.0, 85.0]

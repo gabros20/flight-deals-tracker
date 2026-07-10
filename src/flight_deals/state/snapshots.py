@@ -9,6 +9,20 @@ lands in the same file — that's what makes a delta meaningful.
 
 Writes go through ``state.store.append_jsonl`` (atomic single-line append), so
 concurrent snapshots from a parallel sweep never interleave a partial record.
+
+Same-day dedup: a display re-running the same search minutes later would
+otherwise append an identical observation every time; ``snapshot()`` skips the
+append when the latest existing record for the deal already has the same
+``price_eur`` *and* the same UTC calendar day — a genuine price change (or the
+next day's first sighting) still gets its own line.
+
+Two-store split (Task 7): this JSONL store is the **authoritative source for
+deal identity and check-time deltas** — one file per ``deal_id``, fed by every
+displayed deal (``getaway``/``oneway``/``check``). The CSV history in
+``history.py`` (fed by the cron ``run``/``track`` path) is the authoritative
+source for price-context/typical-price stats instead; ``getaway`` *reads* that
+CSV for its "why" context but never writes to it. The two stores are
+deliberately not merged — different write cadences, different readers.
 """
 
 from __future__ import annotations
@@ -48,10 +62,25 @@ def _record_from_deal(deal: Dict[str, Any], now: datetime) -> Dict[str, Any]:
     }
 
 
+def _same_utc_day(prior_seen_at: str, now: datetime) -> bool:
+    prior_dt = datetime.fromisoformat(prior_seen_at)
+    if prior_dt.tzinfo is None:
+        prior_dt = prior_dt.replace(tzinfo=timezone.utc)
+    now_utc = now if now.tzinfo else now.replace(tzinfo=timezone.utc)
+    return prior_dt.astimezone(timezone.utc).date() == now_utc.astimezone(timezone.utc).date()
+
+
 def snapshot(deal: Dict[str, Any], *, now: Optional[datetime] = None) -> Dict[str, Any]:
-    """Append one observation for a rendered Deal dict; return the record."""
+    """Append one observation for a rendered Deal dict; return the record.
+    Skips the append (returning the existing record instead) when the latest
+    observation for this ``deal_id`` already has the same ``price_eur`` and
+    falls on the same UTC calendar day — a repeat display within the same day
+    at an unchanged price is not a new observation."""
     now = now or datetime.now(timezone.utc)
     record = _record_from_deal(deal, now)
+    prior = latest(deal["deal_id"])
+    if prior is not None and prior["price_eur"] == record["price_eur"] and _same_utc_day(prior["seen_at"], now):
+        return prior
     store.append_jsonl(path_for(deal["deal_id"]), record)
     return record
 
