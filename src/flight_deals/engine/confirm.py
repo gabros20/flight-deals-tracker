@@ -2,10 +2,14 @@
 
 Approximate deals come from Wizz timetable pairings priced off day-level minima
 over a *window* (possibly cached). Before we display them — and before Task 8
-would ever alert on them — the ones that reach the display set are re-checked
-with a fresh, cache-bypassed timetable query on the **exact** dates. The
-confirmed figure replaces ``price_eur``; the original windowed estimate is
-retained in ``estimated_price_eur`` so a consumer can see the movement.
+would ever alert on them — every deal in the *confirm margin band*
+(``planner.execute()``'s ``confirm_band``: a bounded superset of the final
+display set that also covers deals within 20% over budget or just outside the
+top-N, so a confirmed price can rescue or back-fill a slot — see
+``intents.run_search``) is re-checked with a fresh, cache-bypassed timetable
+query on the **exact** dates. The confirmed figure replaces ``price_eur``; the
+original windowed estimate is retained in ``estimated_price_eur`` so a
+consumer can see the movement.
 
 Ryanair FarePairs are already exact (RT-EXACT confidence), so they are skipped.
 A Wizz deal that cannot be re-confirmed stays ``approximate`` and untouched —

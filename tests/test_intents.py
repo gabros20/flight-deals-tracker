@@ -155,6 +155,108 @@ def test_confirm_replaces_estimate_with_exact_requery():
 
 
 # --------------------------------------------------------------------------- #
+# confirm margin band: rescue / back-fill / bounded fan-out                   #
+# --------------------------------------------------------------------------- #
+def test_confirm_rescues_deal_estimated_over_budget():
+    """A deal estimated 10% over budget (within the 20% margin band) whose
+    exact re-query comes back under budget is rescued into the display set —
+    the old estimates-only budget cut would have dropped it for good."""
+    planner = Planner()
+    planner.ryanair.roundtrip_fares = lambda *a, **k: []
+
+    def fake_tt(origin, dest, date_from, date_to, use_cache=True):
+        if dest != "CFU":
+            return ([], [])
+        if not use_cache:  # exact re-query: 37 + 38 = 75, under the €80 budget
+            return ([_df("BUD", "CFU", "2026-08-23", 37.0)],
+                    [_df("CFU", "BUD", "2026-08-29", 38.0)])
+        return ([_df("BUD", "CFU", "2026-08-23", 44.0)],   # windowed estimate: 88 (10% over)
+                [_df("CFU", "BUD", "2026-08-29", 44.0)])
+
+    planner.wizz.timetable = fake_tt
+    _, snap = _collector()
+    env, code = run_search(
+        where="greece & seaside", depart="2026-08-22..2026-08-24", nights="5-8",
+        budget=80, origins=["BUD"], carriers=["wizzair"], planner=planner,
+        history_store=_FakeHistory(), snapshotter=snap, today=FIXED_TODAY, now=FIXED_NOW,
+    )
+    assert code == 0
+    assert "route_status" not in env
+    cfu = next(d for d in env["results"] if d["destination"] == "CFU")
+    assert cfu["price_confidence"] == "approximate"
+    assert cfu["estimated_price_eur"] == 88.0
+    assert cfu["price_eur"] == 75.0
+
+
+def test_confirm_backfills_deal_estimated_just_outside_top_n():
+    """max_results=1: SKG estimates cheaper (90) than CFU (100) and would win
+    the only slot on estimates alone. CFU's exact re-query is far cheaper (50)
+    and SKG's is unchanged — CFU must back-fill the single slot."""
+    planner = Planner()
+    planner.ryanair.roundtrip_fares = lambda *a, **k: []
+
+    def fake_tt(origin, dest, date_from, date_to, use_cache=True):
+        if dest == "CFU":
+            if not use_cache:
+                return ([_df("BUD", "CFU", "2026-08-23", 25.0)],
+                        [_df("CFU", "BUD", "2026-08-29", 25.0)])  # confirmed: 50
+            return ([_df("BUD", "CFU", "2026-08-23", 50.0)],
+                    [_df("CFU", "BUD", "2026-08-29", 50.0)])      # estimate: 100
+        if dest == "SKG":
+            return ([_df("BUD", "SKG", "2026-08-23", 45.0)],
+                    [_df("SKG", "BUD", "2026-08-29", 45.0)])      # estimate == confirmed: 90
+        return ([], [])
+
+    planner.wizz.timetable = fake_tt
+    _, snap = _collector()
+    env, code = run_search(
+        where="greece & seaside", depart="2026-08-22..2026-08-24", nights="5-8",
+        budget=None, origins=["BUD"], carriers=["wizzair"], max_results=1, planner=planner,
+        history_store=_FakeHistory(), snapshotter=snap, today=FIXED_TODAY, now=FIXED_NOW,
+    )
+    assert code == 0
+    assert len(env["results"]) == 1
+    only = env["results"][0]
+    assert only["destination"] == "CFU"
+    assert only["estimated_price_eur"] == 100.0
+    assert only["price_eur"] == 50.0
+
+
+def test_confirm_call_count_is_bounded_by_the_margin_band_not_the_pool():
+    """12 destinations all produce an approximate candidate; max_results=3 so
+    the margin band is bounded (3 + min(5, ceil(3*0.5)) == 5). Confirm must be
+    called on exactly the cheapest 5, never fan out to all 12."""
+    from flight_deals.engine.planner import _confirm_band_size
+
+    planner = Planner()
+    planner.ryanair.roundtrip_fares = lambda *a, **k: []
+
+    matched = ["CFU", "CHQ", "EFL", "HER", "JMK", "JTR", "KGS", "KLX", "PVK", "RHO", "SKG", "ZTH"]
+    price_of = {d: 20.0 + 10.0 * i for i, d in enumerate(matched)}  # strictly increasing, alphabetical == rank order
+    confirm_calls = []
+
+    def fake_tt(origin, dest, date_from, date_to, use_cache=True):
+        if not use_cache:
+            confirm_calls.append(dest)
+        half = price_of[dest] / 2
+        return ([_df(origin, dest, "2026-08-23", half)], [_df(dest, origin, "2026-08-29", half)])
+
+    planner.wizz.timetable = fake_tt
+    _, snap = _collector()
+    env, code = run_search(
+        where="greece & seaside", depart="2026-08-22..2026-08-24", nights="5-8",
+        budget=None, origins=["BUD"], carriers=["wizzair"], max_results=3, planner=planner,
+        history_store=_FakeHistory(), snapshotter=snap, today=FIXED_TODAY, now=FIXED_NOW,
+    )
+    assert code == 0
+    band_size = _confirm_band_size(3)
+    assert band_size == 5
+    assert len(confirm_calls) == band_size  # bounded fan-out, not one call per destination
+    assert set(confirm_calls) == set(sorted(matched, key=lambda d: price_of[d])[:band_size])
+    assert len(env["results"]) == 3  # still truncated to max_results
+
+
+# --------------------------------------------------------------------------- #
 # oneway (S1)                                                                 #
 # --------------------------------------------------------------------------- #
 def test_oneway_produces_s1_deals():

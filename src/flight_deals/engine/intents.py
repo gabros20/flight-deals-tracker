@@ -124,15 +124,25 @@ def run_search(
 
     results = outcome["results"]
 
-    # Estimate→confirm: refine approximate (Wizz) deals in the display set with
-    # a fresh exact-date re-query, then re-apply budget/rank (a confirmed price
-    # can move a deal out of band).
-    if do_confirm and results:
-        confirm_mod.confirm(results, wizz=planner.wizz)
-        if spec.budget is not None:
-            results = [d for d in results if d["price_eur"] <= float(spec.budget)]
-        results.sort(key=lambda d: (d["price_eur"], d["price_confidence"] != "exact", d["destination"]))
-        results = results[: spec.max_results]
+    # Estimate→confirm: budget/top-N truncation above happened on *estimates*,
+    # so confirm alone could only ever drop a deal (never rescue one just over
+    # budget, nor back-fill a slot from one just outside the top-N). Instead we
+    # confirm the wider (bounded) ``confirm_band`` planner.execute() computed —
+    # estimates within BUDGET_MARGIN_FACTOR (20%) over budget and ranked up to
+    # ``_confirm_band_size(max_results)`` — then re-apply the *strict* budget
+    # filter, re-rank, and truncate to max_results using confirmed prices. The
+    # extra confirm calls are bounded by the band size, never by the full
+    # candidate pool (see planner._confirm_band_size).
+    if do_confirm:
+        band = outcome.get("confirm_band", results)
+        if band:
+            confirm_mod.confirm(band, wizz=planner.wizz)
+            if spec.budget is not None:
+                band = [d for d in band if d["price_eur"] <= float(spec.budget)]
+            band.sort(key=lambda d: (d["price_eur"], d["price_confidence"] != "exact", d["destination"]))
+            results = band[: spec.max_results]
+        else:
+            results = []
 
     # History enrichment: honest why-strings + standout/solid/baseline groups.
     if history_store is None:
@@ -147,10 +157,16 @@ def run_search(
         except Exception as e:  # noqa: BLE001
             logger.warning("snapshot failed for %s: %s", d.get("deal_id"), e)
 
-    # Recompute the empty-state after confirm may have dropped everything.
+    # Recompute the empty-state: confirm may have dropped everything from a
+    # previously non-empty set, or (the margin-band rescue/back-fill) turned a
+    # previously empty set non-empty — route_status must track the *final*
+    # results, not the pre-confirm ones.
     route_status = outcome["route_status"]
     exit_code = outcome["exit_code"]
-    if not results and route_status is None:
+    if results:
+        route_status = None
+        exit_code = 0  # CONTRACT §3: exit 1 only when results == []
+    elif route_status is None:
         route_status = "no_match" if outcome["candidate_count"] else "no_service"
 
     error = hint = None

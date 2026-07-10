@@ -17,6 +17,7 @@ leak across searches (Task 3 review carry-over).
 from __future__ import annotations
 
 import logging
+import math
 from concurrent.futures import as_completed
 from dataclasses import dataclass, field
 from datetime import date, timedelta
@@ -37,6 +38,29 @@ logger = logging.getLogger(__name__)
 NOMINAL_RATE = 1.0
 
 DEFAULT_MAX_CALLS = 40
+
+# Estimate->confirm margin band (Task 7 quality fix): budget/top-N truncation
+# below is computed on *estimates*, so a deal confirm() could rescue (or that
+# could back-fill a truncated slot) must survive past that cut in order to be
+# confirmable at all. ``confirm_band`` is a deliberately small superset of the
+# final display set: BUDGET_MARGIN_FACTOR widens the budget ceiling so a deal
+# estimated up to 20% over budget is still confirmed (its exact price may come
+# in under budget), and the rank cutoff is extended by a bounded extra count so
+# a deal estimated just outside the top-N can still confirm and back-fill a
+# cheaper slot. The bound keeps confirm's call count honest — see
+# ``_confirm_band_size``.
+BUDGET_MARGIN_FACTOR = 1.20
+
+
+def _confirm_band_size(max_results: int) -> int:
+    """Extra candidates (beyond ``max_results``) kept for the confirm margin
+    band: ``min(5, ceil(max_results * 0.5))`` extra slots, e.g. 5 extra at
+    max_results=10, 2 extra at max_results=4. Bounded so confirm's fan-out
+    never grows unboundedly with the candidate pool."""
+    if max_results <= 0:
+        return 0
+    extra = min(5, math.ceil(max_results * 0.5))
+    return max_results + extra
 
 
 # --------------------------------------------------------------------------- #
@@ -420,9 +444,12 @@ class Planner:
 
     def execute(self, plan: CallPlan, spec, *, fresh: bool = False) -> Dict[str, Any]:
         """Run the plan concurrently on the shared pool. Returns a dict with
-        ``results`` (rendered Deal dicts), ``sources`` (frozen map),
-        ``route_status`` (None when non-empty), ``exit_code`` and
-        ``candidate_count`` (pre-budget, for the empty-state distinction)."""
+        ``results`` (rendered Deal dicts, final budget+rank cut on estimates),
+        ``confirm_band`` (a bounded superset of ``results`` — see
+        ``_confirm_band_size`` — for intents.run_search's estimate->confirm
+        rescue/back-fill pass), ``sources`` (frozen map), ``route_status``
+        (None when non-empty), ``exit_code`` and ``candidate_count`` (pre-budget,
+        for the empty-state distinction)."""
         matched = set(_matched_destinations(spec, self.registry))
         depart = spec.depart_spec
         # depart.kind == "dates" (an explicit comma list) must not silently
@@ -483,6 +510,19 @@ class Planner:
         candidates = list(best.values())
         candidate_count = len(candidates)
 
+        # Confirm margin band: a wider (but bounded) superset of the final cut,
+        # rendered so intents.confirm() can rescue/back-fill using confirmed
+        # prices before the real budget+rank truncation below. Budget margin
+        # only widens (never tightens) the strict filter; rank cutoff is
+        # extended by a bounded extra (see _confirm_band_size).
+        if spec.budget is not None:
+            band_pool = [c for c in candidates if c.price_eur <= float(spec.budget) * BUDGET_MARGIN_FACTOR]
+        else:
+            band_pool = list(candidates)
+        band_pool.sort(key=lambda c: (c.rank_key(), c.destination))
+        band_pool = band_pool[: _confirm_band_size(spec.max_results)]
+        confirm_band = [self._render(c) for c in band_pool]
+
         # budget filter
         if spec.budget is not None:
             candidates = [c for c in candidates if c.price_eur <= float(spec.budget)]
@@ -505,6 +545,7 @@ class Planner:
 
         return {
             "results": results,
+            "confirm_band": confirm_band,
             "sources": output.project_sources(aggregated),
             "route_status": route_status,
             "exit_code": exit_code,
