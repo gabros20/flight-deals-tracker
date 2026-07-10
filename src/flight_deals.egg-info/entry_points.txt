@@ -1,2 +1,0 @@
-[console_scripts]
-flight-deals = flight_deals.cli:app
