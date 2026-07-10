@@ -231,6 +231,16 @@ class SearchSpec(BaseModel):
     def _stringify(cls, v):
         return None if v is None else str(v)
 
+    @field_validator("budget")
+    @classmethod
+    def _validate_budget(cls, v):
+        if v is not None and v < 0:
+            raise SpecError(
+                f"budget {v!r} cannot be negative",
+                'budget must be >= 0 (a EUR amount), e.g. "budget":180',
+            )
+        return v
+
     @model_validator(mode="after")
     def _validate_dsl(self):
         # These raise SpecError (with hints); parse_spec surfaces them.

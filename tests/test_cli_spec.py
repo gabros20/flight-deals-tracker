@@ -134,6 +134,16 @@ def test_run_invalid_where_exits_2_with_error_and_hint():
     assert env["error"] and env["hint"]
 
 
+# --- budget must validate non-negative (minor hardening) ------------------- #
+def test_run_negative_budget_exits_2_with_hint():
+    result = runner.invoke(app, ["run", "--spec",
+                                 '{"origins":["BUD"],"where":"seaside",'
+                                 '"depart":"2026-08-22..2026-08-24","nights":"5-8","budget":-1}'])
+    assert result.exit_code == 2
+    env = json.loads(result.output)
+    assert env["error"] and env["hint"]
+    assert "budget" in env["hint"]
+
 
 # --- partial coverage: a provider failing while another succeeds is exit 0 -
 # (controller-amended CONTRACT §3: only empty-AND-failed is exit 1) -------- #
@@ -159,6 +169,17 @@ def test_run_partial_coverage_is_exit_0_with_incomplete_summary(monkeypatch):
     assert "error" not in env and "hint" not in env
     assert env["sources"]["wizzair"] == "error"
     assert "incomplete" in env["summary"]
+
+
+# --- --spec accepts a file path (goldens dir already has committed specs) - #
+def test_plan_accepts_spec_file_path():
+    spec_path = FIXTURES.parent / "goldens" / "spec_single_dest.json"
+    result = runner.invoke(app, ["plan", "--spec", str(spec_path)])
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["estimated_calls"] >= 1
+    assert payload["calls"][0]["mode"] == "anywhere"
+
 
 def test_plan_inline_and_stdin_equivalent(monkeypatch):
     inline = runner.invoke(app, ["plan", "--spec", SEASIDE_SINGLE])
