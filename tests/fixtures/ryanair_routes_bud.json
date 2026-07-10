@@ -1,13 +1,554 @@
 {
-  "_synthetic": true,
-  "_note": "Documented shape of https://www.ryanair.com/api/views/locate/searchWidget/routes/en/airport/BUD — no live fixture was captured at contract-freeze time (Task 2). Each entry is a route object with arrivalAirport.code (IATA). Trimmed to a representative handful.",
+  "_captured_live": true,
   "_url": "https://www.ryanair.com/api/views/locate/searchWidget/routes/en/airport/BUD",
   "_status_code": 200,
+  "_truncated_to": 15,
+  "_full_size": 70,
   "body": [
-    {"arrivalAirport": {"code": "CFU", "name": "Corfu"}, "connectingAirport": null, "operator": "RYANAIR"},
-    {"arrivalAirport": {"code": "CTA", "name": "Catania"}, "connectingAirport": null, "operator": "RYANAIR"},
-    {"arrivalAirport": {"code": "AGP", "name": "Malaga"}, "connectingAirport": null, "operator": "RYANAIR"},
-    {"arrivalAirport": {"code": "STN", "name": "London Stansted"}, "connectingAirport": null, "operator": "RYANAIR"},
-    {"arrivalAirport": {"code": "PMO", "name": "Palermo"}, "connectingAirport": null, "operator": "RYANAIR"}
+    {
+      "arrivalAirport": {
+        "code": "AGP",
+        "name": "Malaga",
+        "seoName": "malaga",
+        "aliases": [],
+        "base": true,
+        "city": {
+          "name": "Malaga",
+          "code": "MALAGA"
+        },
+        "region": {
+          "name": "Costa del Sol",
+          "code": "COSTA_DE_SOL"
+        },
+        "country": {
+          "code": "es",
+          "iso3code": "ESP",
+          "name": "Spain",
+          "currency": "EUR",
+          "defaultAirportCode": "BCN",
+          "schengen": true
+        },
+        "coordinates": {
+          "latitude": 36.6749,
+          "longitude": -4.49911
+        },
+        "timeZone": "Europe/Madrid"
+      },
+      "recent": false,
+      "seasonal": false,
+      "operator": "FR",
+      "tags": []
+    },
+    {
+      "arrivalAirport": {
+        "code": "AHO",
+        "name": "Alghero",
+        "seoName": "alghero",
+        "aliases": [],
+        "base": true,
+        "city": {
+          "name": "Alghero",
+          "code": "ALGHERO"
+        },
+        "region": {
+          "name": "Sardinia",
+          "code": "SARDINIA"
+        },
+        "country": {
+          "code": "it",
+          "iso3code": "ITA",
+          "name": "Italy",
+          "currency": "EUR",
+          "defaultAirportCode": "BGY",
+          "schengen": true
+        },
+        "coordinates": {
+          "latitude": 40.6321,
+          "longitude": 8.29077
+        },
+        "timeZone": "Europe/Rome"
+      },
+      "recent": false,
+      "seasonal": false,
+      "operator": "FR",
+      "tags": []
+    },
+    {
+      "arrivalAirport": {
+        "code": "ALC",
+        "name": "Alicante",
+        "seoName": "alicante",
+        "aliases": [],
+        "base": true,
+        "city": {
+          "name": "Alicante",
+          "code": "ALICANTE"
+        },
+        "region": {
+          "name": "Costa Blanca",
+          "code": "COSTA_BLANCA"
+        },
+        "country": {
+          "code": "es",
+          "iso3code": "ESP",
+          "name": "Spain",
+          "currency": "EUR",
+          "defaultAirportCode": "BCN",
+          "schengen": true
+        },
+        "coordinates": {
+          "latitude": 38.2822,
+          "longitude": -0.558156
+        },
+        "timeZone": "Europe/Madrid"
+      },
+      "recent": false,
+      "seasonal": false,
+      "operator": "FR",
+      "tags": []
+    },
+    {
+      "arrivalAirport": {
+        "code": "AMM",
+        "name": "Amman Jordan",
+        "seoName": "amman",
+        "aliases": [],
+        "base": false,
+        "city": {
+          "name": "Amman",
+          "code": "AMMAN",
+          "macCode": "JOR"
+        },
+        "macCity": {
+          "name": "Amman",
+          "code": "AMMAN",
+          "macCode": "JOR"
+        },
+        "region": {
+          "name": "Amman Governorate",
+          "code": "AMMAN_GOVERNORATE"
+        },
+        "country": {
+          "code": "jo",
+          "iso3code": "JOR",
+          "name": "Jordan",
+          "currency": "EUR",
+          "defaultAirportCode": "AMM",
+          "schengen": false
+        },
+        "coordinates": {
+          "latitude": 31.5659,
+          "longitude": 35.5558
+        },
+        "timeZone": "Asia/Amman"
+      },
+      "recent": false,
+      "seasonal": false,
+      "operator": "FR",
+      "tags": []
+    },
+    {
+      "arrivalAirport": {
+        "code": "ARN",
+        "name": "Stockholm Arlanda",
+        "seoName": "stockholm-arlandia",
+        "aliases": [],
+        "base": true,
+        "city": {
+          "name": "Stockholm",
+          "code": "STOCKHOLM",
+          "macCode": "SLM"
+        },
+        "macCity": {
+          "name": "Stockholm",
+          "code": "STOCKHOLM",
+          "macCode": "SLM"
+        },
+        "region": {
+          "name": "Stockholm",
+          "code": "STOCKHOLM"
+        },
+        "country": {
+          "code": "se",
+          "iso3code": "SWE",
+          "name": "Sweden",
+          "currency": "SEK",
+          "defaultAirportCode": "NYO",
+          "schengen": true
+        },
+        "coordinates": {
+          "latitude": 59.6498,
+          "longitude": 17.9239
+        },
+        "timeZone": "Europe/Stockholm"
+      },
+      "recent": false,
+      "seasonal": false,
+      "operator": "FR",
+      "tags": []
+    },
+    {
+      "arrivalAirport": {
+        "code": "ATH",
+        "name": "Athens",
+        "seoName": "athens",
+        "aliases": [],
+        "base": true,
+        "city": {
+          "name": "Athens",
+          "code": "ATHENS"
+        },
+        "region": {
+          "name": "Default GR",
+          "code": "DEFAULT_GR"
+        },
+        "country": {
+          "code": "gr",
+          "iso3code": "GRC",
+          "name": "Greece",
+          "currency": "EUR",
+          "defaultAirportCode": "ATH",
+          "schengen": true
+        },
+        "coordinates": {
+          "latitude": 37.9364,
+          "longitude": 23.9445
+        },
+        "timeZone": "Europe/Athens"
+      },
+      "recent": false,
+      "seasonal": false,
+      "operator": "FR",
+      "tags": []
+    },
+    {
+      "arrivalAirport": {
+        "code": "BCN",
+        "name": "Barcelona",
+        "seoName": "barcelona-el-prat",
+        "aliases": [],
+        "base": true,
+        "city": {
+          "name": "Barcelona",
+          "code": "BARCELONA",
+          "macCode": "BAR"
+        },
+        "macCity": {
+          "name": "Barcelona",
+          "code": "BARCELONA",
+          "macCode": "BAR"
+        },
+        "region": {
+          "name": "Costa Brava",
+          "code": "COSTA_BRAVA"
+        },
+        "country": {
+          "code": "es",
+          "iso3code": "ESP",
+          "name": "Spain",
+          "currency": "EUR",
+          "defaultAirportCode": "BCN",
+          "schengen": true
+        },
+        "coordinates": {
+          "latitude": 41.2971,
+          "longitude": 2.07846
+        },
+        "timeZone": "Europe/Madrid"
+      },
+      "recent": false,
+      "seasonal": false,
+      "operator": "FR",
+      "tags": []
+    },
+    {
+      "arrivalAirport": {
+        "code": "BER",
+        "name": "Berlin Brandenburg",
+        "seoName": "brandenburg",
+        "aliases": [],
+        "base": true,
+        "city": {
+          "name": "Berlin",
+          "code": "BERLIN",
+          "macCode": "BER"
+        },
+        "macCity": {
+          "name": "Berlin",
+          "code": "BERLIN",
+          "macCode": "BER"
+        },
+        "region": {
+          "name": "Berlin-Brandenburg",
+          "code": "BERLIN-BRANDENBURG"
+        },
+        "country": {
+          "code": "de",
+          "iso3code": "DEU",
+          "name": "Germany",
+          "currency": "EUR",
+          "defaultAirportCode": "HHN",
+          "schengen": true
+        },
+        "coordinates": {
+          "latitude": 52.3667,
+          "longitude": 13.5033
+        },
+        "timeZone": "Europe/Berlin"
+      },
+      "recent": false,
+      "seasonal": false,
+      "operator": "FR",
+      "tags": []
+    },
+    {
+      "arrivalAirport": {
+        "code": "BGY",
+        "name": "Milan Bergamo",
+        "seoName": "milan-bergamo",
+        "aliases": [],
+        "base": true,
+        "city": {
+          "name": "Bergamo",
+          "code": "BERGAMO"
+        },
+        "macCity": {
+          "name": "Milan",
+          "code": "MILAN",
+          "macCode": "MIL"
+        },
+        "region": {
+          "name": "Lombardy",
+          "code": "LOMBARDY"
+        },
+        "country": {
+          "code": "it",
+          "iso3code": "ITA",
+          "name": "Italy",
+          "currency": "EUR",
+          "defaultAirportCode": "BGY",
+          "schengen": true
+        },
+        "coordinates": {
+          "latitude": 45.6739,
+          "longitude": 9.70417
+        },
+        "timeZone": "Europe/Rome"
+      },
+      "recent": false,
+      "seasonal": false,
+      "operator": "FR",
+      "tags": []
+    },
+    {
+      "arrivalAirport": {
+        "code": "BHX",
+        "name": "Birmingham",
+        "seoName": "birmingham",
+        "aliases": [],
+        "base": true,
+        "city": {
+          "name": "Birmingham",
+          "code": "BIRMINGHAM"
+        },
+        "region": {
+          "name": "England",
+          "code": "ENGLAND"
+        },
+        "country": {
+          "code": "gb",
+          "iso3code": "GBR",
+          "name": "United Kingdom",
+          "currency": "GBP",
+          "defaultAirportCode": "STN",
+          "schengen": false
+        },
+        "coordinates": {
+          "latitude": 52.4539,
+          "longitude": -1.74803
+        },
+        "timeZone": "Europe/London"
+      },
+      "recent": false,
+      "seasonal": false,
+      "operator": "FR",
+      "tags": []
+    },
+    {
+      "arrivalAirport": {
+        "code": "BLQ",
+        "name": "Bologna",
+        "seoName": "bologna",
+        "aliases": [],
+        "base": true,
+        "city": {
+          "name": "Bologna",
+          "code": "BOLOGNA"
+        },
+        "region": {
+          "name": "Emilia-Romagna",
+          "code": "EMILIA-ROMAGNA"
+        },
+        "country": {
+          "code": "it",
+          "iso3code": "ITA",
+          "name": "Italy",
+          "currency": "EUR",
+          "defaultAirportCode": "BGY",
+          "schengen": true
+        },
+        "coordinates": {
+          "latitude": 44.5354,
+          "longitude": 11.2887
+        },
+        "timeZone": "Europe/Rome"
+      },
+      "recent": false,
+      "seasonal": false,
+      "operator": "FR",
+      "tags": []
+    },
+    {
+      "arrivalAirport": {
+        "code": "BOJ",
+        "name": "Burgas",
+        "seoName": "burgas",
+        "aliases": [],
+        "base": true,
+        "city": {
+          "name": "Burgas",
+          "code": "BURGAS"
+        },
+        "region": {
+          "name": "Default BG",
+          "code": "DEFAULT_BG"
+        },
+        "country": {
+          "code": "bg",
+          "iso3code": "BGR",
+          "name": "Bulgaria",
+          "currency": "EUR",
+          "defaultAirportCode": "PDV",
+          "schengen": false
+        },
+        "coordinates": {
+          "latitude": 42.301,
+          "longitude": 27.2812
+        },
+        "timeZone": "Europe/Sofia"
+      },
+      "recent": false,
+      "seasonal": false,
+      "operator": "FR",
+      "tags": []
+    },
+    {
+      "arrivalAirport": {
+        "code": "BRI",
+        "name": "Bari",
+        "seoName": "bari",
+        "aliases": [],
+        "base": true,
+        "city": {
+          "name": "Bari",
+          "code": "BARI"
+        },
+        "region": {
+          "name": "Puglia",
+          "code": "PUGLIA"
+        },
+        "country": {
+          "code": "it",
+          "iso3code": "ITA",
+          "name": "Italy",
+          "currency": "EUR",
+          "defaultAirportCode": "BGY",
+          "schengen": true
+        },
+        "coordinates": {
+          "latitude": 41.1389,
+          "longitude": 16.7606
+        },
+        "timeZone": "Europe/Rome"
+      },
+      "recent": false,
+      "seasonal": false,
+      "operator": "FR",
+      "tags": []
+    },
+    {
+      "arrivalAirport": {
+        "code": "BRS",
+        "name": "Bristol",
+        "seoName": "bristol",
+        "aliases": [],
+        "base": true,
+        "city": {
+          "name": "Bristol",
+          "code": "BRISTOL"
+        },
+        "region": {
+          "name": "England",
+          "code": "ENGLAND"
+        },
+        "country": {
+          "code": "gb",
+          "iso3code": "GBR",
+          "name": "United Kingdom",
+          "currency": "GBP",
+          "defaultAirportCode": "STN",
+          "schengen": false
+        },
+        "coordinates": {
+          "latitude": 51.3827,
+          "longitude": -2.71909
+        },
+        "timeZone": "Europe/London"
+      },
+      "recent": false,
+      "seasonal": false,
+      "operator": "FR",
+      "tags": []
+    },
+    {
+      "arrivalAirport": {
+        "code": "BVA",
+        "name": "Paris Beauvais",
+        "seoName": "paris-beauvais",
+        "aliases": [],
+        "base": false,
+        "city": {
+          "name": "Paris",
+          "code": "PARIS",
+          "macCode": "PAR"
+        },
+        "macCity": {
+          "name": "Paris",
+          "code": "PARIS",
+          "macCode": "PAR"
+        },
+        "region": {
+          "name": "Picardy",
+          "code": "PICARDY"
+        },
+        "country": {
+          "code": "fr",
+          "iso3code": "FRA",
+          "name": "France",
+          "currency": "EUR",
+          "defaultAirportCode": "BVA",
+          "schengen": true
+        },
+        "coordinates": {
+          "latitude": 49.4544,
+          "longitude": 2.11278
+        },
+        "timeZone": "Europe/Paris"
+      },
+      "recent": false,
+      "seasonal": false,
+      "operator": "FR",
+      "tags": []
+    }
   ]
 }

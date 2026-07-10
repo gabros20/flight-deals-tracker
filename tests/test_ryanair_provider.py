@@ -95,7 +95,7 @@ def test_routes_happy():
     url = ry.ROUTES_URL.format(origin="BUD")
     responses.add(responses.GET, url, json=load_body("ryanair_routes_bud.json"), status=200)
     codes = _p().routes("BUD")
-    assert "CFU" in codes and "CTA" in codes
+    assert "AGP" in codes and "BCN" in codes  # present in the captured BUD network
     assert codes == sorted(codes)  # deterministic
 
 

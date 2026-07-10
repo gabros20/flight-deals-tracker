@@ -107,6 +107,7 @@ def load_config() -> FlightDealsConfig:
         "TELEGRAM_BOT_TOKEN": "telegram_bot_token",
         "TELEGRAM_CHAT_ID": "telegram_chat_id",
         "FLIGHT_DEALS_CACHE_TTL_HOURS": "cache_ttl_hours",
+        "FLIGHT_DEALS_HTTP_RATE": "http_rate_per_second",
         "FLIGHT_DEALS_MAX_WORKERS": "max_workers",
         "FLIGHT_DEALS_DATA_DIR": "data_dir",
         "FLIGHT_DEALS_ENABLE_CACHE": "enable_cache",
@@ -121,7 +122,7 @@ def load_config() -> FlightDealsConfig:
         if env_var not in os.environ:
             continue
         val = os.environ[env_var]
-        if field == "cache_ttl_hours":
+        if field in ("cache_ttl_hours", "http_rate_per_second"):
             try:
                 config_data[field] = float(val)
             except ValueError:
