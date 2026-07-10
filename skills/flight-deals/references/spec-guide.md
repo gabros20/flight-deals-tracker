@@ -99,6 +99,10 @@ bundles everything a review session needs, read-only, no network:
 Sanity-check any variation with `flight-deals plan --spec ...` before running
 or saving it.
 
+To run this loop on a schedule (the `searches due --agentic` → `wake` → agent
+driver, with a ready-to-cron `deploy/agentic-wake.sh`), see
+`docs/OPERATIONS.md` §4a "Agentic review".
+
 ## Failure modes
 
 - **A non-`direct` shape is refused.** `extended-origin`/`open-jaw`/`via-hub`

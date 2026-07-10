@@ -90,6 +90,35 @@ flight-deals brief --dry-run     # preview the digest chunks, offline
 so an hourly wake-up with no news stays silent while a real drop is never
 missed.
 
+## 4a. Agentic review (optional)
+
+Beside the deterministic `brief` loop there is an optional *agentic* periphery
+(SEARCH-DESIGN §6): saved searches that carry an `agent_prompt` are meant to be
+reviewed by a reasoning agent rather than just diffed against a price threshold.
+The loop is:
+
+```sh
+flight-deals searches due --agentic          # due searches carrying an agent_prompt
+# for each NAME it prints:
+flight-deals wake "$NAME"                     # read-only bundle: spec + agent_prompt
+                                              #   + last_result + history + allowed_moves
+# feed that JSON bundle to your agent, which may persist a variation with
+# `flight-deals searches add --name <name> --spec -` (idempotent).
+```
+
+`wake` reads saved state only — no network — so it is cheap to skip on a day
+with nothing due. A ready-to-cron driver is `deploy/agentic-wake.sh`:
+
+```sh
+AGENT_CMD='hermes run --skill flight-deals-review' deploy/agentic-wake.sh
+```
+
+`AGENT_CMD` is **user-specific** — it is however you invoke your agent (a
+`hermes …` or `claude …` CLI call, a script, etc.) reading the wake bundle on
+stdin. The example ships as a placeholder; the script just echoes the bundle if
+`AGENT_CMD` is unset, so you can dry-run the loop before wiring an agent in.
+Schedule it with launchd exactly like `brief` (§3), pointing at this script.
+
 ## 5. Logs
 
 ```sh
