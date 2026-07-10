@@ -10,6 +10,7 @@ import pytest
 from flight_deals.engine import brief as brief_mod
 from flight_deals.engine.planner import Planner
 from flight_deals.history import PriceHistoryStore
+from flight_deals.http import ProviderDown
 from flight_deals.models import FareLeg, FarePair
 from flight_deals.state import alert_state, searches, snapshots
 
@@ -155,6 +156,58 @@ def test_prune_pass_clears_past_dated_and_stale_state(env_dirs, monkeypatch):
 
     assert snapshots.records("old12345678") == []      # past-dated snapshot pruned
     assert searches.last_run_at("ghost") is None         # stale run stamp pruned
+
+
+def _boom(*_a, **_kw):
+    raise ProviderDown("provider unavailable")
+
+
+def test_all_providers_down_across_all_due_searches_exits_1(env_dirs):
+    """A cron day where every executed search had zero ok sources (both
+    Ryanair and Wizz down for both searches) must be red: exit 1, with
+    error=provider_error + hint on the envelope (controller ruling)."""
+    searches.add(name="bud-ath", spec={"origins": ["BUD"], "destinations": ["ATH"],
+                                       "depart": "2026-08-20..2026-08-24", "nights": "5-7"})
+    searches.add(name="bud-cfu", spec={"origins": ["BUD"], "destinations": ["CFU"],
+                                       "depart": "2026-08-20..2026-08-24", "nights": "5-7"})
+    planner = Planner()
+    planner.ryanair.roundtrip_fares = _boom
+    planner.wizz.timetable = _boom
+
+    r = _run(env_dirs, planner)
+    assert r.ran == ["bud-ath", "bud-cfu"]  # both searches actually ran
+    assert r.fired == []
+    assert r.exit_code == 1
+    assert r.envelope["error"] == "provider_error"
+    assert r.envelope["hint"]
+
+
+def test_one_search_fine_one_degraded_exits_0_with_coverage_caveat(env_dirs):
+    """A quiet day where at least one search still had a usable source stays
+    exit 0 — only an ALL-degraded day is red. The digest still names the gap
+    (CONTRACT §3 partial coverage)."""
+    searches.add(name="bud-ath", spec={"origins": ["BUD"], "destinations": ["ATH"],
+                                       "depart": "2026-08-20..2026-08-24", "nights": "5-7"})
+    searches.add(name="bud-cfu", spec={"origins": ["BUD"], "destinations": ["CFU"],
+                                       "depart": "2026-08-20..2026-08-24", "nights": "5-7"})
+
+    planner = Planner()
+    calls = {"n": 0}
+
+    def _rt(*_a, **_kw):
+        calls["n"] += 1
+        if calls["n"] == 1:  # bud-ath (runs first, sorted by name) -> fine
+            return [_farepair("ATH", 140)]
+        raise ProviderDown("ryanair unavailable")  # bud-cfu -> degraded
+
+    planner.ryanair.roundtrip_fares = _rt
+    planner.wizz.timetable = _boom  # Wizz down throughout, doesn't matter for the ruling
+
+    r = _run(env_dirs, planner)
+    assert r.ran == ["bud-ath", "bud-cfu"]
+    assert r.exit_code == 0
+    assert "error" not in r.envelope
+    assert "unavailable" in r.envelope["summary"]  # coverage caveat in the digest
 
 
 def test_nothing_due_sends_nothing(env_dirs):

@@ -368,6 +368,12 @@ Decisions locked in:
 
 ## Changelog
 
+- **2026-07-11 (Task 8 fix wave)** — `brief` exit code, ruled: exit 1 not only
+  when a search failed to even run, but ALSO when ≥1 search executed and every
+  executed search had zero ok sources (all-providers-down day; envelope then
+  carries `error=provider_error` + `hint`) — a quiet day (sources ok, no
+  alerts) is unaffected and stays exit 0.
+
 - **2026-07-11 (Task 8)** — Additive, backward-compatible extensions for the
   monitoring loop; no frozen field changed shape:
   - `SearchSpec` gains an **optional** `destinations` list (upper-case IATAs) so

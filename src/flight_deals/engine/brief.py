@@ -45,6 +45,11 @@ logger = logging.getLogger(__name__)
 
 MAX_MOVERS = 5
 
+# Statuses that mean a provider's data was usable this run (CONTRACT §1
+# sources enum) — mirrors orchestrator.aggregate_status's ok_statuses / the
+# inverse of intents._SOURCE_FAILURE_STATUSES.
+_SOURCE_OK_STATUSES = {"ok", "version_refreshed"}
+
 
 class BriefResult:
     """Outcome of one brief run: the envelope, an exit code, and the fired
@@ -126,6 +131,10 @@ def run_brief(
     movers: List[Tuple[float, Dict[str, Any]]] = []  # (drop_amount, deal)
     ran: List[str] = []
     n_searches_failed = 0
+    # True as long as every search that actually ran had zero ok sources (an
+    # all-providers-down day). Flips False the moment one executed search's
+    # own sources show at least one ok/version_refreshed provider.
+    all_ran_degraded = True
 
     for record in due:
         name = record["name"]
@@ -155,8 +164,15 @@ def run_brief(
         ran.append(name)
         searches.stamp_run(name, now)
 
+        # This search's own sources, before the cross-search merge below —
+        # used to detect an all-providers-down day (every executed search had
+        # zero ok sources), independent of what any other search reported.
+        local_sources = env.get("sources", {})
+        if any(status in _SOURCE_OK_STATUSES for status in local_sources.values()):
+            all_ran_degraded = False
+
         # Merge per-provider status (a failure anywhere sticks — worst wins).
-        for prov, status in env.get("sources", {}).items():
+        for prov, status in local_sources.items():
             if prov not in sources or status != "ok":
                 sources[prov] = status
 
@@ -208,7 +224,24 @@ def run_brief(
     results = fired + mover_deals
 
     summary = _digest_summary(len(due), ran, fired, mover_deals, sources)
-    envelope = output.envelope(results=results, summary=summary, sources=sources, next=[])
+
+    # Exit code: a search failing to even run is a real problem (exit 1); a
+    # provider hiccup that still produced deals is not (the digest names it).
+    # ALSO exit 1 when at least one search ran but every one of them had zero
+    # ok sources — an all-providers-down cron day where nothing could actually
+    # be checked must be red, not a quiet exit 0 (controller ruling). A quiet
+    # day (sources ok, simply no alerts) is unaffected and stays exit 0.
+    error = hint = None
+    if n_searches_failed and not ran:
+        exit_code = 1
+    elif ran and all_ran_degraded:
+        exit_code = 1
+        error = "provider_error"
+        hint = "the next scheduled run will retry; or re-run with --fresh"
+    else:
+        exit_code = 0
+
+    envelope = output.envelope(results=results, summary=summary, sources=sources, next=[], error=error, hint=hint)
     envelope["brief"] = {
         "searches_due": len(due),
         "searches_ran": ran,
@@ -216,9 +249,6 @@ def run_brief(
         "movers": len(mover_deals),
     }
 
-    # Exit code: a search failing to even run is a real problem (exit 1); a
-    # provider hiccup that still produced deals is not (the digest names it).
-    exit_code = 1 if (n_searches_failed and not ran) else 0
     return BriefResult(envelope, exit_code, fired, ran)
 
 
