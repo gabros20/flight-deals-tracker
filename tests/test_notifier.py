@@ -24,6 +24,24 @@ def test_chunk_hard_splits_an_overlong_single_line():
     assert "".join(chunks) == "z" * (CHUNK_LIMIT * 2 + 10)
 
 
+def test_chunk_never_splits_an_html_tag_or_entity():
+    """A long line of ``<a href>`` deep links (with an ``&amp;`` entity in each
+    URL) must chunk on the spaces between links, never mid-tag or mid-entity —
+    otherwise HTML parse mode 400s the send."""
+    links = [
+        f'<a href="https://x.example/a?b=1&amp;c={i}">link{i}</a>' for i in range(40)
+    ]
+    line = " ".join(links)
+    chunks = chunk_message(line, limit=120)
+    assert len(chunks) > 1
+    for c in chunks:
+        assert len(c) <= 120
+        # balanced angle brackets => no tag was cut in half
+        assert c.count("<") == c.count(">")
+        # every '&' is a whole '&amp;' => no entity was cut
+        assert c.count("&") == c.count("&amp;")
+
+
 def test_dry_run_prints_chunks_and_does_not_send(capsys):
     n = TelegramNotifier(token="t", chat_id="c")
     assert n.send("hello\nworld", dry_run=True) is True

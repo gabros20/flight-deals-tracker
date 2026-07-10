@@ -31,19 +31,62 @@ TELEGRAM_API = "https://api.telegram.org"
 CHUNK_LIMIT = 3500  # under the 4096 hard cap, room for HTML entity expansion
 
 
+def _split_long_line(line: str, limit: int) -> List[str]:
+    """Split a single over-``limit`` line, breaking at the last space BEFORE the
+    limit that is NOT inside an HTML tag (``<...>``) or entity (``&...;``) — a
+    naive ``line[:limit]`` could cut through a ``<a href>`` deep link and 400 the
+    send under HTML parse mode. A hard split at the limit is the fallback ONLY
+    when a single token (no safe space) already exceeds it."""
+    pieces: List[str] = []
+    while len(line) > limit:
+        inside_tag = inside_ent = False
+        ent_start = 0
+        last_space = -1
+        for i, ch in enumerate(line[:limit]):
+            if inside_tag:
+                if ch == ">":
+                    inside_tag = False
+                continue
+            if inside_ent:
+                if ch == ";":
+                    inside_ent = False
+                    continue
+                if ch != " " and (i - ent_start) <= 12:
+                    continue
+                inside_ent = False  # a bare '&', not an entity — fall through
+            if ch == "<":
+                inside_tag = True
+            elif ch == "&":
+                inside_ent = True
+                ent_start = i
+            elif ch == " ":
+                last_space = i
+        if last_space > 0:
+            pieces.append(line[:last_space])
+            line = line[last_space + 1:]  # drop the break space
+        else:  # single token longer than the limit: unavoidable hard split
+            pieces.append(line[:limit])
+            line = line[limit:]
+    if line:
+        pieces.append(line)
+    return pieces
+
+
 def chunk_message(text: str, limit: int = CHUNK_LIMIT) -> List[str]:
     """Split ``text`` into <=``limit``-char chunks on line boundaries. A single
-    line longer than ``limit`` is hard-split so no chunk ever exceeds the cap."""
+    line longer than ``limit`` is split by :func:`_split_long_line` so a chunk
+    never cuts through an HTML tag/entity (falling back to a hard split only for
+    a single over-long token)."""
     chunks: List[str] = []
     current = ""
     for line in text.split("\n"):
-        while len(line) > limit:
-            # A pathologically long single line: hard-split it.
+        if len(line) > limit:
+            pieces = _split_long_line(line, limit)
             if current:
                 chunks.append(current)
                 current = ""
-            chunks.append(line[:limit])
-            line = line[limit:]
+            chunks.extend(pieces[:-1])  # all but the last are complete chunks
+            line = pieces[-1]
         candidate = line if not current else current + "\n" + line
         if len(candidate) > limit:
             chunks.append(current)
