@@ -55,6 +55,21 @@ class ProviderDown(ProviderError):
     """5xx or a network/connection error that survived all retries."""
 
 
+class UnexpectedStatus(ProviderDown):
+    """
+    A non-retryable, unexpected HTTP status (a 4xx that isn't 403/429 — e.g. a
+    404 or 400). Subclasses ``ProviderDown`` so callers that only care that the
+    call failed still treat it as a provider outage, but it carries ``.status``
+    so a provider can react to a *specific* code — e.g. Wizz treats a 404/400 on
+    its versioned timetable path as a signal to re-discover the API version and
+    retry once (Task 4).
+    """
+
+    def __init__(self, status: int, message: str = ""):
+        self.status = status
+        super().__init__(message or f"unexpected status {status}")
+
+
 class SchemaError(ProviderError):
     """
     A 200 response whose body didn't match the shape the provider expected.
@@ -171,23 +186,27 @@ def _default_headers() -> Dict[str, str]:
 # --------------------------------------------------------------------------- #
 # The one entry point                                                        #
 # --------------------------------------------------------------------------- #
-def get_json(
+def _request(
+    method: str,
     url: str,
-    params: Optional[Dict[str, Any]] = None,
     *,
+    params: Optional[Dict[str, Any]] = None,
+    json_body: Any = None,
     headers: Optional[Dict[str, str]] = None,
     timeout: float = 15.0,
     max_retries: int = 3,
     backoff_base: float = 0.5,
-) -> Any:
+) -> requests.Response:
     """
-    Rate-limited GET returning parsed JSON. Retries 429/5xx up to ``max_retries``
-    with exponential backoff, then raises the appropriate typed exception.
+    Shared rate-limited request core for ``get_json`` / ``post_json`` /
+    ``get_text``. Retries 429/5xx up to ``max_retries`` with exponential
+    backoff, then raises the appropriate typed exception. Returns the raw 200
+    ``Response`` for the caller to decode (JSON vs text is the wrapper's job).
 
     * 403                       -> ``Blocked`` immediately (retrying won't help).
     * 429 exhausted             -> ``RateLimited``.
     * 5xx / network exhausted   -> ``ProviderDown``.
-    * 200 but not JSON          -> ``SchemaError`` (body isn't what we asked for).
+    * other 4xx (404/400/…)     -> ``UnexpectedStatus`` (carries ``.status``).
     """
     merged_headers = _default_headers()
     if headers:
@@ -197,7 +216,10 @@ def get_json(
     for attempt in range(max_retries + 1):
         _BUCKET.acquire()
         try:
-            resp = _session().get(url, params=params, headers=merged_headers, timeout=timeout)
+            resp = _session().request(
+                method, url, params=params, json=json_body,
+                headers=merged_headers, timeout=timeout,
+            )
         except requests.RequestException as e:
             # Connection reset, DNS, timeout, etc. Retry, then give up.
             if attempt < max_retries:
@@ -211,10 +233,7 @@ def get_json(
         last_status = status
 
         if status == 200:
-            try:
-                return resp.json()
-            except ValueError as e:
-                raise SchemaError(f"200 from {url} but body was not JSON: {e}") from e
+            return resp
 
         if status == 403:
             raise Blocked(403, f"{url} returned 403 (fingerprinted/blocked)")
@@ -229,8 +248,76 @@ def get_json(
                 raise RateLimited(f"{url} returned 429 after {max_retries} retries")
             raise ProviderDown(f"{url} returned {status} after {max_retries} retries")
 
-        # Any other 4xx: not retryable, not a rate limit.
-        raise ProviderDown(f"{url} returned unexpected status {status}")
+        # Any other 4xx: not retryable, not a rate limit. Carries the status so
+        # a provider (e.g. Wizz) can act on a specific code like 404.
+        raise UnexpectedStatus(status, f"{url} returned unexpected status {status}")
 
     # Unreachable, but keeps type-checkers happy.
     raise ProviderDown(f"{url} exhausted retries (last status {last_status})")
+
+
+def _decode_json(resp: requests.Response) -> Any:
+    try:
+        return resp.json()
+    except ValueError as e:
+        raise SchemaError(f"200 from {resp.url} but body was not JSON: {e}") from e
+
+
+def get_json(
+    url: str,
+    params: Optional[Dict[str, Any]] = None,
+    *,
+    headers: Optional[Dict[str, str]] = None,
+    timeout: float = 15.0,
+    max_retries: int = 3,
+    backoff_base: float = 0.5,
+) -> Any:
+    """Rate-limited GET returning parsed JSON (200 but not JSON -> ``SchemaError``)."""
+    resp = _request(
+        "GET", url, params=params, headers=headers, timeout=timeout,
+        max_retries=max_retries, backoff_base=backoff_base,
+    )
+    return _decode_json(resp)
+
+
+def post_json(
+    url: str,
+    json_body: Any = None,
+    *,
+    headers: Optional[Dict[str, str]] = None,
+    timeout: float = 15.0,
+    max_retries: int = 3,
+    backoff_base: float = 0.5,
+) -> Any:
+    """
+    Rate-limited POST of a JSON body returning parsed JSON. Same token bucket,
+    retries and typed exceptions as ``get_json`` — the Wizz timetable endpoint
+    is a POST (Task 4). A non-retryable 4xx (e.g. a version-drift 404) raises
+    ``UnexpectedStatus`` carrying ``.status`` so the caller can react.
+    """
+    resp = _request(
+        "POST", url, json_body=json_body, headers=headers, timeout=timeout,
+        max_retries=max_retries, backoff_base=backoff_base,
+    )
+    return _decode_json(resp)
+
+
+def get_text(
+    url: str,
+    params: Optional[Dict[str, Any]] = None,
+    *,
+    headers: Optional[Dict[str, str]] = None,
+    timeout: float = 15.0,
+    max_retries: int = 3,
+    backoff_base: float = 0.5,
+) -> str:
+    """
+    Rate-limited GET returning the raw response text (not JSON). Used by Wizz
+    version auto-discovery, which scrapes ``be.wizzair.com/{X.Y.Z}`` out of the
+    timetable page HTML.
+    """
+    resp = _request(
+        "GET", url, params=params, headers=headers, timeout=timeout,
+        max_retries=max_retries, backoff_base=backoff_base,
+    )
+    return resp.text

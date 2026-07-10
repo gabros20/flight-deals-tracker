@@ -133,3 +133,48 @@ def test_session_is_per_thread():
 def test_user_agents_present():
     assert 2 <= len(http.USER_AGENTS) <= 3
     assert all("Mozilla/5.0" in ua for ua in http.USER_AGENTS)
+
+
+# --------------------------------------------------------------------------- #
+# post_json / get_text / UnexpectedStatus (Task 4)                            #
+# --------------------------------------------------------------------------- #
+@responses.activate
+def test_post_json_sends_body_and_returns_json():
+    from flight_deals.http import post_json
+
+    responses.add(responses.POST, URL, json={"ok": True}, status=200)
+    out = post_json(URL, {"hello": "world"}, headers={"X-Test": "1"})
+    assert out == {"ok": True}
+    sent = responses.calls[0].request
+    assert sent.method == "POST"
+    assert b"hello" in sent.body
+    assert sent.headers["X-Test"] == "1"
+
+
+@responses.activate
+def test_post_json_404_raises_unexpected_status_with_code():
+    from flight_deals.http import UnexpectedStatus, post_json
+
+    responses.add(responses.POST, URL, body="<html>404</html>", status=404)
+    with pytest.raises(UnexpectedStatus) as ei:
+        post_json(URL, {"x": 1})
+    assert ei.value.status == 404
+    # UnexpectedStatus is a ProviderDown so generic callers still treat it as an outage.
+    assert isinstance(ei.value, ProviderDown)
+
+
+@responses.activate
+def test_post_json_retries_5xx_then_succeeds():
+    from flight_deals.http import post_json
+
+    responses.add(responses.POST, URL, json={}, status=503)
+    responses.add(responses.POST, URL, json={"ok": 1}, status=200)
+    assert post_json(URL, {"a": 1}) == {"ok": 1}
+
+
+@responses.activate
+def test_get_text_returns_raw_body():
+    from flight_deals.http import get_text
+
+    responses.add(responses.GET, URL, body="be.wizzair.com/29.6.0", status=200)
+    assert "29.6.0" in get_text(URL)
