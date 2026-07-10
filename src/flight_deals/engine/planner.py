@@ -135,6 +135,13 @@ def _matched_destinations(spec, registry: DestinationRegistry) -> List[str]:
         matched = {a.iata for a in airports}
     else:
         matched = {a.iata for a in registry.airports}
+    # A route watch pins one (or a few) specific destinations (SavedSearch,
+    # Task 8): intersect so RT-ANYWHERE results and the TT fan-out are both
+    # restricted to exactly those routes. ``destinations=None`` keeps the
+    # existing category behaviour byte-identical.
+    dests = getattr(spec, "destinations", None)
+    if dests:
+        matched &= {d.upper() for d in dests}
     return sorted(matched - origins)
 
 

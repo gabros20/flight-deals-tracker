@@ -118,6 +118,41 @@ def run_search(
     _validate_not_past(spec.depart_spec, today)
 
     planner = planner or Planner(registry=registry)
+    return execute_spec(
+        spec,
+        planner=planner,
+        registry=registry,
+        history_store=history_store,
+        snapshotter=snapshotter,
+        now=now,
+        do_confirm=do_confirm,
+        fresh=fresh,
+        max_calls=max_calls,
+    )
+
+
+def execute_spec(
+    spec,
+    *,
+    planner: Planner,
+    registry: Optional[DestinationRegistry] = None,
+    history_store: Any = None,
+    snapshotter: Callable[..., Any] = snapshots.snapshot,
+    now: Optional[datetime] = None,
+    do_confirm: bool = True,
+    fresh: bool = False,
+    max_calls: int = 40,
+) -> Tuple[Dict[str, Any], int]:
+    """Run an already-parsed ``SearchSpec`` through the full intent pipeline
+    (planner → estimate→confirm → history enrich → snapshot → envelope) and
+    return ``(envelope, exit_code)``.
+
+    Split out of :func:`run_search` so ``brief`` (Task 8) can drive a saved
+    search's stored spec through the identical path — one pipeline, no second
+    code path — without going through the intent-flag validation that only the
+    interactive verbs need."""
+    now = now or datetime.now(timezone.utc)
+
     plan = planner.compile(spec)
     check_max_calls(plan, max_calls)  # PlannerRefusal -> exit 2 in CLI
     outcome = planner.execute(plan, spec, fresh=fresh)

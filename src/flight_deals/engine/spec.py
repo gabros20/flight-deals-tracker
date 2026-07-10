@@ -184,6 +184,7 @@ class SearchSpec(BaseModel):
 
     origins: List[str] = Field(default_factory=lambda: ["BUD"])
     where: Optional[str] = None
+    destinations: Optional[List[str]] = None  # explicit route watch: restrict to these IATAs
     depart: str
     nights: Optional[str] = None
     shapes: List[Shape] = Field(default_factory=lambda: ["direct"])
@@ -211,6 +212,21 @@ class SearchSpec(BaseModel):
                 )
             out.append(o)
         return out
+
+    @field_validator("destinations", mode="before")
+    @classmethod
+    def _norm_destinations(cls, v):
+        if v is None:
+            return None
+        if isinstance(v, str):
+            v = [v]
+        out = []
+        for d in v:
+            d = str(d).strip().upper()
+            if len(d) != _IATA_LEN or not d.isalpha():
+                raise ValueError(f"destination {d!r} is not a 3-letter IATA code (e.g. CFU)")
+            out.append(d)
+        return out or None
 
     @field_validator("carriers", mode="before")
     @classmethod
