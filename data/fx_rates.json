@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "base": "EUR",
+  "as_of": "2026-07-01",
+  "source": "seed (frankfurter.app / ECB reference rates); refresh via scripts/refresh_fx.py",
+  "note": "EUR-base rates: 1 EUR = <rate> units of the listed currency. Wizz BUD fares arrive in HUF.",
+  "rates": {
+    "HUF": 395.0,
+    "PLN": 4.30,
+    "CZK": 25.20,
+    "RON": 4.97,
+    "GBP": 0.85,
+    "CHF": 0.94,
+    "BGN": 1.9558,
+    "SEK": 11.30,
+    "NOK": 11.60,
+    "DKK": 7.46
+  }
+}
