@@ -368,6 +368,17 @@ Decisions locked in:
 
 ## Changelog
 
+- **2026-07-11 (Task 8)** — Additive, backward-compatible extensions for the
+  monitoring loop; no frozen field changed shape:
+  - `SearchSpec` gains an **optional** `destinations` list (upper-case IATAs) so
+    a single-route watch (`BUD-CFU`) can pin the planner to one route. Absent on
+    every existing spec, so category plans/envelopes stay byte-identical.
+  - `brief`'s envelope carries an extra top-level **`brief`** object
+    (`searches_due`, `searches_ran`, `alerts`, `movers`) alongside the standard
+    envelope fields — a convenience summary for the digest, ignorable by any
+    consumer that doesn't know it. `results` on a brief run = alerting deals +
+    top movers; `summary` is the digest sentence.
+
 - **2026-07-10 (Task 7)** — Two **additive, optional** Deal fields (present
   only on the intent verbs `getaway`/`oneway`, never on the deterministic
   `run`/`plan` path, so existing envelopes stay byte-identical):
