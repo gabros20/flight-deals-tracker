@@ -2,7 +2,6 @@
 __pycache__/
 *.pyc
 .pytest_cache/
-data/price_history.csv
 .env
 *.log
 data/cache/
