@@ -1,0 +1,23 @@
+{
+  "_captured_live": true,
+  "_url": "https://www.ryanair.com/api/farfnd/v4/roundTripFares",
+  "_params": {
+    "departureAirportIataCode": "BUD",
+    "arrivalAirportIataCode": "JFK",
+    "outboundDepartureDateFrom": "2026-08-22",
+    "outboundDepartureDateTo": "2026-08-22",
+    "inboundDepartureDateFrom": "2026-08-27",
+    "inboundDepartureDateTo": "2026-08-27",
+    "currency": "EUR",
+    "market": "en-gb",
+    "adults": 1
+  },
+  "_status_code": 200,
+  "body": {
+    "arrivalAirportCategories": null,
+    "fares": [],
+    "nextPage": null,
+    "size": 0
+  },
+  "_raw_text_on_parse_failure": null
+}

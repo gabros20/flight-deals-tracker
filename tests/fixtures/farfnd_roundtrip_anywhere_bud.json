@@ -1,0 +1,1796 @@
+{
+  "_captured_live": true,
+  "_url": "https://www.ryanair.com/api/farfnd/v4/roundTripFares",
+  "_params": {
+    "departureAirportIataCode": "BUD",
+    "outboundDepartureDateFrom": "2026-08-22",
+    "outboundDepartureDateTo": "2026-08-24",
+    "inboundDepartureDateFrom": "2026-08-27",
+    "inboundDepartureDateTo": "2026-09-02",
+    "durationFrom": 5,
+    "durationTo": 8,
+    "currency": "EUR",
+    "market": "en-gb",
+    "adults": 1
+  },
+  "_status_code": 200,
+  "body": {
+    "arrivalAirportCategories": null,
+    "fares": [
+      {
+        "outbound": {
+          "departureAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Bulgaria",
+            "iataCode": "SOF",
+            "name": "Sofia",
+            "seoName": "sofia",
+            "city": {
+              "code": "SOFIA",
+              "countryCode": "bg",
+              "name": "Sofia"
+            }
+          },
+          "departureDate": "2026-08-22T21:40:00",
+          "arrivalDate": "2026-08-23T00:05:00",
+          "price": {
+            "value": 17.4,
+            "valueMainUnit": "17",
+            "valueFractionalUnit": "40",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~5642~ ~~BUD~08/22/2026 21:40~SOF~08/23/2026 00:05~~",
+          "flightNumber": "FR5642",
+          "previousPrice": null,
+          "priceUpdated": 1783690237000
+        },
+        "inbound": {
+          "departureAirport": {
+            "countryName": "Bulgaria",
+            "iataCode": "SOF",
+            "name": "Sofia",
+            "seoName": "sofia",
+            "city": {
+              "code": "SOFIA",
+              "countryCode": "bg",
+              "name": "Sofia"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "departureDate": "2026-08-29T20:55:00",
+          "arrivalDate": "2026-08-29T21:15:00",
+          "price": {
+            "value": 16.99,
+            "valueMainUnit": "16",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~5643~ ~~SOF~08/29/2026 20:55~BUD~08/29/2026 21:15~~",
+          "flightNumber": "FR5643",
+          "previousPrice": null,
+          "priceUpdated": 1783703552000
+        },
+        "summary": {
+          "price": {
+            "value": 34.39,
+            "valueMainUnit": "34",
+            "valueFractionalUnit": "39",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "previousPrice": null,
+          "newRoute": false,
+          "tripDurationDays": 7
+        }
+      },
+      {
+        "outbound": {
+          "departureAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Poland",
+            "iataCode": "KTW",
+            "name": "Katowice",
+            "seoName": "katowice",
+            "city": {
+              "code": "KATOWICE",
+              "countryCode": "pl",
+              "name": "Katowice"
+            }
+          },
+          "departureDate": "2026-08-24T05:45:00",
+          "arrivalDate": "2026-08-24T06:45:00",
+          "price": {
+            "value": 21.77,
+            "valueMainUnit": "21",
+            "valueFractionalUnit": "77",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~9785~ ~~BUD~08/24/2026 05:45~KTW~08/24/2026 06:45~~",
+          "flightNumber": "FR9785",
+          "previousPrice": null,
+          "priceUpdated": 1783683206000
+        },
+        "inbound": {
+          "departureAirport": {
+            "countryName": "Poland",
+            "iataCode": "KTW",
+            "name": "Katowice",
+            "seoName": "katowice",
+            "city": {
+              "code": "KATOWICE",
+              "countryCode": "pl",
+              "name": "Katowice"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "departureDate": "2026-08-31T07:10:00",
+          "arrivalDate": "2026-08-31T08:15:00",
+          "price": {
+            "value": 16.97,
+            "valueMainUnit": "16",
+            "valueFractionalUnit": "97",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~9786~ ~~KTW~08/31/2026 07:10~BUD~08/31/2026 08:15~~",
+          "flightNumber": "FR9786",
+          "previousPrice": null,
+          "priceUpdated": 1783683457000
+        },
+        "summary": {
+          "price": {
+            "value": 38.74,
+            "valueMainUnit": "38",
+            "valueFractionalUnit": "74",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "previousPrice": null,
+          "newRoute": true,
+          "tripDurationDays": 7
+        }
+      },
+      {
+        "outbound": {
+          "departureAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Poland",
+            "iataCode": "WMI",
+            "name": "Warsaw Modlin",
+            "seoName": "warsaw-modlin",
+            "city": {
+              "code": "WARSAW",
+              "countryCode": "pl",
+              "macCode": "WWA",
+              "name": "Warsaw"
+            }
+          },
+          "departureDate": "2026-08-24T05:45:00",
+          "arrivalDate": "2026-08-24T07:05:00",
+          "price": {
+            "value": 25.09,
+            "valueMainUnit": "25",
+            "valueFractionalUnit": "09",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~1923~ ~~BUD~08/24/2026 05:45~WMI~08/24/2026 07:05~~",
+          "flightNumber": "FR1923",
+          "previousPrice": null,
+          "priceUpdated": 1783683206000
+        },
+        "inbound": {
+          "departureAirport": {
+            "countryName": "Poland",
+            "iataCode": "WMI",
+            "name": "Warsaw Modlin",
+            "seoName": "warsaw-modlin",
+            "city": {
+              "code": "WARSAW",
+              "countryCode": "pl",
+              "macCode": "WWA",
+              "name": "Warsaw"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "departureDate": "2026-08-31T07:30:00",
+          "arrivalDate": "2026-08-31T08:50:00",
+          "price": {
+            "value": 19.15,
+            "valueMainUnit": "19",
+            "valueFractionalUnit": "15",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~1922~ ~~WMI~08/31/2026 07:30~BUD~08/31/2026 08:50~~",
+          "flightNumber": "FR1922",
+          "previousPrice": null,
+          "priceUpdated": 1783695602000
+        },
+        "summary": {
+          "price": {
+            "value": 44.24,
+            "valueMainUnit": "44",
+            "valueFractionalUnit": "24",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "previousPrice": null,
+          "newRoute": true,
+          "tripDurationDays": 7
+        }
+      },
+      {
+        "outbound": {
+          "departureAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Croatia",
+            "iataCode": "ZAD",
+            "name": "Zadar",
+            "seoName": "zadar",
+            "city": {
+              "code": "ZADAR",
+              "countryCode": "hr",
+              "name": "Zadar"
+            }
+          },
+          "departureDate": "2026-08-23T20:05:00",
+          "arrivalDate": "2026-08-23T21:20:00",
+          "price": {
+            "value": 19.99,
+            "valueMainUnit": "19",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~6521~ ~~BUD~08/23/2026 20:05~ZAD~08/23/2026 21:20~~",
+          "flightNumber": "FR6521",
+          "previousPrice": null,
+          "priceUpdated": 1783697606000
+        },
+        "inbound": {
+          "departureAirport": {
+            "countryName": "Croatia",
+            "iataCode": "ZAD",
+            "name": "Zadar",
+            "seoName": "zadar",
+            "city": {
+              "code": "ZADAR",
+              "countryCode": "hr",
+              "name": "Zadar"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "departureDate": "2026-08-29T07:25:00",
+          "arrivalDate": "2026-08-29T08:35:00",
+          "price": {
+            "value": 26.67,
+            "valueMainUnit": "26",
+            "valueFractionalUnit": "67",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~6522~ ~~ZAD~08/29/2026 07:25~BUD~08/29/2026 08:35~~",
+          "flightNumber": "FR6522",
+          "previousPrice": null,
+          "priceUpdated": 1783697420000
+        },
+        "summary": {
+          "price": {
+            "value": 46.66,
+            "valueMainUnit": "46",
+            "valueFractionalUnit": "66",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "previousPrice": null,
+          "newRoute": false,
+          "tripDurationDays": 6
+        }
+      },
+      {
+        "outbound": {
+          "departureAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Italy",
+            "iataCode": "MXP",
+            "name": "Milan Malpensa",
+            "seoName": "milan-malpensa",
+            "city": {
+              "code": "MILAN",
+              "countryCode": "it",
+              "macCode": "MIL",
+              "name": "Milan"
+            }
+          },
+          "departureDate": "2026-08-23T10:30:00",
+          "arrivalDate": "2026-08-23T12:15:00",
+          "price": {
+            "value": 28.99,
+            "valueMainUnit": "28",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~8325~ ~~BUD~08/23/2026 10:30~MXP~08/23/2026 12:15~~",
+          "flightNumber": "FR8325",
+          "previousPrice": null,
+          "priceUpdated": 1783697633000
+        },
+        "inbound": {
+          "departureAirport": {
+            "countryName": "Italy",
+            "iataCode": "MXP",
+            "name": "Milan Malpensa",
+            "seoName": "milan-malpensa",
+            "city": {
+              "code": "MILAN",
+              "countryCode": "it",
+              "macCode": "MIL",
+              "name": "Milan"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "departureDate": "2026-08-31T15:05:00",
+          "arrivalDate": "2026-08-31T16:45:00",
+          "price": {
+            "value": 17.99,
+            "valueMainUnit": "17",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~8326~ ~~MXP~08/31/2026 15:05~BUD~08/31/2026 16:45~~",
+          "flightNumber": "FR8326",
+          "previousPrice": null,
+          "priceUpdated": 1783692842000
+        },
+        "summary": {
+          "price": {
+            "value": 46.98,
+            "valueMainUnit": "46",
+            "valueFractionalUnit": "98",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "previousPrice": null,
+          "newRoute": false,
+          "tripDurationDays": 8
+        }
+      },
+      {
+        "outbound": {
+          "departureAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Germany",
+            "iataCode": "BER",
+            "name": "Berlin Brandenburg",
+            "seoName": "brandenburg",
+            "city": {
+              "code": "BERLIN",
+              "countryCode": "de",
+              "macCode": "BER",
+              "name": "Berlin"
+            }
+          },
+          "departureDate": "2026-08-24T06:20:00",
+          "arrivalDate": "2026-08-24T07:50:00",
+          "price": {
+            "value": 25.99,
+            "valueMainUnit": "25",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~ 197~ ~~BUD~08/24/2026 06:20~BER~08/24/2026 07:50~~",
+          "flightNumber": "FR197",
+          "previousPrice": null,
+          "priceUpdated": 1783696058000
+        },
+        "inbound": {
+          "departureAirport": {
+            "countryName": "Germany",
+            "iataCode": "BER",
+            "name": "Berlin Brandenburg",
+            "seoName": "brandenburg",
+            "city": {
+              "code": "BERLIN",
+              "countryCode": "de",
+              "macCode": "BER",
+              "name": "Berlin"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "departureDate": "2026-08-31T08:20:00",
+          "arrivalDate": "2026-08-31T09:50:00",
+          "price": {
+            "value": 24.89,
+            "valueMainUnit": "24",
+            "valueFractionalUnit": "89",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~ 196~ ~~BER~08/31/2026 08:20~BUD~08/31/2026 09:50~~",
+          "flightNumber": "FR196",
+          "previousPrice": null,
+          "priceUpdated": 1783683112000
+        },
+        "summary": {
+          "price": {
+            "value": 50.88,
+            "valueMainUnit": "50",
+            "valueFractionalUnit": "88",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "previousPrice": null,
+          "newRoute": false,
+          "tripDurationDays": 7
+        }
+      },
+      {
+        "outbound": {
+          "departureAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Italy",
+            "iataCode": "CIA",
+            "name": "Rome Ciampino",
+            "seoName": "rome-ciampino",
+            "city": {
+              "code": "ROME",
+              "countryCode": "it",
+              "macCode": "ROM",
+              "name": "Rome"
+            }
+          },
+          "departureDate": "2026-08-23T06:20:00",
+          "arrivalDate": "2026-08-23T08:00:00",
+          "price": {
+            "value": 32.54,
+            "valueMainUnit": "32",
+            "valueFractionalUnit": "54",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~6515~ ~~BUD~08/23/2026 06:20~CIA~08/23/2026 08:00~~",
+          "flightNumber": "FR6515",
+          "previousPrice": null,
+          "priceUpdated": 1783697591000
+        },
+        "inbound": {
+          "departureAirport": {
+            "countryName": "Italy",
+            "iataCode": "CIA",
+            "name": "Rome Ciampino",
+            "seoName": "rome-ciampino",
+            "city": {
+              "code": "ROME",
+              "countryCode": "it",
+              "macCode": "ROM",
+              "name": "Rome"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "departureDate": "2026-08-31T09:00:00",
+          "arrivalDate": "2026-08-31T10:40:00",
+          "price": {
+            "value": 21.99,
+            "valueMainUnit": "21",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~6516~ ~~CIA~08/31/2026 09:00~BUD~08/31/2026 10:40~~",
+          "flightNumber": "FR6516",
+          "previousPrice": null,
+          "priceUpdated": 1783695856000
+        },
+        "summary": {
+          "price": {
+            "value": 54.53,
+            "valueMainUnit": "54",
+            "valueFractionalUnit": "53",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "previousPrice": null,
+          "newRoute": false,
+          "tripDurationDays": 8
+        }
+      },
+      {
+        "outbound": {
+          "departureAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Croatia",
+            "iataCode": "DBV",
+            "name": "Dubrovnik",
+            "seoName": "dubrovnik",
+            "city": {
+              "code": "DUBROVNIK",
+              "countryCode": "hr",
+              "name": "Dubrovnik"
+            }
+          },
+          "departureDate": "2026-08-23T18:45:00",
+          "arrivalDate": "2026-08-23T20:00:00",
+          "price": {
+            "value": 21.99,
+            "valueMainUnit": "21",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~2488~ ~~BUD~08/23/2026 18:45~DBV~08/23/2026 20:00~~",
+          "flightNumber": "FR2488",
+          "previousPrice": null,
+          "priceUpdated": 1783695805000
+        },
+        "inbound": {
+          "departureAirport": {
+            "countryName": "Croatia",
+            "iataCode": "DBV",
+            "name": "Dubrovnik",
+            "seoName": "dubrovnik",
+            "city": {
+              "code": "DUBROVNIK",
+              "countryCode": "hr",
+              "name": "Dubrovnik"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "departureDate": "2026-08-30T20:25:00",
+          "arrivalDate": "2026-08-30T21:35:00",
+          "price": {
+            "value": 34.23,
+            "valueMainUnit": "34",
+            "valueFractionalUnit": "23",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~2489~ ~~DBV~08/30/2026 20:25~BUD~08/30/2026 21:35~~",
+          "flightNumber": "FR2489",
+          "previousPrice": null,
+          "priceUpdated": 1783704895000
+        },
+        "summary": {
+          "price": {
+            "value": 56.22,
+            "valueMainUnit": "56",
+            "valueFractionalUnit": "22",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "previousPrice": null,
+          "newRoute": true,
+          "tripDurationDays": 7
+        }
+      },
+      {
+        "outbound": {
+          "departureAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Italy",
+            "iataCode": "BGY",
+            "name": "Milan Bergamo",
+            "seoName": "milan-bergamo",
+            "city": {
+              "code": "BERGAMO",
+              "countryCode": "it",
+              "name": "Bergamo"
+            }
+          },
+          "departureDate": "2026-08-24T06:05:00",
+          "arrivalDate": "2026-08-24T07:45:00",
+          "price": {
+            "value": 40.55,
+            "valueMainUnit": "40",
+            "valueFractionalUnit": "55",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~3165~ ~~BUD~08/24/2026 06:05~BGY~08/24/2026 07:45~~",
+          "flightNumber": "FR3165",
+          "previousPrice": null,
+          "priceUpdated": 1783683197000
+        },
+        "inbound": {
+          "departureAirport": {
+            "countryName": "Italy",
+            "iataCode": "BGY",
+            "name": "Milan Bergamo",
+            "seoName": "milan-bergamo",
+            "city": {
+              "code": "BERGAMO",
+              "countryCode": "it",
+              "name": "Bergamo"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "departureDate": "2026-08-30T22:05:00",
+          "arrivalDate": "2026-08-30T23:40:00",
+          "price": {
+            "value": 16.99,
+            "valueMainUnit": "16",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~3164~ ~~BGY~08/30/2026 22:05~BUD~08/30/2026 23:40~~",
+          "flightNumber": "FR3164",
+          "previousPrice": null,
+          "priceUpdated": 1783686446000
+        },
+        "summary": {
+          "price": {
+            "value": 57.54,
+            "valueMainUnit": "57",
+            "valueFractionalUnit": "54",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "previousPrice": null,
+          "newRoute": false,
+          "tripDurationDays": 6
+        }
+      },
+      {
+        "outbound": {
+          "departureAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Czech Republic",
+            "iataCode": "PRG",
+            "name": "Prague",
+            "seoName": "prague",
+            "city": {
+              "code": "PRAGUE",
+              "countryCode": "cz",
+              "name": "Prague"
+            }
+          },
+          "departureDate": "2026-08-24T06:40:00",
+          "arrivalDate": "2026-08-24T07:55:00",
+          "price": {
+            "value": 31.69,
+            "valueMainUnit": "31",
+            "valueFractionalUnit": "69",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~4034~ ~~BUD~08/24/2026 06:40~PRG~08/24/2026 07:55~~",
+          "flightNumber": "FR4034",
+          "previousPrice": null,
+          "priceUpdated": 1783682303000
+        },
+        "inbound": {
+          "departureAirport": {
+            "countryName": "Czech Republic",
+            "iataCode": "PRG",
+            "name": "Prague",
+            "seoName": "prague",
+            "city": {
+              "code": "PRAGUE",
+              "countryCode": "cz",
+              "name": "Prague"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "departureDate": "2026-09-01T07:30:00",
+          "arrivalDate": "2026-09-01T08:40:00",
+          "price": {
+            "value": 29.99,
+            "valueMainUnit": "29",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~4033~ ~~PRG~09/01/2026 07:30~BUD~09/01/2026 08:40~~",
+          "flightNumber": "FR4033",
+          "previousPrice": null,
+          "priceUpdated": 1783693584000
+        },
+        "summary": {
+          "price": {
+            "value": 61.68,
+            "valueMainUnit": "61",
+            "valueFractionalUnit": "68",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "previousPrice": null,
+          "newRoute": false,
+          "tripDurationDays": 8
+        }
+      },
+      {
+        "outbound": {
+          "departureAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Poland",
+            "iataCode": "KRK",
+            "name": "Krakow",
+            "seoName": "krakow",
+            "city": {
+              "code": "KRAKOW",
+              "countryCode": "pl",
+              "name": "Krakow"
+            }
+          },
+          "departureDate": "2026-08-23T16:10:00",
+          "arrivalDate": "2026-08-23T17:25:00",
+          "price": {
+            "value": 43.84,
+            "valueMainUnit": "43",
+            "valueFractionalUnit": "84",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~9752~ ~~BUD~08/23/2026 16:10~KRK~08/23/2026 17:25~~",
+          "flightNumber": "FR9752",
+          "previousPrice": null,
+          "priceUpdated": 1783687560000
+        },
+        "inbound": {
+          "departureAirport": {
+            "countryName": "Poland",
+            "iataCode": "KRK",
+            "name": "Krakow",
+            "seoName": "krakow",
+            "city": {
+              "code": "KRAKOW",
+              "countryCode": "pl",
+              "name": "Krakow"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "departureDate": "2026-08-30T14:35:00",
+          "arrivalDate": "2026-08-30T15:45:00",
+          "price": {
+            "value": 18.25,
+            "valueMainUnit": "18",
+            "valueFractionalUnit": "25",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~9751~ ~~KRK~08/30/2026 14:35~BUD~08/30/2026 15:45~~",
+          "flightNumber": "FR9751",
+          "previousPrice": null,
+          "priceUpdated": 1783696045000
+        },
+        "summary": {
+          "price": {
+            "value": 62.09,
+            "valueMainUnit": "62",
+            "valueFractionalUnit": "09",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "previousPrice": null,
+          "newRoute": false,
+          "tripDurationDays": 7
+        }
+      },
+      {
+        "outbound": {
+          "departureAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Italy",
+            "iataCode": "RMI",
+            "name": "Rimini",
+            "seoName": "rimini",
+            "city": {
+              "code": "RIMINI",
+              "countryCode": "it",
+              "name": "Rimini"
+            }
+          },
+          "departureDate": "2026-08-24T20:35:00",
+          "arrivalDate": "2026-08-24T22:05:00",
+          "price": {
+            "value": 22.99,
+            "valueMainUnit": "22",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~5254~ ~~BUD~08/24/2026 20:35~RMI~08/24/2026 22:05~~",
+          "flightNumber": "FR5254",
+          "previousPrice": null,
+          "priceUpdated": 1783694004000
+        },
+        "inbound": {
+          "departureAirport": {
+            "countryName": "Italy",
+            "iataCode": "RMI",
+            "name": "Rimini",
+            "seoName": "rimini",
+            "city": {
+              "code": "RIMINI",
+              "countryCode": "it",
+              "name": "Rimini"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "departureDate": "2026-08-31T22:30:00",
+          "arrivalDate": "2026-08-31T23:55:00",
+          "price": {
+            "value": 48.99,
+            "valueMainUnit": "48",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~5255~ ~~RMI~08/31/2026 22:30~BUD~08/31/2026 23:55~~",
+          "flightNumber": "FR5255",
+          "previousPrice": null,
+          "priceUpdated": 1783696656000
+        },
+        "summary": {
+          "price": {
+            "value": 71.98,
+            "valueMainUnit": "71",
+            "valueFractionalUnit": "98",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "previousPrice": null,
+          "newRoute": false,
+          "tripDurationDays": 7
+        }
+      },
+      {
+        "outbound": {
+          "departureAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Denmark",
+            "iataCode": "CPH",
+            "name": "Copenhagen",
+            "seoName": "copenhagen",
+            "city": {
+              "code": "COPENHAGEN",
+              "countryCode": "dk",
+              "name": "Copenhagen"
+            }
+          },
+          "departureDate": "2026-08-24T18:10:00",
+          "arrivalDate": "2026-08-24T20:10:00",
+          "price": {
+            "value": 53.35,
+            "valueMainUnit": "53",
+            "valueFractionalUnit": "35",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~  80~ ~~BUD~08/24/2026 18:10~CPH~08/24/2026 20:10~~",
+          "flightNumber": "FR80",
+          "previousPrice": null,
+          "priceUpdated": 1783682301000
+        },
+        "inbound": {
+          "departureAirport": {
+            "countryName": "Denmark",
+            "iataCode": "CPH",
+            "name": "Copenhagen",
+            "seoName": "copenhagen",
+            "city": {
+              "code": "COPENHAGEN",
+              "countryCode": "dk",
+              "name": "Copenhagen"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "departureDate": "2026-09-01T15:00:00",
+          "arrivalDate": "2026-09-01T16:50:00",
+          "price": {
+            "value": 25.28,
+            "valueMainUnit": "25",
+            "valueFractionalUnit": "28",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~  81~ ~~CPH~09/01/2026 15:00~BUD~09/01/2026 16:50~~",
+          "flightNumber": "FR81",
+          "previousPrice": null,
+          "priceUpdated": 1783685883000
+        },
+        "summary": {
+          "price": {
+            "value": 78.63,
+            "valueMainUnit": "78",
+            "valueFractionalUnit": "63",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "previousPrice": null,
+          "newRoute": false,
+          "tripDurationDays": 8
+        }
+      },
+      {
+        "outbound": {
+          "departureAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Italy",
+            "iataCode": "SUF",
+            "name": "Lamezia",
+            "seoName": "lamezia",
+            "city": {
+              "code": "LAMEZIA",
+              "countryCode": "it",
+              "name": "Lamezia"
+            }
+          },
+          "departureDate": "2026-08-23T06:00:00",
+          "arrivalDate": "2026-08-23T07:55:00",
+          "price": {
+            "value": 45.99,
+            "valueMainUnit": "45",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~9621~ ~~BUD~08/23/2026 06:00~SUF~08/23/2026 07:55~~",
+          "flightNumber": "FR9621",
+          "previousPrice": null,
+          "priceUpdated": 1783689893000
+        },
+        "inbound": {
+          "departureAirport": {
+            "countryName": "Italy",
+            "iataCode": "SUF",
+            "name": "Lamezia",
+            "seoName": "lamezia",
+            "city": {
+              "code": "LAMEZIA",
+              "countryCode": "it",
+              "name": "Lamezia"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "departureDate": "2026-08-30T08:20:00",
+          "arrivalDate": "2026-08-30T10:15:00",
+          "price": {
+            "value": 33.39,
+            "valueMainUnit": "33",
+            "valueFractionalUnit": "39",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~9622~ ~~SUF~08/30/2026 08:20~BUD~08/30/2026 10:15~~",
+          "flightNumber": "FR9622",
+          "previousPrice": null,
+          "priceUpdated": 1783697059000
+        },
+        "summary": {
+          "price": {
+            "value": 79.38,
+            "valueMainUnit": "79",
+            "valueFractionalUnit": "38",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "previousPrice": null,
+          "newRoute": true,
+          "tripDurationDays": 7
+        }
+      },
+      {
+        "outbound": {
+          "departureAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Sweden",
+            "iataCode": "GOT",
+            "name": "Göteborg Landvetter",
+            "seoName": "gothenburg-landvetter",
+            "city": {
+              "code": "GOTHENBURG",
+              "countryCode": "se",
+              "name": "Gothenburg"
+            }
+          },
+          "departureDate": "2026-08-24T12:45:00",
+          "arrivalDate": "2026-08-24T14:55:00",
+          "price": {
+            "value": 30.7,
+            "valueMainUnit": "30",
+            "valueFractionalUnit": "70",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~6748~ ~~BUD~08/24/2026 12:45~GOT~08/24/2026 14:55~~",
+          "flightNumber": "FR6748",
+          "previousPrice": null,
+          "priceUpdated": 1783678702000
+        },
+        "inbound": {
+          "departureAirport": {
+            "countryName": "Sweden",
+            "iataCode": "GOT",
+            "name": "Göteborg Landvetter",
+            "seoName": "gothenburg-landvetter",
+            "city": {
+              "code": "GOTHENBURG",
+              "countryCode": "se",
+              "name": "Gothenburg"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "departureDate": "2026-08-31T10:10:00",
+          "arrivalDate": "2026-08-31T12:15:00",
+          "price": {
+            "value": 52.69,
+            "valueMainUnit": "52",
+            "valueFractionalUnit": "69",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~6749~ ~~GOT~08/31/2026 10:10~BUD~08/31/2026 12:15~~",
+          "flightNumber": "FR6749",
+          "previousPrice": null,
+          "priceUpdated": 1783678684000
+        },
+        "summary": {
+          "price": {
+            "value": 83.39,
+            "valueMainUnit": "83",
+            "valueFractionalUnit": "39",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "previousPrice": null,
+          "newRoute": false,
+          "tripDurationDays": 7
+        }
+      },
+      {
+        "outbound": {
+          "departureAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Sweden",
+            "iataCode": "ARN",
+            "name": "Stockholm Arlanda",
+            "seoName": "stockholm-arlandia",
+            "city": {
+              "code": "STOCKHOLM",
+              "countryCode": "se",
+              "macCode": "SLM",
+              "name": "Stockholm"
+            }
+          },
+          "departureDate": "2026-08-24T09:55:00",
+          "arrivalDate": "2026-08-24T12:15:00",
+          "price": {
+            "value": 48.94,
+            "valueMainUnit": "48",
+            "valueFractionalUnit": "94",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~7599~ ~~BUD~08/24/2026 09:55~ARN~08/24/2026 12:15~~",
+          "flightNumber": "FR7599",
+          "previousPrice": null,
+          "priceUpdated": 1783705693000
+        },
+        "inbound": {
+          "departureAirport": {
+            "countryName": "Sweden",
+            "iataCode": "ARN",
+            "name": "Stockholm Arlanda",
+            "seoName": "stockholm-arlandia",
+            "city": {
+              "code": "STOCKHOLM",
+              "countryCode": "se",
+              "macCode": "SLM",
+              "name": "Stockholm"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "departureDate": "2026-09-01T20:00:00",
+          "arrivalDate": "2026-09-01T22:20:00",
+          "price": {
+            "value": 38.41,
+            "valueMainUnit": "38",
+            "valueFractionalUnit": "41",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~7600~ ~~ARN~09/01/2026 20:00~BUD~09/01/2026 22:20~~",
+          "flightNumber": "FR7600",
+          "previousPrice": null,
+          "priceUpdated": 1783678643000
+        },
+        "summary": {
+          "price": {
+            "value": 87.35,
+            "valueMainUnit": "87",
+            "valueFractionalUnit": "35",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "previousPrice": null,
+          "newRoute": false,
+          "tripDurationDays": 8
+        }
+      },
+      {
+        "outbound": {
+          "departureAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Italy",
+            "iataCode": "NAP",
+            "name": "Naples",
+            "seoName": "naples",
+            "city": {
+              "code": "NAPLES",
+              "countryCode": "it",
+              "name": "Naples"
+            }
+          },
+          "departureDate": "2026-08-24T19:55:00",
+          "arrivalDate": "2026-08-24T21:35:00",
+          "price": {
+            "value": 61.99,
+            "valueMainUnit": "61",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~4090~ ~~BUD~08/24/2026 19:55~NAP~08/24/2026 21:35~~",
+          "flightNumber": "FR4090",
+          "previousPrice": null,
+          "priceUpdated": 1783694004000
+        },
+        "inbound": {
+          "departureAirport": {
+            "countryName": "Italy",
+            "iataCode": "NAP",
+            "name": "Naples",
+            "seoName": "naples",
+            "city": {
+              "code": "NAPLES",
+              "countryCode": "it",
+              "name": "Naples"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "departureDate": "2026-09-01T13:20:00",
+          "arrivalDate": "2026-09-01T15:00:00",
+          "price": {
+            "value": 25.99,
+            "valueMainUnit": "25",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~4089~ ~~NAP~09/01/2026 13:20~BUD~09/01/2026 15:00~~",
+          "flightNumber": "FR4089",
+          "previousPrice": null,
+          "priceUpdated": 1783700175000
+        },
+        "summary": {
+          "price": {
+            "value": 87.98,
+            "valueMainUnit": "87",
+            "valueFractionalUnit": "98",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "previousPrice": null,
+          "newRoute": false,
+          "tripDurationDays": 8
+        }
+      },
+      {
+        "outbound": {
+          "departureAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Greece",
+            "iataCode": "SKG",
+            "name": "Thessaloniki",
+            "seoName": "thessaloniki",
+            "city": {
+              "code": "THESSALONIKI",
+              "countryCode": "gr",
+              "name": "Thessaloniki"
+            }
+          },
+          "departureDate": "2026-08-23T05:45:00",
+          "arrivalDate": "2026-08-23T08:20:00",
+          "price": {
+            "value": 41.99,
+            "valueMainUnit": "41",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~4277~ ~~BUD~08/23/2026 05:45~SKG~08/23/2026 08:20~~",
+          "flightNumber": "FR4277",
+          "previousPrice": null,
+          "priceUpdated": 1783692784000
+        },
+        "inbound": {
+          "departureAirport": {
+            "countryName": "Greece",
+            "iataCode": "SKG",
+            "name": "Thessaloniki",
+            "seoName": "thessaloniki",
+            "city": {
+              "code": "THESSALONIKI",
+              "countryCode": "gr",
+              "name": "Thessaloniki"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "departureDate": "2026-08-28T22:10:00",
+          "arrivalDate": "2026-08-28T22:50:00",
+          "price": {
+            "value": 47.67,
+            "valueMainUnit": "47",
+            "valueFractionalUnit": "67",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~4278~ ~~SKG~08/28/2026 22:10~BUD~08/28/2026 22:50~~",
+          "flightNumber": "FR4278",
+          "previousPrice": null,
+          "priceUpdated": 1783697069000
+        },
+        "summary": {
+          "price": {
+            "value": 89.66,
+            "valueMainUnit": "89",
+            "valueFractionalUnit": "66",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "previousPrice": null,
+          "newRoute": false,
+          "tripDurationDays": 5
+        }
+      },
+      {
+        "outbound": {
+          "departureAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Belgium",
+            "iataCode": "CRL",
+            "name": "Brussels Charleroi",
+            "seoName": "brussels-charleroi",
+            "city": {
+              "code": "CHARLEROI",
+              "countryCode": "be",
+              "name": "Charleroi"
+            }
+          },
+          "departureDate": "2026-08-23T06:20:00",
+          "arrivalDate": "2026-08-23T08:25:00",
+          "price": {
+            "value": 65.05,
+            "valueMainUnit": "65",
+            "valueFractionalUnit": "05",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~  54~ ~~BUD~08/23/2026 06:20~CRL~08/23/2026 08:25~~",
+          "flightNumber": "FR54",
+          "previousPrice": null,
+          "priceUpdated": 1783695798000
+        },
+        "inbound": {
+          "departureAirport": {
+            "countryName": "Belgium",
+            "iataCode": "CRL",
+            "name": "Brussels Charleroi",
+            "seoName": "brussels-charleroi",
+            "city": {
+              "code": "CHARLEROI",
+              "countryCode": "be",
+              "name": "Charleroi"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "departureDate": "2026-08-30T08:50:00",
+          "arrivalDate": "2026-08-30T10:50:00",
+          "price": {
+            "value": 24.99,
+            "valueMainUnit": "24",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~  55~ ~~CRL~08/30/2026 08:50~BUD~08/30/2026 10:50~~",
+          "flightNumber": "FR55",
+          "previousPrice": null,
+          "priceUpdated": 1783685907000
+        },
+        "summary": {
+          "price": {
+            "value": 90.04,
+            "valueMainUnit": "90",
+            "valueFractionalUnit": "04",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "previousPrice": null,
+          "newRoute": false,
+          "tripDurationDays": 7
+        }
+      },
+      {
+        "outbound": {
+          "departureAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Italy",
+            "iataCode": "BRI",
+            "name": "Bari",
+            "seoName": "bari",
+            "city": {
+              "code": "BARI",
+              "countryCode": "it",
+              "name": "Bari"
+            }
+          },
+          "departureDate": "2026-08-22T10:10:00",
+          "arrivalDate": "2026-08-22T11:40:00",
+          "price": {
+            "value": 70.62,
+            "valueMainUnit": "70",
+            "valueFractionalUnit": "62",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~5190~ ~~BUD~08/22/2026 10:10~BRI~08/22/2026 11:40~~",
+          "flightNumber": "FR5190",
+          "previousPrice": null,
+          "priceUpdated": 1783678706000
+        },
+        "inbound": {
+          "departureAirport": {
+            "countryName": "Italy",
+            "iataCode": "BRI",
+            "name": "Bari",
+            "seoName": "bari",
+            "city": {
+              "code": "BARI",
+              "countryCode": "it",
+              "name": "Bari"
+            }
+          },
+          "arrivalAirport": {
+            "countryName": "Hungary",
+            "iataCode": "BUD",
+            "name": "Budapest",
+            "seoName": "budapest",
+            "city": {
+              "code": "BUDAPEST",
+              "countryCode": "hu",
+              "name": "Budapest"
+            }
+          },
+          "departureDate": "2026-08-27T22:25:00",
+          "arrivalDate": "2026-08-27T23:55:00",
+          "price": {
+            "value": 19.99,
+            "valueMainUnit": "19",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "flightKey": "FR~5211~ ~~BRI~08/27/2026 22:25~BUD~08/27/2026 23:55~~",
+          "flightNumber": "FR5211",
+          "previousPrice": null,
+          "priceUpdated": 1783697577000
+        },
+        "summary": {
+          "price": {
+            "value": 90.61,
+            "valueMainUnit": "90",
+            "valueFractionalUnit": "61",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "previousPrice": null,
+          "newRoute": false,
+          "tripDurationDays": 5
+        }
+      }
+    ],
+    "nextPage": null,
+    "size": 65,
+    "_truncated": true
+  },
+  "_raw_text_on_parse_failure": null
+}
