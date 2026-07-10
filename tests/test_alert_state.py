@@ -112,6 +112,24 @@ def test_state_persists_across_instances(tmp_path):
     assert m2.evaluate(search_name="w", deal=_deal(140), max_price=150, now=now) is False
 
 
+def test_legacy_entry_without_sent_key_is_not_pending(tmp_path):
+    """Back-compat: a state file written before the acknowledged-send bookkeeping
+    existed has entries with no ``sent`` key. Those must be treated as
+    already-sent (``.get("sent", True)``) so upgrading the code never re-includes
+    and re-sends an old alert."""
+    m = _machine(tmp_path)
+    deal = _deal(140)
+    key = "w|BUD-CFU|2026-08"
+    m._entries[key] = {
+        "last_alert_price": 140.0,
+        "last_alert_at": "2026-07-01T08:30:00+00:00",
+        "expires_at": "2026-08-31T23:59:59+00:00",
+        "state": "alerted",
+        # NOTE: no "sent" key — this is the legacy shape.
+    }
+    assert m.is_pending("w", deal) is False
+
+
 def test_prune_expired_removes_past_month_entries(tmp_path):
     m = _machine(tmp_path)
     with freeze_time("2026-07-01T08:30:00+00:00"):

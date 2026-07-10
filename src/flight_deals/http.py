@@ -210,6 +210,14 @@ def get_executor(max_workers: int = 8):
     Reused across every ``planner.execute()`` so worker threads — and their
     per-thread ``requests.Session`` objects — are bounded and long-lived
     instead of leaking one set per search (Task 3 review carry-over).
+
+    SIZING IS FIXED AT FIRST CREATION. ``max_workers`` on the very first call
+    sizes the singleton; the pool is intentionally NOT resized on later calls
+    (resizing a live ThreadPoolExecutor is not supported and would defeat the
+    keep-alive point). A later call asking for a *different* size is honoured
+    with the existing pool and logs a warning so the mismatch is visible rather
+    than silently ignored. Call :func:`shutdown_executor` first if a genuine
+    re-size is needed (e.g. in a long-lived host or a test).
     """
     global _executor
     from concurrent.futures import ThreadPoolExecutor
@@ -218,6 +226,12 @@ def get_executor(max_workers: int = 8):
         if _executor is None:
             _executor = ThreadPoolExecutor(
                 max_workers=max(1, max_workers), thread_name_prefix="fd-http"
+            )
+        elif max(1, max_workers) != _executor._max_workers:
+            logger.warning(
+                "http: worker pool already sized at %d; ignoring requested "
+                "max_workers=%d (call shutdown_executor() to re-size)",
+                _executor._max_workers, max_workers,
             )
         return _executor
 

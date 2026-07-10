@@ -135,6 +135,25 @@ def test_user_agents_present():
     assert all("Mozilla/5.0" in ua for ua in http.USER_AGENTS)
 
 
+def test_get_executor_is_singleton_and_warns_on_resize(caplog):
+    """The pool is created once at its first size and never resized; a later
+    call requesting a different size reuses it and logs a warning."""
+    import logging
+
+    http.shutdown_executor()  # clean singleton state
+    try:
+        ex = http.get_executor(4)
+        assert ex._max_workers == 4
+        assert http.get_executor(4) is ex  # same size -> same pool, no warning
+        with caplog.at_level(logging.WARNING, logger="flight_deals.http"):
+            again = http.get_executor(8)  # different size requested
+        assert again is ex                 # NOT resized
+        assert again._max_workers == 4
+        assert "already sized at 4" in caplog.text
+    finally:
+        http.shutdown_executor()
+
+
 # --------------------------------------------------------------------------- #
 # post_json / get_text / UnexpectedStatus (Task 4)                            #
 # --------------------------------------------------------------------------- #
