@@ -15,9 +15,24 @@ def test_eur_passthrough():
     assert fx.to_eur(100, "eur") == 100.0  # case-insensitive
 
 
-def test_huf_converts_to_eur():
+def test_huf_converts_to_eur(tmp_path, monkeypatch):
+    """
+    Pins its own HUF rate via fx's existing test-reset mechanism (a swapped-in
+    rate table + `reload_rates()`, the same pattern `test_staleness_warning`
+    uses below) instead of asserting on the committed seed's numeric value —
+    the seed is refreshed from live ECB rates independently of this test
+    (`scripts/refresh_fx.py`), so a numeric assertion tied to it would break
+    every time the seed is refreshed.
+    """
+    table = {
+        "schema_version": 1, "base": "EUR", "as_of": "2026-07-01",
+        "rates": {"HUF": 395.0},
+    }
+    f = tmp_path / "fx_rates.json"
+    f.write_text(json.dumps(table))
+    monkeypatch.setattr(fx, "resolve_path", lambda _p: f)
     fx.reload_rates()
-    # seed rate is EUR/HUF = 395 -> 1 EUR = 395 HUF
+    # 1 EUR = 395 HUF (pinned above, independent of data/fx_rates.json)
     assert fx.to_eur(26090.0, "HUF") == round(26090.0 / 395.0, 2)
     assert fx.to_eur(26090.0, "HUF") == 66.05
 
