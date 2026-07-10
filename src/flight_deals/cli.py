@@ -130,6 +130,117 @@ def roundtrip():
     raise typer.Exit(2)
 
 
+# --------------------------------------------------------------------------- #
+# Spec layer (Task 6): plan (compile only) + run (compile + execute)          #
+# --------------------------------------------------------------------------- #
+def _load_spec_input(spec_arg: str) -> dict:
+    """Resolve ``--spec`` to a raw dict. Accepts inline JSON (``{...}``), a file
+    path (JSON or YAML), or ``-`` for stdin. YAML is a JSON superset so one
+    loader reads both; a top-level ``spec:`` wrapper is unwrapped by
+    :func:`engine.spec.parse_spec`."""
+    import sys
+
+    import yaml
+
+    text = spec_arg
+    stripped = spec_arg.strip()
+    if stripped == "-":
+        text = sys.stdin.read()
+    elif not stripped.startswith("{"):
+        from pathlib import Path
+        p = Path(spec_arg).expanduser()
+        if not p.exists():
+            raise ValueError(f"spec file not found: {spec_arg}")
+        text = p.read_text()
+    return yaml.safe_load(text)
+
+
+def _emit_spec_error(error: str, hint: str, pretty: bool) -> None:
+    from flight_deals import output
+    env = output.error_envelope(error, hint)
+    typer.echo(output.render(env, pretty=pretty))
+
+
+@app.command()
+def plan(
+    spec: str = typer.Option(..., "--spec", help="Spec as inline JSON, a file path, or '-' for stdin"),
+    pretty: bool = typer.Option(False, "--pretty"),
+):
+    """Compile a search spec into a call plan (CONTRACT §6). No network — prints
+    the ordered calls, estimated_calls and estimated_seconds so cost can be
+    inspected before running."""
+    from flight_deals.engine.planner import PlannerRefusal, compile_plan
+    from flight_deals.engine.spec import SpecError, parse_spec
+    from flight_deals.registry.where import WhereParseError
+
+    try:
+        raw = _load_spec_input(spec)
+    except Exception as e:
+        _emit_spec_error("bad_spec_input", f"could not read --spec: {e}", pretty)
+        raise typer.Exit(2)
+
+    try:
+        parsed = parse_spec(raw)
+        call_plan = compile_plan(parsed, registry)
+    except (SpecError, PlannerRefusal) as e:
+        _emit_spec_error(type(e).__name__, e.hint, pretty)
+        raise typer.Exit(2)
+    except WhereParseError as e:
+        _emit_spec_error("invalid_where", e.hint, pretty)
+        raise typer.Exit(2)
+
+    plan_dict = call_plan.to_dict()
+    if pretty:
+        console.print(f"[bold]{plan_dict['estimated_calls']} calls[/bold], "
+                      f"~{plan_dict['estimated_seconds']}s (warm-cache, ~1 req/s)")
+        for c in plan_dict["calls"]:
+            console.print(f"  {c['provider']}/{c['endpoint']} [{c['mode']}] {c['shape']} {c['params']}")
+    else:
+        typer.echo(json.dumps(plan_dict))
+
+
+@app.command()
+def run(
+    spec: str = typer.Option(..., "--spec", help="Spec as inline JSON, a file path, or '-' for stdin"),
+    max_calls: int = typer.Option(40, "--max-calls", help="Refuse specs whose plan exceeds this"),
+    fresh: bool = typer.Option(False, "--fresh", help="Bypass cache, fetch fresh"),
+    pretty: bool = typer.Option(False, "--pretty"),
+):
+    """Compile + execute a spec and print the result envelope (CONTRACT §1).
+    Exit 0 on success (incl. empty results), 1 on provider failure, 2 on bad
+    input."""
+    from flight_deals import output
+    from flight_deals.engine.planner import Planner, PlannerRefusal
+    from flight_deals.engine.spec import SpecError, parse_spec
+    from flight_deals.registry.where import WhereParseError
+
+    try:
+        raw = _load_spec_input(spec)
+    except Exception as e:
+        _emit_spec_error("bad_spec_input", f"could not read --spec: {e}", pretty)
+        raise typer.Exit(2)
+
+    try:
+        parsed = parse_spec(raw)
+    except SpecError as e:
+        _emit_spec_error("invalid_spec", e.hint, pretty)
+        raise typer.Exit(2)
+
+    try:
+        planner = Planner(registry=registry)
+        env, exit_code = planner.run(parsed, max_calls=max_calls, fresh=fresh)
+    except (PlannerRefusal, SpecError) as e:
+        _emit_spec_error(type(e).__name__, e.hint, pretty)
+        raise typer.Exit(2)
+    except WhereParseError as e:
+        _emit_spec_error("invalid_where", e.hint, pretty)
+        raise typer.Exit(2)
+
+    typer.echo(output.render(env, pretty=pretty))
+    if exit_code:
+        raise typer.Exit(exit_code)
+
+
 @app.command()
 def track(
     origin: str = typer.Option(None, "--origin", "-o"),
