@@ -79,6 +79,26 @@ class AlertMachine:
     def get(self, search_name: str, route: str, month: str) -> Optional[Dict[str, Any]]:
         return self._entries.get(_key(search_name, route, month))
 
+    # -- acknowledged-send bookkeeping ------------------------------------- #
+    # An alert entry is fired with ``sent: False`` and only flipped to
+    # ``sent: True`` once the notifier CONFIRMS delivery (brief re-persists
+    # then). A run that fires but whose send fails leaves the entry pending, so
+    # the next brief re-includes and re-sends it — at-least-once on the wire,
+    # exactly-once on state. Legacy entries without the field are treated as
+    # already-sent (``.get("sent", True)``) so an upgrade never re-alerts.
+    def is_pending(self, search_name: str, deal: Dict[str, Any]) -> bool:
+        """True if this deal's alert entry exists but was never confirmed-sent —
+        i.e. a previous run fired it but the Telegram send did not succeed."""
+        entry = self._entries.get(_key(search_name, route_of(deal), month_of(deal)))
+        return entry is not None and not entry.get("sent", True)
+
+    def mark_sent(self, search_name: str, deal: Dict[str, Any]) -> None:
+        """Acknowledge that this deal's alert was delivered. Call once per fired
+        deal AFTER a confirmed notifier send, then :meth:`save`."""
+        entry = self._entries.get(_key(search_name, route_of(deal), month_of(deal)))
+        if entry is not None:
+            entry["sent"] = True
+
     def evaluate(
         self,
         *,
@@ -141,6 +161,7 @@ class AlertMachine:
             "last_alert_at": now.isoformat(),
             "expires_at": expires_at.isoformat(),
             "state": "alerted",
+            "sent": False,  # pending until the notifier confirms delivery
         }
 
     def prune_expired(self, now: Optional[datetime] = None) -> int:

@@ -368,7 +368,21 @@ Decisions locked in:
 
 ## Changelog
 
-- **2026-07-11 (Task 8 fix wave)** — `brief` exit code, ruled: exit 1 not only
+- **2026-07-11 (Task 8 fix wave 2)** — Reliability-backbone hardening; additive
+  only, no frozen field changed shape:
+  - `brief`'s envelope `brief` object gains an **optional** `searches_skipped`
+    list (`{file, reason}`) — a saved search that fails to load (corrupt YAML,
+    bad `schema_version`) or has a malformed `schedule` string is now skipped
+    with a warning and surfaced here, never aborting the loop. Present only when
+    at least one search was skipped; a run's exit code is unaffected by a skip.
+  - Acknowledged-send ordering: a `brief --send` now fires alerts as *pending*,
+    persists state, then sends; state is flipped to delivered ONLY on a
+    confirmed send. A failed/transient Telegram send still exits 1 (unchanged)
+    but the alert is re-included and re-sent on the next run instead of being
+    silently suppressed — at-least-once on the wire, exactly-once on state (a
+    crash between send and ack double-sends at most once). This adds an internal
+    `sent: bool` field to `data/alert_state.json` entries (schema_version
+    unchanged; legacy entries without it are treated as already-sent).
   when a search failed to even run, but ALSO when ≥1 search executed and every
   executed search had zero ok sources (all-providers-down day; envelope then
   carries `error=provider_error` + `hint`) — a quiet day (sources ok, no

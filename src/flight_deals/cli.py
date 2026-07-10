@@ -821,29 +821,21 @@ def brief(
     digest envelope. ``--send`` pushes it to Telegram; a failed send exits 1.
     A second concurrent brief exits 1 ("already running")."""
     from flight_deals import output
-    from flight_deals.engine.brief import run_brief, should_send
+    from flight_deals.engine.brief import run_brief
     from flight_deals.state.store import flock_guard
 
     with flock_guard("brief"):
+        # The send is done INSIDE run_brief behind the injected notifier so the
+        # acknowledged-send ordering (fire→persist→send→ack-persist) is atomic
+        # with the run: a failed/transient send leaves the alert pending and the
+        # next brief re-sends it, never silently dropped. run_brief folds a
+        # failed send into its exit code (still exit 1).
         result = run_brief(
             force_all=all_searches, registry=registry, history_store=history_store,
             max_calls=max_calls, fresh=fresh,
+            notifier=get_notifier(), send=send, dry_run=dry_run,
         )
         typer.echo(output.render(result.envelope, pretty=pretty))
-
-        send_failed = False
-        if dry_run:
-            # Always preview the digest we *would* send, offline.
-            digest = output.telegram_text(result.envelope, html=True)
-            get_notifier().send(digest, dry_run=True)
-        elif send and should_send(result):
-            # Only message when there's something to report (no empty-digest spam).
-            digest = output.telegram_text(result.envelope, html=True)
-            if not get_notifier().send(digest):
-                send_failed = True
-
-        if send_failed:
-            raise typer.Exit(1)
         if result.exit_code:
             raise typer.Exit(result.exit_code)
 

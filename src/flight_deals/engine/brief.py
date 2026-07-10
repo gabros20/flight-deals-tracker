@@ -54,13 +54,16 @@ _SOURCE_OK_STATUSES = {"ok", "version_refreshed"}
 class BriefResult:
     """Outcome of one brief run: the envelope, an exit code, and the fired
     alert deals (so the CLI can decide whether to send and the tests can assert
-    exactly-once)."""
+    exactly-once). ``sent`` records whether a confirmed Telegram send happened;
+    ``send_failed`` records an attempted-but-failed send (which forces exit 1)."""
 
     def __init__(self, envelope: Dict[str, Any], exit_code: int, fired: List[Dict[str, Any]], ran: List[str]):
         self.envelope = envelope
         self.exit_code = exit_code
         self.fired = fired
         self.ran = ran
+        self.sent = False
+        self.send_failed = False
 
 
 def should_send(result: "BriefResult") -> bool:
@@ -108,10 +111,25 @@ def run_brief(
     fresh: bool = False,
     snapshotter: Callable[..., Any] = snapshots.snapshot,
     do_prune: bool = True,
+    notifier: Any = None,
+    send: bool = False,
+    dry_run: bool = False,
 ) -> BriefResult:
     """Run the monitoring loop. Does NOT take the flock (the CLI does, so a bad
-    flock exits before any work) and does NOT send Telegram (the CLI does, so a
-    dry-run stays offline). Returns a :class:`BriefResult`."""
+    flock exits before any work). The Telegram send is done HERE, behind the
+    injected ``notifier`` (an object with ``send(text, *, dry_run=...) -> bool``),
+    so the acknowledged-send ordering is testable end-to-end:
+
+    * alerts fire with ``sent=False`` and the state is persisted BEFORE any send;
+    * only a confirmed send flips them to ``sent=True`` and re-persists;
+    * a failed send leaves them pending, so the NEXT brief re-includes and
+      re-sends them (at-least-once on the wire, exactly-once on state — a
+      crash-after-send-before-persist double-sends at most once, an accepted
+      trade for a personal alert tool over silently losing an alert).
+
+    ``notifier=None`` skips sending entirely (pure compute — dry-run offline
+    callers pass a notifier with ``dry_run=True``). Returns a
+    :class:`BriefResult`."""
     now = now or datetime.now(timezone.utc)
     now = now if now.tzinfo else now.replace(tzinfo=timezone.utc)
     today = today or now.astimezone(timezone.utc).date()
@@ -124,7 +142,8 @@ def run_brief(
         history_store = PriceHistoryStore()
     alert_machine = alert_machine or alert_state.AlertMachine(realert_drop_pct=config.realert_drop_pct)
 
-    due = searches.due(now, force_all=force_all)
+    skipped_searches: List[Dict[str, str]] = []
+    due = searches.due(now, force_all=force_all, skipped=skipped_searches)
 
     sources: Dict[str, str] = {}
     fired: List[Dict[str, Any]] = []
@@ -190,7 +209,14 @@ def run_brief(
             # Alert: only watches (searches with an alert block) evaluate.
             fired_here = False
             if max_price is not None:
-                if alert_machine.evaluate(search_name=name, deal=deal, max_price=float(max_price), now=now):
+                fired_now = alert_machine.evaluate(
+                    search_name=name, deal=deal, max_price=float(max_price), now=now
+                )
+                # Include the deal in this digest either on a fresh crossing OR
+                # when a prior alert for this key is still unacknowledged
+                # (previous send failed) — idempotent re-inclusion until a send
+                # is confirmed, guaranteeing an alert is never silently lost.
+                if fired_now or alert_machine.is_pending(name, deal):
                     d = dict(deal)
                     d["_watch"] = name
                     fired.append(d)
@@ -248,8 +274,37 @@ def run_brief(
         "alerts": len(fired),
         "movers": len(mover_deals),
     }
+    # Additive: any saved search that failed to load/parse (bad YAML, bad
+    # schedule) was skipped, never aborting the loop — surface it so the operator
+    # sees the hand-edit typo. Present only when there is something to report.
+    if skipped_searches:
+        envelope["brief"]["searches_skipped"] = skipped_searches
 
-    return BriefResult(envelope, exit_code, fired, ran)
+    result = BriefResult(envelope, exit_code, fired, ran)
+
+    # --- Acknowledged send (item 1) ------------------------------------- #
+    # State was already persisted above with every fired entry marked
+    # sent=False. Only a CONFIRMED send flips them to sent=True and re-persists;
+    # a failed send leaves them pending so the next brief re-sends. This is the
+    # single ordering that never loses an alert on a transient Telegram failure.
+    if notifier is not None:
+        if dry_run:
+            # Preview what we WOULD send, offline; never mutates sent-state.
+            digest = output.telegram_text(envelope, html=True)
+            notifier.send(digest, dry_run=True)
+        elif send and should_send(result):
+            digest = output.telegram_text(envelope, html=True)
+            if notifier.send(digest):
+                for d in fired:
+                    alert_machine.mark_sent(d["_watch"], d)
+                alert_machine.save()
+                result.sent = True
+            else:
+                # Leave sent=False on disk (already persisted) → re-sent next run.
+                result.send_failed = True
+                result.exit_code = result.exit_code or 1
+
+    return result
 
 
 def _digest_summary(
