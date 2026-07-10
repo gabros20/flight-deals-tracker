@@ -134,6 +134,32 @@ def test_run_invalid_where_exits_2_with_error_and_hint():
     assert env["error"] and env["hint"]
 
 
+
+# --- partial coverage: a provider failing while another succeeds is exit 0 -
+# (controller-amended CONTRACT §3: only empty-AND-failed is exit 1) -------- #
+def test_run_partial_coverage_is_exit_0_with_incomplete_summary(monkeypatch):
+    from flight_deals.http import ProviderDown
+
+    body = json.loads((FIXTURES / "farfnd_roundtrip_anywhere_bud.json").read_text())["body"]
+    monkeypatch.setattr(
+        RyanairProvider, "roundtrip_fares",
+        lambda self, origin, dest=None, **k: self._parse_roundtrip(
+            body, k.get("duration_from"), k.get("duration_to")),
+    )
+
+    def wizz_boom(self, *a, **k):
+        raise ProviderDown("wizz simulated outage")
+    monkeypatch.setattr(WizzProvider, "timetable", wizz_boom)
+
+    result = runner.invoke(app, ["run", "--spec", SEASIDE_SINGLE])
+    assert result.exit_code == 0
+    env = json.loads(result.output)
+    assert len(env["results"]) >= 1
+    assert "route_status" not in env
+    assert "error" not in env and "hint" not in env
+    assert env["sources"]["wizzair"] == "error"
+    assert "incomplete" in env["summary"]
+
 def test_plan_inline_and_stdin_equivalent(monkeypatch):
     inline = runner.invoke(app, ["plan", "--spec", SEASIDE_SINGLE])
     piped = runner.invoke(app, ["plan", "--spec", "-"], input=SEASIDE_SINGLE)

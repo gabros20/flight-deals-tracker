@@ -433,7 +433,9 @@ class Planner:
             hint = "the next scheduled run will retry; or re-run with --fresh"
         env = output.envelope(
             results=outcome["results"],
-            summary=output.build_summary(outcome["results"], spec.origins, outcome["route_status"]),
+            summary=output.build_summary(
+                outcome["results"], spec.origins, outcome["route_status"], outcome["sources"],
+            ),
             sources=outcome["sources"],
             next=output.build_next(spec, outcome["results"], outcome["route_status"]),
             route_status=outcome["route_status"],

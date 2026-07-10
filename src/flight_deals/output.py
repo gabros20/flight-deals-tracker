@@ -184,9 +184,36 @@ _ROUTE_STATUS_PROSE = {
     "provider_error": "a provider failed, so this run could not confirm what's available",
 }
 
+# Status values that mean "this provider's data is NOT usable this run"
+# (CONTRACT §1 sources enum) — everything else (``ok``, ``version_refreshed``)
+# is a clean success for coverage-gap purposes.
+_SOURCE_FAILURE_STATUSES = {"error", "blocked", "parse_error"}
 
-def build_summary(results: List[Dict[str, Any]], origins: List[str], route_status: Optional[str]) -> str:
-    """One honest sentence, safe to paste into Telegram (CONTRACT §1)."""
+_PROVIDER_DISPLAY_NAME = {"ryanair": "Ryanair", "wizzair": "Wizz Air"}
+
+
+def _coverage_gap_note(sources: Optional[Dict[str, str]]) -> str:
+    """CONTRACT §3 "Partial coverage": when results are non-empty but a
+    provider failed, ``summary`` must name the gap in plain language rather
+    than reading as a clean success."""
+    if not sources:
+        return ""
+    failing = [name for name, status in sorted(sources.items()) if status in _SOURCE_FAILURE_STATUSES]
+    if not failing:
+        return ""
+    names = " and ".join(_PROVIDER_DISPLAY_NAME.get(n, n) for n in failing)
+    return f" ({names} unavailable — results may be incomplete)"
+
+
+def build_summary(
+    results: List[Dict[str, Any]],
+    origins: List[str],
+    route_status: Optional[str],
+    sources: Optional[Dict[str, str]] = None,
+) -> str:
+    """One honest sentence, safe to paste into Telegram (CONTRACT §1). When
+    ``results`` is non-empty but ``sources`` shows a provider failure, appends
+    the coverage-gap caveat (CONTRACT §3 "Partial coverage")."""
     origin_str = "/".join(origins)
     if not results:
         return _ROUTE_STATUS_PROSE.get(route_status or "no_service", "no deals found")
@@ -200,7 +227,7 @@ def build_summary(results: List[Dict[str, Any]], origins: List[str], route_statu
     return (
         f"Found {n} {plural} from {origin_str}, cheapest {cheapest['destination']} "
         f"€{cheapest['price_eur']:.0f} rt {dates} ({conf})"
-    )
+    ) + _coverage_gap_note(sources)
 
 
 def build_next(spec: Any, results: List[Dict[str, Any]], route_status: Optional[str]) -> List[str]:

@@ -49,6 +49,11 @@ Field rules:
 - `summary`: always present, always a single sentence, always safe to paste
   verbatim into a Telegram message (no JSON, no markdown tables). On empty
   results it explains *why* in plain language, sourced from `route_status`.
+  When `results` is non-empty but a provider needed to answer the query
+  failed/blocked/parse-errored (see § 3 "Partial coverage"), `summary` MUST
+  append the coverage gap in plain language, e.g. `"...(Wizz Air
+  unavailable — results may be incomplete)"` — never silently reported as a
+  clean success.
 - `sources`: always present, one key per provider **queried during this
   call** (a provider not relevant to the request — e.g. Wizz for a
   Wizz-unserved route — is simply absent, not `"not_queried"`, since it was
@@ -68,10 +73,12 @@ Field rules:
 - `next`: always present (may be `[]`). Each entry is a **complete,
   copy-pasteable** `flight-deals ...` command string, not a description.
   Agents (Hermes) must be able to run `next[0]` verbatim.
-- `error` / `hint`: present together, only when exit code is 1 or 2. `hint`
+- `error` / `hint`: present together, only when exit code is 1 or 2, and
+  always both present when either is (never one without the other). `hint`
   is not generic advice — it is either an exact corrected command (exit 2)
-  or a plain statement of what will happen automatically (exit 1, e.g. "the
-  next scheduled run will retry").
+  or a plain statement of what will happen automatically (exit 1, e.g.
+  `error: "provider_error"`, `hint: "the next scheduled run will retry; or
+  re-run with --fresh"`).
 
 **What's frozen vs. what isn't:** `deal_id`, field names, field types, and
 enum values (`shape`, `price_confidence`, `sources` status values,
@@ -206,14 +213,29 @@ Field-by-field:
 
 | Code | Meaning | `results` | `error`/`hint` |
 |---|---|---|---|
-| 0 | OK — command completed and the envelope is trustworthy, **including when `results` is `[]`** (a typed empty state, § 4, is a successful answer) | `[]` or populated | absent |
-| 1 | Transient/provider failure — at least one provider needed to answer this query failed/blocked/parse-errored and no other provider could fully cover for it, so `results` may be incomplete; the caller should not conclude "no deals exist", only "this run couldn't tell". Retry = the next scheduled run (cron) or a manual re-run | `[]` or partial | present |
+| 0 | OK — command completed and the envelope is trustworthy, **including when `results` is `[]`** (a typed empty state, § 4, is a successful answer) **and including when a provider failed but at least one other provider still produced usable results** (see "Partial coverage" below) | `[]` or populated | absent |
+| 1 | Transient/provider failure — `results` is empty **and** at least one provider needed to answer this query failed/blocked/parse-errored, so the emptiness itself is untrustworthy; the caller should not conclude "no deals exist", only "this run couldn't tell". Retry = the next scheduled run (cron) or a manual re-run | `[]` only | present |
 | 2 | Input error — bad IATA, unparsable dates, invalid `--where` expression, invalid flag combination; caught **before** any network call | `[]` | present, `hint` is an exact corrected command |
 
-Rule of thumb: exit 1 is "the world didn't cooperate", exit 2 is "the
-request was malformed" (agent's mistake, fixable without retrying
-anything). A provider being down never becomes exit 2, and a bad flag never
-becomes exit 1.
+Rule of thumb: exit 1 is "the world didn't cooperate **and** left us with
+nothing", exit 2 is "the request was malformed" (agent's mistake, fixable
+without retrying anything). A provider being down never becomes exit 2, and
+a bad flag never becomes exit 1.
+
+**Partial coverage is exit 0, not exit 1.** If a provider fails but at
+least one other provider still produced ≥1 usable result, the run is exit
+0: the caller has something usable *right now*, and retrying wouldn't
+change that. The failure is not hidden — it's visible in two places:
+- `sources` carries the failing provider's real status (`error` /
+  `blocked` / `parse_error`), never silently `ok`;
+- `summary` names the gap in plain language, e.g. `"...found 2 deals...
+  (Wizz Air unavailable — results may be incomplete)"`, so an agent/human
+  reading only the sentence still learns coverage was partial.
+
+Exit 1 stays reserved for the case where that safety net doesn't exist —
+`results == []` with a provider failure — because that's the only case
+where "no deals" and "we couldn't check" are indistinguishable without the
+`error`/`hint` signal.
 
 Stub commands (Task 1: `roundtrip`, `collect`, `alerts`, `history`,
 `multi_airports`, `--connections`) exit 2 with
@@ -341,3 +363,17 @@ Decisions locked in:
 - `AVAIL` (booking/v4/availability, client-version fallback) has no Deal
   shape implications beyond filling in `departure_time`/`flight_number` on
   otherwise day-level legs — no separate contract needed.
+
+---
+
+## Changelog
+
+- **2026-07-10** — Narrowed exit 1 (§ 3) from "`results` is `[]` or
+  partial" to "`results` is `[]` **only**". A provider failing while
+  another provider still returns ≥1 usable result is now exit 0, with the
+  failure surfaced via `sources` (real status, never `ok`) and via a
+  coverage-gap sentence appended to `summary`. Reason: cron/agent
+  ergonomics — exit 0 means "usable results exist, act on them"; `sources`
+  is where provider health lives, not the exit code. A non-zero exit on a
+  partially-successful run would make cron treat a usable answer as a
+  failure and would train agents to distrust/ignore non-empty `results`.
