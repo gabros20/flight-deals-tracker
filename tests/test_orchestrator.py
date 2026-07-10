@@ -1,16 +1,16 @@
-import pytest
 from flight_deals.orchestrator import DealOrchestrator
+
 
 def test_orchestrator_initialization():
     orch = DealOrchestrator()
     assert orch is not None
 
-def test_search_by_category_smoke():
+
+def test_search_by_category_smoke(monkeypatch):
     orch = DealOrchestrator()
-    # This will return empty or real results depending on dates
-    results = orch.search_by_category(
-        "european-islands", "BUD", "2026-08-01", "2026-08-10"
-    )
+    monkeypatch.setattr(orch.ryanair, "get_cheapest_flights", lambda *a, **k: [])
+    monkeypatch.setattr(orch.wizz, "get_cheapest_flights", lambda *a, **k: [])
+    results = orch.search_by_category("european-islands", "BUD", "2026-08-01", "2026-08-10")
     assert isinstance(results, list)
 
 
@@ -43,3 +43,16 @@ def test_provider_exception_surfaces_in_sources(monkeypatch):
     assert orch.provider_status["ryanair"]["last_error"]
     assert "wizz" in orch.provider_status
     assert orch.provider_status["wizz"]["ok"] is True
+
+
+def test_typed_provider_exception_maps_to_status(monkeypatch):
+    """A typed SchemaError surfaces as `parse_error` in the aggregated status."""
+    from flight_deals.http import SchemaError
+
+    orch = DealOrchestrator()
+    monkeypatch.setattr(orch.ryanair, "get_cheapest_flights",
+                        lambda *a, **k: (_ for _ in ()).throw(SchemaError("drift")))
+    monkeypatch.setattr(orch.wizz, "get_cheapest_flights", lambda *a, **k: [])
+
+    orch.search_by_category("seaside", "BUD", "2026-08-22", "2026-08-24")
+    assert orch.provider_status["ryanair"]["status"] == "parse_error"

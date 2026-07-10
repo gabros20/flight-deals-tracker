@@ -11,6 +11,13 @@ dependencies = [
     "python-dateutil>=2.8",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=7",
+    "freezegun>=1.2",
+    "responses>=0.24",
+]
+
 [project.scripts]
 flight-deals = "flight_deals.cli:app"
 
