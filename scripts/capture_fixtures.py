@@ -66,6 +66,7 @@ USER_AGENTS = [
 ]
 
 FARFND_ROUNDTRIP_URL = "https://www.ryanair.com/api/farfnd/v4/roundTripFares"
+FARFND_ONEWAY_URL = "https://www.ryanair.com/api/farfnd/v4/oneWayFares"
 FARFND_CHEAPEST_PER_DAY_URL = "https://www.ryanair.com/api/farfnd/v4/oneWayFares/{origin}/{dest}/cheapestPerDay"
 WIZZ_VERSION_PAGE_URL = "https://wizzair.com/en-gb/flights/timetable"
 WIZZ_TIMETABLE_URL = "https://be.wizzair.com/{version}/Api/search/timetable"
@@ -211,6 +212,31 @@ def capture_farfnd_roundtrip_anywhere(cap: Capture, out_dir: Path) -> dict:
         return result
     except requests.RequestException as e:
         return synthetic_fallback(out_dir, name, params, FARFND_ROUNDTRIP_URL, reason=str(e), body=SYNTHETIC_FARFND_ANYWHERE)
+
+
+def capture_farfnd_oneway_anywhere(cap: Capture, out_dir: Path) -> dict:
+    """OW-ANYWHERE: one-way ``fares`` list, no ``arrivalAirportIataCode``,
+    single outbound window — mirrors ``capture_farfnd_roundtrip_anywhere``
+    but for :meth:`RyanairProvider.oneway_fares` (Task 7 S1), which has no
+    live fixture yet (Task 7 fix wave)."""
+    name = "farfnd_oneway_anywhere_bud"
+    out_from = next_saturday()
+    out_to = out_from + timedelta(days=2)
+    params = {
+        "departureAirportIataCode": "BUD",
+        "outboundDepartureDateFrom": out_from.isoformat(),
+        "outboundDepartureDateTo": out_to.isoformat(),
+        "currency": "EUR",
+        "market": "en-gb",
+        "adults": 1,
+    }
+    try:
+        resp = cap.get(FARFND_ONEWAY_URL, params=params, headers={"Accept": "application/json", "Referer": "https://www.ryanair.com/"})
+        payload, result = evaluate_response(resp, name, FARFND_ONEWAY_URL, params, SYNTHETIC_FARFND_ONEWAY_ANYWHERE)
+        write_json(out_dir / f"{name}.json", payload)
+        return result
+    except requests.RequestException as e:
+        return synthetic_fallback(out_dir, name, params, FARFND_ONEWAY_URL, reason=str(e), body=SYNTHETIC_FARFND_ONEWAY_ANYWHERE)
 
 
 def capture_farfnd_cheapest_per_day(cap: Capture, out_dir: Path) -> dict:
@@ -487,6 +513,20 @@ SYNTHETIC_FARFND_ANYWHERE = {
     ]
 }
 
+SYNTHETIC_FARFND_ONEWAY_ANYWHERE = {
+    "fares": [
+        {
+            "outbound": {
+                "departureAirport": {"iataCode": "BUD", "name": "Budapest", "countryName": "Hungary"},
+                "arrivalAirport": {"iataCode": "CTA", "name": "Catania", "countryName": "Italy"},
+                "departureDate": "2026-08-22T06:15:00",
+                "flightNumber": "FR2201",
+                "price": {"value": 39.99, "currencyCode": "EUR"},
+            },
+        }
+    ]
+}
+
 SYNTHETIC_FARFND_CHEAPEST_PER_DAY = {
     "outbound": {
         "fares": [
@@ -550,6 +590,7 @@ def main() -> int:
 
     summary.append(capture_farfnd_roundtrip_exact(cap, out_dir))
     summary.append(capture_farfnd_roundtrip_anywhere(cap, out_dir))
+    summary.append(capture_farfnd_oneway_anywhere(cap, out_dir))
     summary.append(capture_farfnd_cheapest_per_day(cap, out_dir))
     summary.append(capture_farfnd_empty_nonexistent(cap, out_dir))
     summary.append(capture_wizz_timetable(cap, out_dir, version))

@@ -62,6 +62,29 @@ def test_duration_filter_excludes_out_of_range():
 
 
 # --------------------------------------------------------------------------- #
+# OW-ANYWHERE — one-way fares, real captured shape (Task 7 fix wave)          #
+# --------------------------------------------------------------------------- #
+@responses.activate
+def test_oneway_anywhere_mode_real_fixture_shape():
+    """Parses the live-captured farfnd oneWayFares anywhere-mode body
+    (tests/fixtures/farfnd_oneway_anywhere_bud.json) — a real recorded shape,
+    complementing the hand-built synthetic body already exercised by
+    test_intents.test_oneway_produces_s1_deals."""
+    responses.add(responses.GET, ry.FARFND_ONEWAY,
+                  json=load_body("farfnd_oneway_anywhere_bud.json"), status=200)
+    fares = _p().oneway_fares("BUD", None, out_from="2026-08-22", out_to="2026-08-24")
+    # anywhere -> many distinct destinations; fixture kept 20 (size:65 truncated)
+    assert len(fares) == 20
+    assert len({f.destination for f in fares}) > 1
+    assert all(f.origin == "BUD" for f in fares)
+    assert all(f.price_confidence == "exact" for f in fares)
+    assert all(f.source_endpoint == "farfnd/oneWayFares" for f in fares)
+    # request omitted arrivalAirportIataCode in anywhere mode
+    sent = responses.calls[0].request.url
+    assert "arrivalAirportIataCode" not in sent
+
+
+# --------------------------------------------------------------------------- #
 # CAL — cheapest per day                                                       #
 # --------------------------------------------------------------------------- #
 @responses.activate
