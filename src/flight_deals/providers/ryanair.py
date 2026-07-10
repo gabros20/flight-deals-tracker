@@ -76,19 +76,35 @@ class RyanairProvider:
     # ------------------------------------------------------------------ #
     # HTTP + cache plumbing                                              #
     # ------------------------------------------------------------------ #
-    def _fetch(self, url: str, endpoint: str, params: Dict[str, Any], use_cache: bool) -> Any:
-        """Cache-first GET of a raw response body. Typed exceptions propagate."""
+    def _fetch(
+        self,
+        url: str,
+        endpoint: str,
+        query_params: Dict[str, Any],
+        use_cache: bool,
+        *,
+        key_params: Optional[Dict[str, Any]] = None,
+    ) -> Any:
+        """
+        Cache-first GET of a raw response body. Typed exceptions propagate.
+
+        ``key_params`` is what identifies the call for caching; it defaults to
+        ``query_params`` but MUST be given separately when parts of the request
+        live in the URL path (e.g. cheapestPerDay's origin/dest) — otherwise
+        every route would collide on the same cache key.
+        """
+        cache_key = key_params if key_params is not None else query_params
         want_cache = self.use_cache and use_cache and self._cache is not None
         if want_cache:
-            cached = self._cache.get(self.name, endpoint, params)
+            cached = self._cache.get(self.name, endpoint, cache_key)
             if cached is not None:
-                logger.debug("ryanair: cache hit %s %s", endpoint, params)
+                logger.debug("ryanair: cache hit %s %s", endpoint, cache_key)
                 return cached
 
-        body = http.get_json(url, params=params)
+        body = http.get_json(url, params=query_params)
 
         if want_cache:
-            self._cache.set(self.name, endpoint, params, body)
+            self._cache.set(self.name, endpoint, cache_key, body)
         return body
 
     # ------------------------------------------------------------------ #
@@ -217,7 +233,10 @@ class RyanairProvider:
         origin, dest = origin.upper(), dest.upper()
         url = FARFND_ONEWAY_CPD.format(origin=origin, dest=dest)
         params = {"outboundMonthOfDate": _month_first(month), "currency": "EUR"}
-        body = self._fetch(url, "cheapestPerDay", params, use_cache)
+        # origin/dest are URL path params — include them in the cache key so
+        # different routes don't collide on the same (month, currency) key.
+        key = {"origin": origin, "dest": dest, **params}
+        body = self._fetch(url, "cheapestPerDay", params, use_cache, key_params=key)
         return self._parse_cheapest_per_day(body, origin, dest)
 
     def _parse_cheapest_per_day(self, body: Any, origin: str, dest: str) -> List[DayFare]:

@@ -26,6 +26,29 @@ def test_key_includes_all_params(tmp_path):
     assert k1 == k3           # order-independent
 
 
+@responses.activate
+def test_cheapest_per_day_routes_do_not_collide(tmp_path):
+    """
+    Regression: cheapestPerDay carries origin/dest in the URL *path*, not the
+    query string. The cache key must still distinguish routes, or every route
+    would read the first route's fares.
+    """
+    for dest, fixture in (("CFU", "farfnd_cheapest_per_day_bud_cfu.json"),):
+        url = ry.FARFND_ONEWAY_CPD.format(origin="BUD", dest=dest)
+        responses.add(responses.GET, url, json=load_body(fixture), status=200)
+    url_cb = ry.FARFND_ONEWAY_CPD.format(origin="CFU", dest="BUD")
+    responses.add(responses.GET, url_cb, json=load_body("farfnd_cheapest_per_day_cfu_bud.json"), status=200)
+
+    p = RyanairProvider(use_cache=True)
+    p._cache = _cache(tmp_path)
+    a = p.cheapest_per_day("BUD", "CFU", "2026-08")
+    b = p.cheapest_per_day("CFU", "BUD", "2026-08")
+    # Two network calls, two distinct cache files, correctly-labelled results.
+    assert len(responses.calls) == 2
+    assert all(d.destination == "CFU" for d in a)
+    assert all(d.destination == "BUD" for d in b)
+
+
 def test_set_get_roundtrip(tmp_path):
     c = _cache(tmp_path)
     params = {"o": "BUD", "d": "CFU"}
