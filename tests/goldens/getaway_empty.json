@@ -1,0 +1,15 @@
+{
+  "exit_code": 0,
+  "envelope": {
+    "results": [],
+    "summary": "no scheduled service was found for this search in the window",
+    "sources": {
+      "ryanair": "ok",
+      "wizzair": "ok"
+    },
+    "next": [
+      "flight-deals run --spec '{\"origins\":[\"BUD\"],\"where\":\"croatia & seaside\",\"depart\":\"2026-08-22..2026-08-27\",\"nights\":\"5-8\"}'"
+    ],
+    "route_status": "no_service"
+  }
+}

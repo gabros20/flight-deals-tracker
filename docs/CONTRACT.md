@@ -368,6 +368,17 @@ Decisions locked in:
 
 ## Changelog
 
+- **2026-07-10 (Task 7)** — Two **additive, optional** Deal fields (present
+  only on the intent verbs `getaway`/`oneway`, never on the deterministic
+  `run`/`plan` path, so existing envelopes stay byte-identical):
+  - `estimated_price_eur` — retained pre-confirmation windowed estimate when an
+    approximate (Wizz) fare was refined by an exact-date re-query
+    (estimate→confirm, § UPGRADE-PLAN §4). `price_eur` then holds the confirmed
+    figure; `price_confidence` is unchanged (a Wizz deal stays `approximate`).
+  - `group` — `standout | solid | baseline` (SEARCH-DESIGN §2), attached by
+    history enrichment. Absent when no enrichment ran.
+  Neither repurposes a frozen field; consumers that don't know them ignore them.
+
 - **2026-07-10** — Narrowed exit 1 (§ 3) from "`results` is `[]` or
   partial" to "`results` is `[]` **only**". A provider failing while
   another provider still returns ≥1 usable result is now exit 0, with the

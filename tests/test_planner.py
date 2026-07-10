@@ -49,10 +49,15 @@ def test_compile_refuses_non_direct_shape():
     assert "not yet enabled" in ei.value.hint
 
 
-def test_compile_refuses_one_way():
-    with pytest.raises(PlannerRefusal) as ei:
-        compile_plan(parse_spec({"where": "seaside", "depart": "2026-08"}))
-    assert "nights" in ei.value.hint
+def test_compile_one_way_uses_oneway_anywhere():
+    """One-way (no nights) is enabled in Task 7: it compiles to an OW-ANYWHERE
+    Ryanair call (S1) plus Wizz TT per matched dest — never refused."""
+    plan = compile_plan(parse_spec({"where": "seaside", "depart": "2026-08-22..2026-08-24"}))
+    ow = [c for c in plan.calls if c.provider == "ryanair"]
+    assert len(ow) == 1
+    assert ow[0].endpoint == "oneWayFares"
+    assert ow[0].shape == "S1"
+    assert all(c.shape == "S1" for c in plan.calls)
 
 
 def test_compile_is_deterministic_and_sorted():

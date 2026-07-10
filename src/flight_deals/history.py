@@ -68,17 +68,32 @@ class PriceHistoryStore:
             except (ValueError, TypeError):
                 return None
 
+    @staticmethod
+    def _parse_ts(value: str) -> Optional[datetime]:
+        """Parse the ``timestamp_utc`` column into an aware UTC datetime."""
+        if not value:
+            return None
+        try:
+            dt = datetime.fromisoformat(value)
+        except (ValueError, TypeError):
+            return None
+        return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+
     def _filter_by_window(self, rows: List[Dict], window_days: Optional[int] = None) -> List[Dict]:
-        """Robust date-window filtering for file-based data."""
+        """Window-filter by OBSERVATION time (``timestamp_utc``), not the flight's
+        departure date (history v2, Task 7 req 4): "prices seen in the last N
+        days" is the meaningful window for typical-price and best-this-month
+        comparisons. Rows with an unparseable/empty timestamp are kept (an old
+        row is better than a dropped one)."""
         if window_days is None:
             window_days = self.window_days
         if window_days <= 0:
             return rows
-        cutoff = date.today() - timedelta(days=window_days)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=window_days)
         filtered = []
         for row in rows:
-            dep = self._parse_date(row.get("departure_date", ""))
-            if dep is None or dep >= cutoff:
+            ts = self._parse_ts(row.get("timestamp_utc", ""))
+            if ts is None or ts >= cutoff:
                 filtered.append(row)
         return filtered
 
@@ -131,9 +146,9 @@ class PriceHistoryStore:
         rows = self._filter_by_window(rows, window_days)
         prices = []
         dates = []
-        recent_prices = []  # for best this month logic
+        recent_prices = []  # observations seen in the last 30 days (best-this-month)
 
-        cutoff_month = date.today() - timedelta(days=30)
+        cutoff_month = datetime.now(timezone.utc) - timedelta(days=30)
 
         for row in rows:
             if row.get("origin") != origin or row.get("destination") != destination:
@@ -141,11 +156,15 @@ class PriceHistoryStore:
             try:
                 p = float(row["price"])
                 dep = self._parse_date(row.get("departure_date", ""))
+                ts = self._parse_ts(row.get("timestamp_utc", ""))
                 prices.append(p)
                 if dep:
                     dates.append(str(dep))
-                    if dep >= cutoff_month:
-                        recent_prices.append(p)
+                # best_this_month is over OBSERVATIONS in the last 30 days
+                # (history v2, Task 7): the minimum price we've *seen* recently,
+                # not flights departing soon.
+                if ts is not None and ts >= cutoff_month:
+                    recent_prices.append(p)
             except (ValueError, KeyError):
                 continue
 
@@ -164,10 +183,12 @@ class PriceHistoryStore:
         p25 = prices[max(0, int(0.25 * count))]
         p75 = prices[min(count-1, int(0.75 * count))]
 
-        # Robust best this month / year using actual dates
-        best_this_month = False
-        if recent_prices:
-            best_this_month = min_p <= min(recent_prices)
+        # History v2: best_this_month is the MINIMUM over observations seen in
+        # the last 30 days (a value). The boolean flag means "the all-time-low
+        # was actually set within that window" (i.e. the record is fresh), which
+        # is what a 'best this month' badge should assert.
+        best_price_this_month = round(min(recent_prices), 2) if recent_prices else None
+        best_this_month = bool(recent_prices) and (min_p == min(recent_prices))
 
         best_this_year = min_p == min(prices)  # conservative; could refine with year filter
 
@@ -182,9 +203,48 @@ class PriceHistoryStore:
             "percentile_25": round(p25, 2),
             "percentile_75": round(p75, 2),
             "best_this_month": best_this_month,
+            "best_price_this_month": best_price_this_month,
             "best_this_year": best_this_year,
             "last_collected": last_collected,
             "window_days_used": window_days or self.window_days,
+        }
+
+    def compare(
+        self,
+        origin: str,
+        destination: str,
+        price: float,
+        window_days: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Compare ``price`` for a route against its observed history (history
+        v2, Task 7). Returns the fields the deal-enrichment layer needs:
+
+        * ``count`` — observations in the window;
+        * ``median`` — the "typical" price (``pct_vs_typical`` compares to it);
+        * ``min`` — cheapest ever seen in the window;
+        * ``pct_vs_typical`` — fraction below the median (``None`` if no basis);
+        * ``sufficient`` — ``count >= 5`` (the standout gate; below it we say
+          "insufficient history" rather than inventing a percentile);
+        * ``best_this_month`` — ``price`` ties/beats the last-30d observed min.
+        """
+        stats = self.get_route_stats(origin, destination, window_days=window_days)
+        count = stats.get("count", 0)
+        median = stats.get("median_price")
+        minp = stats.get("min_price")
+        pct = None
+        if median:
+            pct = (median - price) / median
+        best_30d = stats.get("best_price_this_month")
+        # This deal is "best this month" when its price ties/beats the cheapest
+        # fare OBSERVED in the last 30 days (history v2, req 4).
+        best_this_month = best_30d is not None and price <= best_30d
+        return {
+            "count": count,
+            "median": median,
+            "min": minp,
+            "pct_vs_typical": pct,
+            "sufficient": count >= 5,
+            "best_this_month": best_this_month,
         }
 
     def get_previous_price(self, origin: str, destination: str, departure_date: str) -> Optional[float]:

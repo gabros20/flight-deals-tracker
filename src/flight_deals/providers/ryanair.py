@@ -32,6 +32,7 @@ from flight_deals.models import DayFare, FareLeg, FarePair, FlightDeal
 logger = logging.getLogger(__name__)
 
 FARFND_ROUNDTRIP = "https://www.ryanair.com/api/farfnd/v4/roundTripFares"
+FARFND_ONEWAY = "https://www.ryanair.com/api/farfnd/v4/oneWayFares"
 FARFND_ONEWAY_CPD = "https://www.ryanair.com/api/farfnd/v4/oneWayFares/{origin}/{dest}/cheapestPerDay"
 ROUTES_URL = "https://www.ryanair.com/api/views/locate/searchWidget/routes/en/airport/{origin}"
 
@@ -222,6 +223,67 @@ class RyanairProvider:
             flight_number=node.get("flightNumber"),
             duration_minutes=_duration_minutes(dep, node.get("arrivalDate")),
         )
+
+    # ------------------------------------------------------------------ #
+    # OW-ANYWHERE / OW-EXACT — one-way fares (Task 7, S1)                #
+    # ------------------------------------------------------------------ #
+    def oneway_fares(
+        self,
+        origin: str,
+        dest: Optional[str] = None,
+        *,
+        out_from: str,
+        out_to: str,
+        use_cache: bool = True,
+    ) -> List[DayFare]:
+        """Cheapest one-way fare per destination (``dest=None`` -> anywhere) in
+        the outbound window, from farfnd ``oneWayFares``. Mirrors
+        :meth:`roundtrip_fares` but returns per-destination outbound
+        :class:`DayFare` legs (exact confidence). Shape matches roundTripFares:
+        a ``fares`` list whose entries carry an ``outbound`` leg node."""
+        origin = origin.upper()
+        params: Dict[str, Any] = {
+            "departureAirportIataCode": origin,
+            "outboundDepartureDateFrom": out_from,
+            "outboundDepartureDateTo": out_to,
+            "currency": "EUR",
+            "market": MARKET,
+            "adults": 1,
+        }
+        key = dict(params)
+        if dest:
+            params["arrivalAirportIataCode"] = dest.upper()
+            key["arrivalAirportIataCode"] = dest.upper()
+        body = self._fetch(FARFND_ONEWAY, "oneWayFares", params, use_cache, key_params=key)
+        return self._parse_oneway(body)
+
+    def _parse_oneway(self, body: Any) -> List[DayFare]:
+        if not isinstance(body, dict) or not isinstance(body.get("fares"), list):
+            raise SchemaError("oneWayFares: body missing a 'fares' list")
+        out: List[DayFare] = []
+        for fare in body["fares"]:
+            try:
+                node = fare.get("outbound") if isinstance(fare, dict) else None
+                if not node:
+                    continue
+                leg = self._leg(node)
+            except (KeyError, TypeError) as e:
+                raise SchemaError(f"oneWayFares: unexpected fare shape: {e}") from e
+            out.append(
+                DayFare(
+                    origin=leg.origin,
+                    destination=leg.destination,
+                    date=leg.date,
+                    price_eur=leg.price_eur,
+                    currency_original=(node.get("price") or {}).get("currencyCode", "EUR"),
+                    price_confidence=CONFIDENCE,
+                    carrier=CARRIER,
+                    source_endpoint="farfnd/oneWayFares",
+                    departure_time=leg.departure_time,
+                    flight_number=leg.flight_number,
+                )
+            )
+        return out
 
     # ------------------------------------------------------------------ #
     # CAL — cheapest per day                                             #

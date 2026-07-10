@@ -58,3 +58,32 @@ def test_removed_commands_exit_2_with_json_error(args):
     assert result.exit_code == 2
     payload = json.loads(result.output.strip().splitlines()[0])
     assert payload == {"error": "removed_pending_rebuild", "hint": "see docs/UPGRADE-PLAN.md"}
+
+
+# --- Task 7 intent verbs: offline validation paths (no network) ------------- #
+def test_getaway_past_date_exits_2_with_hint():
+    result = runner.invoke(app, ["getaway", "--depart", "2020-01-01..2020-01-05",
+                                 "--where", "seaside", "--nights", "5-8"])
+    assert result.exit_code == 2
+    env = json.loads(result.output)
+    assert env["error"] and "hint" in env
+
+
+def test_getaway_bad_origin_exits_2_suggesting_iata():
+    result = runner.invoke(app, ["getaway", "--depart", "2026-08-22..2026-08-24",
+                                 "--where", "seaside", "--nights", "5-8", "--from", "BUDA"])
+    assert result.exit_code == 2
+    env = json.loads(result.output)
+    assert "BUD" in env["hint"]
+
+
+def test_check_unknown_deal_exits_2():
+    result = runner.invoke(app, ["check", "0000nope00"])
+    assert result.exit_code == 2
+    env = json.loads(result.output)
+    assert env["error"] == "unknown_deal"
+
+
+def test_getaway_and_oneway_and_check_registered():
+    out = runner.invoke(app, ["--help"]).output.lower()
+    assert "getaway" in out and "oneway" in out and "check" in out

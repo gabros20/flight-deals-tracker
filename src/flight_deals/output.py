@@ -112,17 +112,26 @@ def build_deal(
     legs: List[Dict[str, Any]],
     why: str,
     ground: Optional[Dict[str, Any]] = None,
+    estimated_price_eur: Optional[float] = None,
+    group: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Assemble one Deal dict per CONTRACT §2. ``carriers`` is sorted (feeds the
     frozen ``deal_id``); ``nights`` is computed from the dates so it can never
-    disagree with them."""
+    disagree with them.
+
+    ``estimated_price_eur`` (Task 7, estimate→confirm): when an approximate
+    (Wizz) fare has been confirmed via an exact-date re-query, the confirmed
+    figure lands in ``price_eur`` and the original windowed estimate is retained
+    here. ``group`` (Task 7, history enrichment): ``standout|solid|baseline``.
+    Both are only attached when set, so the deterministic planner path (which
+    does neither) keeps producing byte-identical envelopes."""
     carriers = sorted(c.lower() for c in carriers)
     from datetime import date as _date
 
     nights: Optional[int] = None
     if return_date:
         nights = (_date.fromisoformat(return_date) - _date.fromisoformat(out_date)).days
-    return {
+    deal: Dict[str, Any] = {
         "deal_id": deal_id(origin, destination, out_date, return_date, shape, carriers),
         "shape": shape,
         "origin": origin,
@@ -138,6 +147,11 @@ def build_deal(
         "why": why,
         "links": _links(carriers, origin, destination, out_date, return_date),
     }
+    if estimated_price_eur is not None:
+        deal["estimated_price_eur"] = round(float(estimated_price_eur), 2)
+    if group is not None:
+        deal["group"] = group
+    return deal
 
 
 def standout_group(deal: Dict[str, Any], history: Optional[Dict[str, Any]] = None) -> str:
@@ -220,35 +234,76 @@ def build_summary(
     cheapest = results[0]
     conf = "exact" if cheapest["price_confidence"] == "exact" else "approx"
     dates = cheapest["out_date"]
+    trip = "ow"
     if cheapest.get("return_date"):
         dates += f"-{cheapest['return_date']}"
+        trip = "rt"
     n = len(results)
     plural = "deal" if n == 1 else "deals"
     return (
         f"Found {n} {plural} from {origin_str}, cheapest {cheapest['destination']} "
-        f"€{cheapest['price_eur']:.0f} rt {dates} ({conf})"
+        f"€{cheapest['price_eur']:.0f} {trip} {dates} ({conf})"
     ) + _coverage_gap_note(sources)
+
+
+def _spec_run_command(spec: Any, **overrides: Any) -> str:
+    """A copy-pasteable ``run --spec '{json}'`` string built from ``spec`` with
+    the given field overrides applied (the one widening move)."""
+    body: Dict[str, Any] = {"origins": list(spec.origins)}
+    where = getattr(spec, "where", None)
+    if where:
+        body["where"] = where
+    body["depart"] = getattr(spec, "depart", None)
+    if getattr(spec, "nights", None) is not None:
+        body["nights"] = spec.nights
+    if getattr(spec, "budget", None) is not None:
+        body["budget"] = spec.budget
+    body.update(overrides)
+    return f"flight-deals run --spec '{json.dumps(body, separators=(',', ':'))}'"
+
+
+def _widen_depart(spec: Any, extra_days: int = 3) -> str:
+    """Extend the outbound window's tail by ``extra_days`` (the cheapest window
+    widening — a few more candidate dates, no new routes)."""
+    from datetime import date as _date, timedelta as _td
+
+    ds = spec.depart_spec
+    new_to = (_date.fromisoformat(ds.out_to) + _td(days=extra_days)).isoformat()
+    return f"{ds.out_from}..{new_to}"
+
+
+def _broaden_where(where: Optional[str]) -> Optional[str]:
+    """Drop the last ``& term`` of a where-expression so the category widens
+    (e.g. ``"seaside & italy"`` -> ``"seaside"``). ``None`` if nothing to drop."""
+    if not where or "&" not in where:
+        return None
+    return where.rsplit("&", 1)[0].strip()
 
 
 def build_next(spec: Any, results: List[Dict[str, Any]], route_status: Optional[str]) -> List[str]:
     """At most ONE widening move (CONTRACT / UPGRADE-PLAN §4). Copy-pasteable
-    command strings only. Empty when there is nothing sensible to suggest."""
-    suggestions: List[str] = []
+    command strings only. The single move is the *cheapest that plausibly
+    helps*: budget +20% when the emptiness is a budget/constraint miss with a
+    budget set; a window +3d extension when service exists seasonally; else a
+    category broaden. Empty when nothing sensible remains."""
     if results:
-        # A single, useful follow-up: check the cheapest deal's history/current price.
-        suggestions.append(f"flight-deals check {results[0]['deal_id']}")
-        return suggestions[:1]
-    # Empty result: offer exactly one widening move.
-    depart = getattr(spec, "depart", None)
-    where = getattr(spec, "where", None) or "seaside"
+        # A single, useful follow-up: check the cheapest deal's live price/history.
+        return [f"flight-deals check {results[0]['deal_id']}"]
+
+    # Empty result: offer exactly one widening move, chosen by why-it's-empty.
     if route_status == "no_match" and getattr(spec, "budget", None):
         new_budget = int(round(float(spec.budget) * 1.2))
-        suggestions.append(
-            f'flight-deals run --spec \'{{"origins":{json.dumps(spec.origins)},'
-            f'"where":{json.dumps(where)},"depart":{json.dumps(depart)},'
-            f'"nights":{json.dumps(spec.nights)},"budget":{new_budget}}}\''
-        )
-    return suggestions[:1]
+        return [_spec_run_command(spec, budget=new_budget)]
+
+    # no_service (or no_match without a budget to raise): a seasonal window is
+    # the likeliest cheap unlock — widen the depart window by 3 days.
+    try:
+        return [_spec_run_command(spec, depart=_widen_depart(spec))]
+    except Exception:
+        broadened = _broaden_where(getattr(spec, "where", None))
+        if broadened:
+            return [_spec_run_command(spec, where=broadened)]
+        return []
 
 
 # --------------------------------------------------------------------------- #

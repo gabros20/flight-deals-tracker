@@ -135,19 +135,19 @@ def compile_plan(spec, registry: Optional[DestinationRegistry] = None, *, rate: 
             f"shape(s) {', '.join(disabled)} not yet enabled",
             'shape not yet enabled (Task 10); use "shapes":["direct"] for now',
         )
-    if not spec.is_round_trip:
-        raise PlannerRefusal(
-            "one-way search is not yet enabled",
-            'add a nights range for a round-trip, e.g. "nights":"5-8" '
-            "(one-way search arrives in Task 7)",
-        )
-
     depart = spec.depart_spec
-    lo, hi = spec.nights_range
-    # TT must cover outbound window AND the latest possible return (out_to + max
-    # nights). Rows come back un-clipped (Task 4 note) — execute() clips them.
-    tt_from = depart.out_from
-    tt_to = (date.fromisoformat(depart.out_to) + timedelta(days=hi)).isoformat()
+    round_trip = spec.is_round_trip
+    shape = "S2" if round_trip else "S1"
+    if round_trip:
+        lo, hi = spec.nights_range
+        # TT must cover outbound window AND the latest possible return (out_to +
+        # max nights). Rows come back un-clipped (Task 4 note) — execute() clips.
+        tt_from = depart.out_from
+        tt_to = (date.fromisoformat(depart.out_to) + timedelta(days=hi)).isoformat()
+    else:
+        # One-way (S1, Task 7): outbound window only, no return leg.
+        lo = hi = None
+        tt_from, tt_to = depart.out_from, depart.out_to
 
     matched = _matched_destinations(spec, registry)
     want_ryanair = "ryanair" in spec.carriers
@@ -156,17 +156,28 @@ def compile_plan(spec, registry: Optional[DestinationRegistry] = None, *, rate: 
     calls: List[CallDescriptor] = []
     for origin in sorted({o.upper() for o in spec.origins}):
         if want_ryanair:
-            # RT-ANYWHERE: every Ryanair destination in ONE call (exact fares).
-            calls.append(CallDescriptor(
-                provider="ryanair", endpoint="roundTripFares", mode="anywhere", shape="S2",
-                params={
-                    "origin": origin,
-                    "out_from": depart.out_from,
-                    "out_to": depart.out_to,
-                    "duration_from": lo,
-                    "duration_to": hi,
-                },
-            ))
+            if round_trip:
+                # RT-ANYWHERE: every Ryanair destination in ONE call (exact).
+                calls.append(CallDescriptor(
+                    provider="ryanair", endpoint="roundTripFares", mode="anywhere", shape="S2",
+                    params={
+                        "origin": origin,
+                        "out_from": depart.out_from,
+                        "out_to": depart.out_to,
+                        "duration_from": lo,
+                        "duration_to": hi,
+                    },
+                ))
+            else:
+                # OW-ANYWHERE: every Ryanair destination in ONE call (exact).
+                calls.append(CallDescriptor(
+                    provider="ryanair", endpoint="oneWayFares", mode="anywhere", shape="S1",
+                    params={
+                        "origin": origin,
+                        "out_from": depart.out_from,
+                        "out_to": depart.out_to,
+                    },
+                ))
         if want_wizz:
             # TT per where-matched destination. The registry can't know which
             # routes Wizz actually serves (no public route endpoint — Task 5),
@@ -174,7 +185,7 @@ def compile_plan(spec, registry: Optional[DestinationRegistry] = None, *, rate: 
             # bound; execute() tolerates no_service on the ones Wizz doesn't fly.
             for dest in matched:
                 calls.append(CallDescriptor(
-                    provider="wizzair", endpoint="timetable", mode="timetable", shape="S2",
+                    provider="wizzair", endpoint="timetable", mode="timetable", shape=shape,
                     params={
                         "origin": origin,
                         "destination": dest,
@@ -204,23 +215,46 @@ def check_max_calls(plan: CallPlan, max_calls: int) -> None:
 # --------------------------------------------------------------------------- #
 @dataclass
 class _Candidate:
-    """One best round-trip per (origin, destination), pre-render. Exact from a
-    Ryanair FarePair; approximate from a paired Wizz timetable estimate."""
+    """One best trip per (origin, destination), pre-render. Exact from a Ryanair
+    FarePair (S2) / DayFare (S1); approximate from a paired/one-way Wizz
+    timetable estimate. ``return_date``/``nights`` are ``None`` for one-way."""
     origin: str
     destination: str
     out_date: str
-    return_date: str
-    nights: int
+    return_date: Optional[str]
+    nights: Optional[int]
     price_eur: float
     price_confidence: str
     carriers: List[str]
     legs: List[Dict[str, Any]]
+    shape: str = "S2"
 
     def rank_key(self) -> Tuple:
         # cheapest wins; on a price tie an exact fare beats an approximate one;
         # then carriers string for a fully deterministic order.
         approx = self.price_confidence != "exact"
         return (self.price_eur, approx, "+".join(self.carriers))
+
+
+def _dayfare_to_candidate(df: DayFare, carrier: str, confidence: str) -> _Candidate:
+    """One-way (S1) candidate from a single outbound DayFare."""
+    return _Candidate(
+        origin=df.origin,
+        destination=df.destination,
+        out_date=df.date,
+        return_date=None,
+        nights=None,
+        price_eur=round(df.price_eur, 2),
+        price_confidence=confidence,
+        carriers=[carrier],
+        shape="S1",
+        legs=[
+            output.flight_leg(
+                df.origin, df.destination, carrier, df.date, df.price_eur,
+                departure_time=df.departure_time, flight_number=df.flight_number,
+            ),
+        ],
+    )
 
 
 def _farepair_to_candidate(fp: FarePair) -> _Candidate:
@@ -233,6 +267,7 @@ def _farepair_to_candidate(fp: FarePair) -> _Candidate:
         price_eur=round(fp.total_price_eur, 2),
         price_confidence="exact",
         carriers=["ryanair"],
+        shape="S2",
         legs=[
             output.flight_leg(
                 fp.outbound.origin, fp.outbound.destination, "ryanair", fp.outbound.date,
@@ -300,6 +335,24 @@ def _pair_timetable(
     )
 
 
+def _cheapest_oneway_timetable(
+    origin: str, dest: str, out_fares: List[DayFare], depart,
+) -> Optional[_Candidate]:
+    """Cheapest in-window outbound Wizz fare -> one approximate one-way (S1)
+    estimate. Window-clips the un-clipped TT rows the same way ``_pair_timetable``
+    does, and honours an explicit ``dates`` list."""
+    o_from = date.fromisoformat(depart.out_from)
+    o_to = date.fromisoformat(depart.out_to)
+    outs = [f for f in out_fares if o_from <= date.fromisoformat(f.date) <= o_to]
+    if depart.kind == "dates":
+        allowed = set(depart.dates)
+        outs = [f for f in outs if f.date in allowed]
+    if not outs:
+        return None
+    best = min(outs, key=lambda f: f.price_eur)
+    return _dayfare_to_candidate(best, "wizzair", "approximate")
+
+
 class Planner:
     """Compiles + executes specs. Provider instances are attributes so tests can
     monkeypatch them; the shared worker pool keeps sessions from leaking."""
@@ -333,16 +386,33 @@ class Planner:
             logger.warning("planner: ryanair anywhere %s failed: %s", p.get("origin"), e)
             return ("ryanair", [], {"provider": "ryanair", "status": status_for_exception(e), "detail": str(e)})
 
+    def _run_oneway_anywhere(self, call: CallDescriptor, fresh: bool):
+        p = call.params
+        try:
+            fares = self.ryanair.oneway_fares(
+                p["origin"], dest=None,
+                out_from=p["out_from"], out_to=p["out_to"], use_cache=not fresh,
+            )
+            return ("ryanair_ow", fares, {"provider": "ryanair", "status": "ok"})
+        except Exception as e:
+            logger.warning("planner: ryanair oneway %s failed: %s", p.get("origin"), e)
+            return ("ryanair_ow", [], {"provider": "ryanair", "status": status_for_exception(e), "detail": str(e)})
+
     def _run_timetable(self, call: CallDescriptor, spec, fresh: bool):
         p = call.params
         try:
             out_fares, ret_fares = self.wizz.timetable(
                 p["origin"], p["destination"], p["date_from"], p["date_to"], use_cache=not fresh,
             )
-            cand = _pair_timetable(
-                p["origin"], p["destination"], out_fares, ret_fares,
-                spec.depart_spec, spec.nights_range,
-            )
+            if spec.is_round_trip:
+                cand = _pair_timetable(
+                    p["origin"], p["destination"], out_fares, ret_fares,
+                    spec.depart_spec, spec.nights_range,
+                )
+            else:
+                cand = _cheapest_oneway_timetable(
+                    p["origin"], p["destination"], out_fares, spec.depart_spec,
+                )
             return ("wizzair", cand, {"provider": "wizzair", "status": "ok"})
         except Exception as e:
             logger.warning("planner: wizz TT %s->%s failed: %s", p.get("origin"), p.get("destination"), e)
@@ -364,8 +434,10 @@ class Planner:
 
         futures = []
         for call in plan.calls:
-            if call.mode == "anywhere":
+            if call.mode == "anywhere" and call.endpoint == "roundTripFares":
                 futures.append(executor.submit(self._run_anywhere, call, fresh))
+            elif call.mode == "anywhere" and call.endpoint == "oneWayFares":
+                futures.append(executor.submit(self._run_oneway_anywhere, call, fresh))
             elif call.mode == "timetable":
                 futures.append(executor.submit(self._run_timetable, call, spec, fresh))
 
@@ -390,6 +462,18 @@ class Planner:
                         allowed_dates is None or fp.out_date in allowed_dates
                     ):
                         _offer(_farepair_to_candidate(fp))
+            elif kind == "ryanair_ow":
+                # One-way DayFares (S1): clip to the outbound window + matched set.
+                o_from = date.fromisoformat(depart.out_from)
+                o_to = date.fromisoformat(depart.out_to)
+                for df in payload:
+                    if df.destination not in matched:
+                        continue
+                    if not (o_from <= date.fromisoformat(df.date) <= o_to):
+                        continue
+                    if allowed_dates is not None and df.date not in allowed_dates:
+                        continue
+                    _offer(_dayfare_to_candidate(df, "ryanair", "exact"))
             elif kind == "wizzair":
                 _offer(payload)
 
@@ -430,7 +514,7 @@ class Planner:
     @staticmethod
     def _render(c: _Candidate) -> Dict[str, Any]:
         return output.build_deal(
-            shape="S2",
+            shape=c.shape,
             origin=c.origin,
             destination=c.destination,
             out_date=c.out_date,
@@ -439,7 +523,7 @@ class Planner:
             price_confidence=c.price_confidence,
             carriers=c.carriers,
             legs=c.legs,
-            why=output.why_string(c.price_eur, c.price_confidence, round_trip=True),
+            why=output.why_string(c.price_eur, c.price_confidence, round_trip=c.shape == "S2"),
         )
 
     # -- one-shot: compile + guard + execute + build envelope --------------- #

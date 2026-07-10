@@ -11,3 +11,4 @@ __pycache__/
 .venv/
 evidence/
 src/flight_deals.egg-info/
+data/deals/

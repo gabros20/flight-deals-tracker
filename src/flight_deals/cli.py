@@ -80,8 +80,10 @@ def search(
     history_window: int = typer.Option(None, "--history-window", help="Days of history to use for comparisons (default from config)"),
     fresh: bool = typer.Option(False, "--fresh", help="Bypass cache and fetch fresh prices"),
 ):
-    """Search one-way deals by category. Round-trip (--return-from/--return-to)
-    and --connections are removed pending rebuild — see docs/UPGRADE-PLAN.md."""
+    """[DEPRECATED for agents — use `oneway`] Search one-way deals by category.
+    The `oneway` verb is the agent-facing replacement (JSON envelope, --where
+    expressions, estimate→confirm, snapshots). Round-trip (--return-from/
+    --return-to) and --connections remain removed — see docs/UPGRADE-PLAN.md."""
     if return_from or return_to or connections:
         _removed_pending_rebuild()
         raise typer.Exit(2)
@@ -239,6 +241,94 @@ def run(
     typer.echo(output.render(env, pretty=pretty))
     if exit_code:
         raise typer.Exit(exit_code)
+
+
+# --------------------------------------------------------------------------- #
+# Intent verbs (Task 7): getaway / oneway / check                             #
+# --------------------------------------------------------------------------- #
+def _parse_origins(origins_opt: Optional[str]) -> list:
+    if not origins_opt:
+        return [config.default_origin]
+    return [o.strip() for o in origins_opt.split(",") if o.strip()]
+
+
+def _emit_intent(env: dict, exit_code: int, pretty: bool) -> None:
+    from flight_deals import output
+    typer.echo(output.render(env, pretty=pretty))
+    if exit_code:
+        raise typer.Exit(exit_code)
+
+
+def _run_intent(*, where, depart, nights, budget, origins_opt, max_calls, fresh, max_results, pretty):
+    from flight_deals.engine.intents import IntentError, run_search
+    from flight_deals.engine.planner import PlannerRefusal
+    from flight_deals.engine.spec import SpecError
+    from flight_deals.registry.where import WhereParseError
+
+    try:
+        env, code = run_search(
+            where=where, depart=depart, nights=nights, budget=budget,
+            origins=_parse_origins(origins_opt), max_results=max_results,
+            max_calls=max_calls, fresh=fresh, registry=registry,
+        )
+    except (IntentError, SpecError, PlannerRefusal) as e:
+        _emit_spec_error(type(e).__name__, e.hint, pretty)
+        raise typer.Exit(2)
+    except WhereParseError as e:
+        _emit_spec_error("invalid_where", e.hint, pretty)
+        raise typer.Exit(2)
+    _emit_intent(env, code, pretty)
+
+
+@app.command()
+def getaway(
+    depart: str = typer.Option(..., "--depart", help="Date, window A..B, month YYYY-MM, or comma list"),
+    where: str = typer.Option(None, "--where", help='Tag expression, e.g. "seaside | italy | spain"'),
+    nights: str = typer.Option(..., "--nights", help='Nights range for the round-trip, e.g. "5-8"'),
+    budget: float = typer.Option(None, "--budget", help="Max total price per person, EUR"),
+    origins_opt: str = typer.Option(None, "--from", "--origins", help="Origin IATA(s), comma-separated (default from config)"),
+    max_calls: int = typer.Option(40, "--max-calls"),
+    max_results: int = typer.Option(10, "--max-results"),
+    fresh: bool = typer.Option(False, "--fresh", help="Bypass cache, fetch fresh prices"),
+    pretty: bool = typer.Option(False, "--pretty"),
+):
+    """Find round-trip getaway deals (S2). Translates intent flags into a spec,
+    runs the planner, confirms approximate fares with an exact re-query, enriches
+    with price history, and snapshots each deal. JSON envelope on stdout."""
+    _run_intent(where=where, depart=depart, nights=nights, budget=budget,
+                origins_opt=origins_opt, max_calls=max_calls, fresh=fresh,
+                max_results=max_results, pretty=pretty)
+
+
+@app.command()
+def oneway(
+    depart: str = typer.Option(..., "--depart", help="Date, window A..B, month YYYY-MM, or comma list"),
+    where: str = typer.Option(None, "--where", help='Tag expression, e.g. "seaside | italy | spain"'),
+    budget: float = typer.Option(None, "--budget", help="Max price per person, EUR"),
+    origins_opt: str = typer.Option(None, "--from", "--origins", help="Origin IATA(s), comma-separated (default from config)"),
+    max_calls: int = typer.Option(40, "--max-calls"),
+    max_results: int = typer.Option(10, "--max-results"),
+    fresh: bool = typer.Option(False, "--fresh", help="Bypass cache, fetch fresh prices"),
+    pretty: bool = typer.Option(False, "--pretty"),
+):
+    """Find one-way deals (S1). Same builder as `getaway`, without nights.
+    (The deprecated-for-agents `search` command aliases this behaviour.)"""
+    _run_intent(where=where, depart=depart, nights=None, budget=budget,
+                origins_opt=origins_opt, max_calls=max_calls, fresh=fresh,
+                max_results=max_results, pretty=pretty)
+
+
+@app.command()
+def check(
+    deal_id: str = typer.Argument(..., help="A deal_id from a previous getaway/oneway result"),
+    pretty: bool = typer.Option(False, "--pretty"),
+):
+    """Re-check a previously seen deal: live exact re-query, delta vs the latest
+    and first observation. Unknown id or past dates exit 2 with a hint."""
+    from flight_deals.engine.intents import check_deal
+
+    env, code = check_deal(deal_id, registry=registry)
+    _emit_intent(env, code, pretty)
 
 
 @app.command()
