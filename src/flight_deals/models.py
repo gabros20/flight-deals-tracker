@@ -2,6 +2,76 @@ from typing import Literal, Union, List, Optional, Dict, Any
 from datetime import datetime
 from pydantic import BaseModel, Field
 
+Confidence = Literal["exact", "approximate"]
+
+
+class DayFare(BaseModel):
+    """
+    One direction, one day, cheapest fare — the unit of day-level data
+    (CAL / TT). Fields per Task 3 brief + CONTRACT.md naming.
+    """
+    origin: str
+    destination: str
+    date: str  # airport-local calendar date "YYYY-MM-DD"
+    price_eur: float
+    currency_original: str
+    price_confidence: Confidence
+    carrier: str  # "ryanair" | "wizzair"
+    source_endpoint: str  # e.g. "farfnd/oneWayFares/cheapestPerDay"
+    # Enrichment present on some endpoints (nullable — day-level often has none)
+    departure_time: Optional[str] = None  # "HH:MM"
+    flight_number: Optional[str] = None
+
+
+class FareLeg(BaseModel):
+    """A single priced flight leg inside a FarePair."""
+    origin: str
+    destination: str
+    date: str  # "YYYY-MM-DD"
+    price_eur: float
+    carrier: str
+    departure_time: Optional[str] = None  # "HH:MM"
+    arrival_time: Optional[str] = None
+    flight_number: Optional[str] = None
+    duration_minutes: Optional[int] = None
+
+
+class FarePair(BaseModel):
+    """
+    A paired round-trip (RT-ANYWHERE / RT-EXACT): outbound + inbound legs and a
+    total. Flight numbers/times are present because farfnd roundTripFares
+    returns them.
+    """
+    origin: str
+    destination: str
+    out_date: str
+    return_date: str
+    nights: int
+    total_price_eur: float
+    currency_original: str
+    price_confidence: Confidence
+    carrier: str
+    source_endpoint: str
+    outbound: FareLeg
+    inbound: FareLeg
+
+
+class ProviderStatus(BaseModel):
+    """
+    Per-provider health for one search, aggregated race-free by the
+    orchestrator and rendered as the ``sources`` line / map. ``status`` uses the
+    frozen enum from docs/CONTRACT.md §1.
+    """
+    provider: str
+    status: Literal["ok", "error", "blocked", "parse_error", "version_refreshed"] = "ok"
+    detail: Optional[str] = None
+    calls: int = 0
+    errors: int = 0
+
+    @property
+    def ok(self) -> bool:
+        return self.status in ("ok", "version_refreshed")
+
 class Airport(BaseModel):
     iata: str = Field(..., min_length=3, max_length=3)
     city: str
