@@ -226,7 +226,7 @@ def _emit_intent(env: dict, exit_code: int, pretty: bool) -> None:
         raise typer.Exit(exit_code)
 
 
-def _run_intent(*, where, depart, nights, budget, origins_opt, max_calls, fresh, max_results, pretty):
+def _run_intent(*, where, depart, nights, budget, origins_opt, max_calls, fresh, max_results, pretty, to=None):
     from flight_deals.engine.intents import IntentError, run_search
     from flight_deals.engine.planner import PlannerRefusal
     from flight_deals.engine.spec import SpecError
@@ -234,7 +234,7 @@ def _run_intent(*, where, depart, nights, budget, origins_opt, max_calls, fresh,
 
     try:
         env, code = run_search(
-            where=where, depart=depart, nights=nights, budget=budget,
+            where=where, depart=depart, nights=nights, budget=budget, to=to,
             origins=_parse_origins(origins_opt), max_results=max_results,
             max_calls=max_calls, fresh=fresh, registry=registry,
         )
@@ -251,6 +251,7 @@ def _run_intent(*, where, depart, nights, budget, origins_opt, max_calls, fresh,
 def getaway(
     depart: str = typer.Option(..., "--depart", help="Date, window A..B, month YYYY-MM, or comma list"),
     where: str = typer.Option(None, "--where", help='Tag expression, e.g. "seaside | italy | spain"'),
+    to: str = typer.Option(None, "--to", help="A named place: IATA (BCN) or city (Barcelona, Milan). Mutually exclusive with --where"),
     nights: str = typer.Option(..., "--nights", help='Nights range for the round-trip, e.g. "5-8"'),
     budget: float = typer.Option(None, "--budget", help="Max total price per person, EUR"),
     origins_opt: str = typer.Option(None, "--from", "--origins", help="Origin IATA(s), comma-separated (default from config)"),
@@ -262,7 +263,7 @@ def getaway(
     """Find round-trip getaway deals (S2). Translates intent flags into a spec,
     runs the planner, confirms approximate fares with an exact re-query, enriches
     with price history, and snapshots each deal. JSON envelope on stdout."""
-    _run_intent(where=where, depart=depart, nights=nights, budget=budget,
+    _run_intent(where=where, depart=depart, nights=nights, budget=budget, to=to,
                 origins_opt=origins_opt, max_calls=max_calls, fresh=fresh,
                 max_results=max_results, pretty=pretty)
 
@@ -271,6 +272,7 @@ def getaway(
 def oneway(
     depart: str = typer.Option(..., "--depart", help="Date, window A..B, month YYYY-MM, or comma list"),
     where: str = typer.Option(None, "--where", help='Tag expression, e.g. "seaside | italy | spain"'),
+    to: str = typer.Option(None, "--to", help="A named place: IATA (BCN) or city (Barcelona, Milan). Mutually exclusive with --where"),
     budget: float = typer.Option(None, "--budget", help="Max price per person, EUR"),
     origins_opt: str = typer.Option(None, "--from", "--origins", help="Origin IATA(s), comma-separated (default from config)"),
     max_calls: int = typer.Option(40, "--max-calls"),
@@ -280,7 +282,7 @@ def oneway(
 ):
     """Find one-way deals (S1). Same builder as `getaway`, without nights.
     (The deprecated-for-agents `search` command aliases this behaviour.)"""
-    _run_intent(where=where, depart=depart, nights=None, budget=budget,
+    _run_intent(where=where, depart=depart, nights=None, budget=budget, to=to,
                 origins_opt=origins_opt, max_calls=max_calls, fresh=fresh,
                 max_results=max_results, pretty=pretty)
 

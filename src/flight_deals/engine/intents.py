@@ -81,6 +81,7 @@ def run_search(
     nights: Optional[str],
     budget: Optional[float],
     origins: List[str],
+    to: Optional[str] = None,
     max_results: int = 10,
     max_calls: int = 40,
     fresh: bool = False,
@@ -95,18 +96,38 @@ def run_search(
 ) -> Tuple[Dict[str, Any], int]:
     """Build a spec from intent flags, run it, confirm approximate deals, enrich
     from history, snapshot each displayed deal, and return ``(envelope, exit)``.
-    ``nights=None`` -> one-way (S1); otherwise round-trip (S2)."""
+    ``nights=None`` -> one-way (S1); otherwise round-trip (S2). ``to`` is a
+    named destination (IATA or city) resolved against the registry onto
+    ``SearchSpec.destinations``; it is mutually exclusive with ``where``."""
     from flight_deals.engine.spec import SpecError
 
     registry = registry or DestinationRegistry()
     today = today or date.today()
     now = now or datetime.now(timezone.utc)
 
+    if to is not None and where is not None:
+        raise IntentError(
+            "--to and --where are mutually exclusive",
+            "a city is not a tag: name a place with --to (e.g. --to Barcelona) "
+            "OR a category with --where (e.g. --where seaside), not both",
+        )
+
     valid_origins = _validate_origins(origins, registry)
 
     spec_dict: Dict[str, Any] = {"origins": valid_origins, "depart": depart, "max_results": max_results}
     if where:
         spec_dict["where"] = where
+    if to is not None:
+        dests = registry.resolve_destination(to)
+        if not dests:
+            suggestion = registry.destination_suggestion(to)
+            hint = (
+                f"did you mean --to {suggestion}?" if suggestion else
+                f"{to!r} is not a known airport or city — use a 3-letter IATA "
+                "(e.g. --to BCN) or a city name (e.g. --to Barcelona)"
+            )
+            raise IntentError(f"unknown destination {to!r}", hint)
+        spec_dict["destinations"] = dests
     if nights is not None:
         spec_dict["nights"] = nights
     if budget is not None:

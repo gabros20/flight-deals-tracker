@@ -300,6 +300,67 @@ def test_getaway_fuzzy_matches_unknown_origin():
 
 
 # --------------------------------------------------------------------------- #
+# --to named destinations (C1)                                                #
+# --------------------------------------------------------------------------- #
+def test_resolve_destination_iata():
+    from flight_deals.registry.destinations import DestinationRegistry
+    assert DestinationRegistry().resolve_destination("BCN") == ["BCN"]
+
+
+def test_resolve_destination_city_name():
+    from flight_deals.registry.destinations import DestinationRegistry
+    assert DestinationRegistry().resolve_destination("barcelona") == ["BCN"]
+
+
+def test_resolve_destination_multi_city_expands():
+    from flight_deals.registry.destinations import DestinationRegistry
+    # Milan is a multi_city group -> all member airports present in the registry.
+    assert DestinationRegistry().resolve_destination("Milan") == ["BGY", "MXP"]
+
+
+def test_resolve_destination_typo_gives_suggestion():
+    from flight_deals.registry.destinations import DestinationRegistry
+    reg = DestinationRegistry()
+    assert reg.resolve_destination("Barcelona ") == ["BCN"]  # whitespace tolerant
+    assert reg.resolve_destination("Barcelna") is None
+    assert reg.destination_suggestion("Barcelna") == "Barcelona"
+
+
+def test_getaway_to_unknown_city_hints():
+    with pytest.raises(IntentError) as ei:
+        run_search(where=None, to="Barcelna", depart="2026-08-22..2026-08-24", nights="5-8",
+                   budget=None, origins=["BUD"], planner=_empty_planner(),
+                   history_store=_FakeHistory(), today=FIXED_TODAY)
+    assert "Barcelona" in ei.value.hint
+
+
+def test_to_and_where_are_mutually_exclusive():
+    with pytest.raises(IntentError) as ei:
+        run_search(where="seaside", to="Barcelona", depart="2026-08-22..2026-08-24",
+                   nights="5-8", budget=None, origins=["BUD"], planner=_empty_planner(),
+                   history_store=_FakeHistory(), today=FIXED_TODAY)
+    assert "mutually exclusive" in ei.value.message
+
+
+def test_to_wires_destinations_onto_spec():
+    """--to Milan restricts the fan-out to the city's member airports."""
+    captured = {}
+    planner = _empty_planner()
+    orig_compile = planner.compile
+
+    def spy(spec):
+        captured["destinations"] = spec.destinations
+        return orig_compile(spec)
+
+    planner.compile = spy
+    run_search(where=None, to="Milan", depart="2026-08-22..2026-08-24", nights="5-8",
+               budget=None, origins=["BUD"], planner=planner,
+               history_store=_FakeHistory(), snapshotter=_collector()[1],
+               today=FIXED_TODAY, now=FIXED_NOW)
+    assert captured["destinations"] == ["BGY", "MXP"]
+
+
+# --------------------------------------------------------------------------- #
 # check <deal_id> round-trip                                                  #
 # --------------------------------------------------------------------------- #
 def test_check_unknown_deal_exits_2(tmp_path, monkeypatch):

@@ -272,6 +272,56 @@ class DestinationRegistry:
         return tags
 
     # ------------------------------------------------------------------ #
+    # Named-destination resolution (--to: IATA code OR city name)         #
+    # ------------------------------------------------------------------ #
+    def resolve_destination(self, value: str) -> Optional[List[str]]:
+        """Resolve a ``--to`` value to a list of destination IATAs present in
+        the registry, or ``None`` on a miss.
+
+        Order (task 9 C1): case-insensitive **city name** first (a multi-airport
+        city — ``multi_city`` group — expands to all its member airports present
+        in the registry; e.g. ``milan`` -> ``["BGY", "MXP"]``), then a 3-letter
+        **IATA** code. Never raises — the caller turns ``None`` into an exit-2
+        did-you-mean hint via :meth:`destination_suggestion`.
+        """
+        if not value or not str(value).strip():
+            return None
+        raw = str(value).strip()
+        lower = raw.lower()
+        known = self._iatas()
+
+        # 1a. Multi-airport city group (canonical city name is the group key).
+        for city, iatas in self.multi_city.items():
+            if city.lower() == lower:
+                members = sorted(i for i in iatas if i in known)
+                if members:
+                    return members
+        # 1b. Single-airport city: exact match, else the city's leading token
+        # (airport cities read "Milan Malpensa"/"London Stansted").
+        city_hits = sorted({a.iata for a in self.airports if a.city.lower() == lower})
+        if not city_hits:
+            city_hits = sorted({a.iata for a in self.airports
+                                if a.city.lower().split()[0:1] == [lower]})
+        if city_hits:
+            return city_hits
+
+        # 2. IATA code.
+        up = raw.upper()
+        if len(up) == 3 and up in known:
+            return [up]
+        return None
+
+    def destination_suggestion(self, value: str) -> Optional[str]:
+        """Nearest known city name or IATA for a ``--to`` miss (did-you-mean)."""
+        import difflib
+        raw = str(value).strip()
+        cities = sorted({a.city for a in self.airports} | set(self.multi_city.keys()))
+        close = difflib.get_close_matches(raw, cities, n=1, cutoff=0.6)
+        if not close:
+            close = difflib.get_close_matches(raw.upper(), sorted(self._iatas()), n=1, cutoff=0.6)
+        return close[0] if close else None
+
+    # ------------------------------------------------------------------ #
     # Multi-city / ground / open-jaw accessors                           #
     # ------------------------------------------------------------------ #
     def get_multi_airport_cities(self) -> List[str]:
