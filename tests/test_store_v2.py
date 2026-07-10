@@ -88,18 +88,21 @@ def test_flock_second_holder_exits_1_already_running(tmp_path):
         [sys.executable, "-c", _HOLD_SCRIPT, str(tmp_path), "3"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env,
     )
-    # Wait until the holder confirms it acquired the lock.
-    assert holder.stdout.readline().strip() == "acquired"
+    try:
+        # Wait until the holder confirms it acquired the lock.
+        assert holder.stdout.readline().strip() == "acquired"
 
-    second = subprocess.run(
-        [sys.executable, "-c", _HOLD_SCRIPT, str(tmp_path), "0"],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env,
-    )
-    assert second.returncode == 1
-    assert "already running" in second.stderr
-
-    holder.terminate()
-    holder.wait(timeout=5)
+        second = subprocess.run(
+            [sys.executable, "-c", _HOLD_SCRIPT, str(tmp_path), "0"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env,
+        )
+        assert second.returncode == 1
+        assert "already running" in second.stderr
+    finally:
+        # Always reap the holder, even if an assertion above fails, so it never
+        # lingers holding the lock and wedging the rest of the suite.
+        holder.terminate()
+        holder.wait(timeout=5)
 
 
 def test_flock_released_allows_next_holder(tmp_path):
