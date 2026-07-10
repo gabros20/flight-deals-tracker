@@ -183,11 +183,12 @@ Field-by-field:
     it), `flight_number` (nullable, same reason), `price_eur`,
     `duration_minutes` (nullable).
   - Ground leg: `type: "ground"`, `from_iata`, `to_iata`, `mode`
-    (`"driving"|"public_transit"|"train"|...`), `duration_minutes`,
-    `distance_km`, `cost_eur` (nullable — estimate), matching the existing
-    `GroundLeg` model in `models.py` (renamed `estimated_cost_eur` ->
-    `cost_eur` for brevity is NOT done here; Task 6/7 reconciles model
-    field names with this contract — see open item in § 7).
+    (`"driving"|"public_transit"|"train"|"bus"|...`), `duration_minutes`,
+    `distance_km` (nullable — a static curated hop has no routed distance),
+    `cost_eur` (nullable — estimate). Matches `models.GroundLeg`, whose cost
+    field was renamed `estimated_cost_eur` -> `cost_eur` in Task 10 (§ 7 open
+    item RESOLVED); the model still accepts the legacy key on input via a
+    validation alias.
 - **`ground`**: `null` for `S1`/`S2`. For `S3`/`S4`/`S5`, a **summary**
   object so a consumer doesn't have to walk `legs` to answer "how much
   ground transfer is involved":
@@ -206,6 +207,48 @@ Field-by-field:
   present in `carriers` get an entry. Absent (not `null`) if a booking deep
   link can't be constructed confidently for a shape (e.g. S5 self-transfer
   is two separate bookings — both keyed by leg, not one combined link).
+
+### 2a. Shaped deals — S3 extended-origin, S4 open-jaw (Task 10)
+
+Both are additive: they reuse the exact Deal shape above; only `shape`,
+`legs`, `ground`, and the endpoint semantics differ. Enabled on `getaway` via
+`--shapes` (default `direct` — NOT default-enabled) and on a spec via
+`shapes:[…]`.
+
+- **S3 extended-origin** (`shape: "S3"`): the traveller starts at the base
+  origin (BUD), takes ground to a nearby airport with a big low-cost base
+  (VIE/BTS), flies a **round-trip** from there, and grounds back.
+  - `origin` = base origin (BUD), `destination` = the flown destination D. The
+    extended airport (VIE) appears only inside `legs`.
+  - `legs` (chronological): `ground BUD→VIE`, `flight VIE→D`, `flight D→VIE`,
+    `ground VIE→BUD` — i.e. **two** ground legs (out + back).
+  - `ground` summary carries the **total** ground `duration_minutes` and
+    `cost_eur` across both legs (2×).
+  - `price_eur` = round-trip fare + 2×ground cost. `price_confidence: exact`
+    (Ryanair RT-ANYWHERE). `carriers: ["ryanair"]`.
+- **S4 open-jaw** (`shape: "S4"`): fly into D1, ground D1→D2, fly home from D2 —
+  two separate one-way tickets that form one bookable trip.
+  - `origin` = base origin (BUD). `destination` = **D1, the fly-in airport**
+    (the outbound leg's arrival). The fly-home airport D2 and the hop appear
+    only inside `legs`; the two cities are a single two-city product, so this is
+    the one shape whose `destination` alone doesn't name the whole trip — read
+    `legs`/`ground` for the D2 leg.
+  - `legs` (chronological): `flight BUD→D1`, `ground D1→D2`, `flight D2→BUD` —
+    **one** ground hop.
+  - `ground` summary carries the single hop's `duration_minutes`/`cost_eur`.
+  - `price_eur` = leg1 + leg2 + ground cost. `price_confidence: exact` (Ryanair
+    CAL/OW per leg) — but note it is **two separate tickets**, no single
+    combined booking `link`. `carriers: ["ryanair"]`.
+
+`deal_id` (§ 5) is unchanged: it already includes `shape`, so an S3/S4 deal to
+D never collides with the S2 direct deal to D. `why` carries the honest ground
+clause ("incl. ~€42 bus BUD⇄VIE, 2×2h45m" / "fly into NAP, train ~4h €35, fly
+home from BRI").
+
+Ranking is across shapes by total `price_eur` (fares + ground). S1/S2/S3 to the
+same destination are deduplicated (cheapest wins, so an extended origin only
+surfaces when it genuinely beats direct); S4 is a distinct product keyed by the
+unordered airport pair and is never deduped against a direct deal.
 
 ---
 
@@ -349,11 +392,13 @@ Decisions locked in:
 
 ## 7. Open items deliberately deferred (not decided here)
 
-- Exact reconciliation of `GroundLeg.estimated_cost_eur` (models.py, Task 1
-  baseline) vs. this doc's `legs[].cost_eur` naming — Task 6/7, whichever
-  touches `models.py` first, aligns the two (rename in `models.py` to
-  match this contract; this contract is authoritative, not the current
-  `models.py`).
+- ~~Exact reconciliation of `GroundLeg.estimated_cost_eur` vs. this doc's
+  `legs[].cost_eur` naming.~~ **RESOLVED 2026-07-11 (Task 10):**
+  `models.GroundLeg.estimated_cost_eur` was renamed to `cost_eur` — the name
+  this contract froze for both the ground leg and the ground summary. The model
+  keeps a `validation_alias` accepting the legacy `estimated_cost_eur` key on
+  input, so older `data/ground_transfers.json` rows and embedded history dicts
+  still load; the attribute and serialised key are now `cost_eur` everywhere.
 - Golden per-intent-verb JSON outputs (mentioned in UPGRADE-PLAN §7 Phase
   0.5 item 3) are **not** produced by this task — they require the
   envelope to actually be emitted by code, which is Task 6's job (see this
@@ -367,6 +412,17 @@ Decisions locked in:
 ---
 
 ## Changelog
+
+- **2026-07-11 (Task 10)** — Trip shapes S3 (extended-origin) and S4 (open-jaw)
+  enabled; additive, no frozen field changed shape:
+  - New `shape` values `S3`/`S4` now appear in `results` (§ 2a documents their
+    `legs`/`ground`/endpoint semantics). `S3.destination` is the flown airport;
+    `S4.destination` is the fly-in airport D1 (fly-home D2 lives in `legs`).
+  - `GroundLeg.estimated_cost_eur` renamed to `cost_eur` (§ 7 open item
+    RESOLVED); legacy key still accepted on input via a validation alias.
+    Ground `legs[].distance_km` is now nullable (a static curated hop has none).
+  - `getaway` gains `--shapes` (comma list; default `direct`, NOT
+    default-enabled). `via-hub` (S5) is still refused by the planner with a hint.
 
 - **2026-07-11 (Task 8 fix wave 2)** — Reliability-backbone hardening; additive
   only, no frozen field changed shape:

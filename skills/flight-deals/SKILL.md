@@ -36,6 +36,10 @@ tracked, not today's prices).
   → `"island & greece"`; "islands but not the Canaries" → `"island & !canaries"`.
   Unsure a word is a real tag? Run `flight-deals where list` first — never guess.
 - A watch with no `--nights` is a one-way watch: getaway watches need `--nights`.
+- Cheaper trip shapes are opt-in: add `--shapes direct,extended-origin,open-jaw`
+  to `getaway` to also consider nearby-airport departures (VIE/BTS, ground cost
+  shown) and open-jaw city pairs (fly into one city, home from another). Default
+  is `direct` only; a non-direct shape appears only when it genuinely beats direct.
 
 # Rules
 

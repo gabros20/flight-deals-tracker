@@ -17,7 +17,8 @@ spec:
   destinations: [CFU]            # optional: pin to specific IATA(s) (a route watch)
   depart: 2026-08-22..2026-08-24 # date | window A..B | month YYYY-MM | comma list
   nights: 5-8                    # "lo-hi"; omit entirely for one-way (S1)
-  shapes: [direct]                # direct is the only shape enabled today (see Failure modes)
+  shapes: [direct]                # direct (S2)|extended-origin (S3)|open-jaw (S4); via-hub still refused
+                                  # getaway: --shapes direct,extended-origin,open-jaw (default direct)
   via: none                       # via-hub only; unused until shapes:[via-hub] ships
   budget: 180                     # EUR, total per person; omit for no cap
   carriers: [ryanair, wizzair]     # default both
@@ -105,11 +106,14 @@ driver, with a ready-to-cron `deploy/agentic-wake.sh`), see
 
 ## Failure modes
 
-- **A non-`direct` shape is refused.** `extended-origin`/`open-jaw`/`via-hub`
-  are accepted by the spec schema (forward-compatible) but the planner refuses
-  them today: `PlannerRefusal: shape(s) via-hub not yet enabled` — hint says
-  `use "shapes":["direct"] for now`. Don't retry with the same shape; drop
-  back to `direct` or wait for that shape to ship.
+- **Shapes.** `direct` (S2), `extended-origin` (S3, adds nearby-airport
+  round-trip sweeps such as VIE/BTS with ground cost folded into `price_eur`),
+  and `open-jaw` (S4, fly into D1 / ground to D2 / fly home from D2) are all
+  enabled. On `getaway`: `--shapes direct,extended-origin,open-jaw` (default
+  `direct`). Only `via-hub` (S5 self-transfer) is still refused —
+  `PlannerRefusal: shape via-hub not yet enabled`, hint says to drop it. A
+  non-direct shape only surfaces when it genuinely beats direct (S1/S2/S3 to the
+  same destination dedupe cheapest-wins); S4 is a separate two-city deal.
 - **`--max-calls` exceeded.** `run`/`brief` refuse a plan whose `estimated_calls`
   exceeds the cap: `plan needs 57 calls, over the --max-calls 40 cap`. The
   hint gives the exact fix — narrow (tighter `--where`, fewer origins) or
