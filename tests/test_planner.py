@@ -104,6 +104,75 @@ def test_pair_timetable_no_valid_pair_returns_none():
     assert _pair_timetable("BUD", "ZAD", outs, rets, spec.depart_spec, spec.nights_range) is None
 
 
+def test_pair_timetable_month_kind_is_unaffected_regression():
+    """Regression: a ``month`` depart (no explicit dates list) must keep
+    considering every in-window outbound date, exactly like ``window`` above."""
+    spec = _spec(depart="2026-08")
+    outs = [
+        _dayfare("BUD", "ZAD", "2026-08-05", 30.0),
+        _dayfare("BUD", "ZAD", "2026-08-12", 20.0),  # cheapest, arbitrary date, must still win
+    ]
+    rets = [
+        _dayfare("ZAD", "BUD", "2026-08-10", 40.0),  # 5 nights from 08-05
+        _dayfare("ZAD", "BUD", "2026-08-17", 10.0),  # 5 nights from 08-12
+    ]
+    cand = _pair_timetable("BUD", "ZAD", outs, rets, spec.depart_spec, spec.nights_range)
+    assert cand.out_date == "2026-08-12" and cand.return_date == "2026-08-17"
+    assert cand.price_eur == 30.0
+
+
+# --- date-list ("dates") kind must not silently widen (quality review fix) - #
+def test_pair_timetable_dates_kind_only_pairs_listed_outbound_dates():
+    """depart="2026-08-01,2026-08-15,2026-08-29" must only ever pair an
+    outbound on one of those THREE dates — never on some other in-window date
+    (2026-08-10 below), even when that other date is far cheaper."""
+    spec = _spec(depart="2026-08-01,2026-08-15,2026-08-29")
+    assert spec.depart_spec.kind == "dates"
+    outs = [
+        _dayfare("BUD", "ZAD", "2026-08-01", 50.0),   # listed
+        _dayfare("BUD", "ZAD", "2026-08-10", 1.0),    # NOT listed - must be excluded
+        _dayfare("BUD", "ZAD", "2026-08-15", 40.0),   # listed
+    ]
+    rets = [
+        _dayfare("ZAD", "BUD", "2026-08-08", 20.0),   # pairs w/ 08-01 (7 nights) -> 70
+        _dayfare("ZAD", "BUD", "2026-08-16", 1.0),    # pairs w/ 08-10 (6 nights) -> 2 if not excluded
+        _dayfare("ZAD", "BUD", "2026-08-21", 10.0),   # pairs w/ 08-15 (6 nights) -> 50
+    ]
+    cand = _pair_timetable("BUD", "ZAD", outs, rets, spec.depart_spec, spec.nights_range)
+    assert cand is not None
+    assert cand.out_date != "2026-08-10"
+    assert cand.out_date == "2026-08-15" and cand.return_date == "2026-08-21"
+    assert cand.price_eur == 50.0
+
+
+def test_farepair_excludes_out_date_not_in_dates_list():
+    """Confirmed repro from quality review: depart="2026-08-01,2026-08-29"
+    must NOT accept a FarePair outbound on 2026-08-15 (the un-listed midpoint
+    of the request window) — only exactly-listed outbound dates may surface."""
+    spec = _spec(depart="2026-08-01,2026-08-29", where="sicily")
+    ry = [
+        _farepair("CTA", "2026-08-15", "2026-08-20", 10.0),  # NOT listed - must be excluded
+        _farepair("CTA", "2026-08-01", "2026-08-08", 70.0),  # listed - kept
+    ]
+    out = _planner_with(ry, {}).execute(compile_plan(spec), spec)
+    cta = [d for d in out["results"] if d["destination"] == "CTA"]
+    assert len(cta) == 1
+    assert cta[0]["out_date"] == "2026-08-01"
+
+
+def test_compile_dates_kind_plan_reflects_request_window_not_exact_list():
+    """compile stays pure/window-shaped even for a dates-kind depart: the
+    plan's params carry the request window (out_from/out_to spanning the
+    listed dates) — it is execute() that filters back down to exactly the
+    listed dates (see tests above)."""
+    spec = _spec(depart="2026-08-01,2026-08-29", where="sicily")
+    assert spec.depart_spec.kind == "dates"
+    plan = compile_plan(spec)
+    anywhere = [c for c in plan.calls if c.mode == "anywhere"][0]
+    assert anywhere.params["out_from"] == "2026-08-01"
+    assert anywhere.params["out_to"] == "2026-08-29"
+
+
 # --- cross-carrier merge (exact beats approximate on tie) ------------------ #
 def _planner_with(ry_pairs, wizz_map):
     pl = Planner()

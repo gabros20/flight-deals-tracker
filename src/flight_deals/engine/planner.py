@@ -1,11 +1,10 @@
 """The deterministic query compiler (SEARCH-DESIGN §4, CONTRACT §6).
 
-``compile_plan(spec)`` is **pure** — no network, no clock reads beyond an
-injectable ``today`` used only for validation — and turns a ``SearchSpec`` into
-a typed, inspectable ``CallPlan`` (the ``plan`` command prints exactly this).
-``Planner.execute(plan, spec)`` runs the plan under the shared rate limiter and
-returns raw results + a per-source status, which ``output.py`` renders into the
-frozen envelope (the ``run`` command).
+``compile_plan(spec)`` is **pure** — no network, no wall-clock reads at all —
+and turns a ``SearchSpec`` into a typed, inspectable ``CallPlan`` (the ``plan``
+command prints exactly this). ``Planner.execute(plan, spec)`` runs the plan
+under the shared rate limiter and returns raw results + a per-source status,
+which ``output.py`` renders into the frozen envelope (the ``run`` command).
 
 Task 6 scope: the ``direct`` shape as a **round-trip** (S2). RT-ANYWHERE on
 Ryanair enumerates every served destination in one call (exact fares); Wizz TT
@@ -117,7 +116,17 @@ def _matched_destinations(spec, registry: DestinationRegistry) -> List[str]:
 
 def compile_plan(spec, registry: Optional[DestinationRegistry] = None, *, rate: float = NOMINAL_RATE) -> CallPlan:
     """Compile a ``SearchSpec`` into a ``CallPlan``. Pure: no network, no wall
-    clock. Refuses (with a hint) any shape/one-way not enabled in Task 6."""
+    clock. Refuses (with a hint) any shape/one-way not enabled in Task 6.
+
+    Note on ``depart.kind == "dates"`` (a comma list of specific outbound
+    dates): the compiled calls still request the *window* spanning those
+    dates (``out_from``..``out_to`` for RT-ANYWHERE/RT-EXACT, and the TT
+    date range) — narrowing the request itself isn't worth a call per date.
+    The plan's ``params`` therefore reflect the request window, not the
+    exact list. It is ``execute()`` that filters candidate results back down
+    to exactly the listed dates (see ``_pair_timetable`` and the ryanair
+    branch below) — a listed date list must never silently widen to its
+    span."""
     registry = registry or DestinationRegistry()
 
     disabled = [s for s in spec.shapes if s != "direct"]
@@ -245,11 +254,19 @@ def _pair_timetable(
 ) -> Optional[_Candidate]:
     """Window-clip the (un-clipped) TT rows and pair the cheapest in-window
     outbound with the cheapest in-window inbound whose gap is within the nights
-    range -> one approximate round-trip estimate for this destination."""
+    range -> one approximate round-trip estimate for this destination.
+
+    When ``depart.kind == "dates"`` (an explicit comma list), the outbound
+    candidates are additionally filtered down to exactly those dates — the
+    window is only ever the *request* span (``out_from``..``out_to``); a
+    date list must not silently widen to every date in between."""
     lo, hi = nights_range
     o_from = date.fromisoformat(depart.out_from)
     o_to = date.fromisoformat(depart.out_to)
     outs = [f for f in out_fares if o_from <= date.fromisoformat(f.date) <= o_to]
+    if depart.kind == "dates":
+        allowed = set(depart.dates)
+        outs = [f for f in outs if f.date in allowed]
     r_lo, r_hi = o_from + timedelta(days=lo), o_to + timedelta(days=hi)
     rets = [f for f in ret_fares if r_lo <= date.fromisoformat(f.date) <= r_hi]
 
@@ -337,6 +354,12 @@ class Planner:
         ``route_status`` (None when non-empty), ``exit_code`` and
         ``candidate_count`` (pre-budget, for the empty-state distinction)."""
         matched = set(_matched_destinations(spec, self.registry))
+        depart = spec.depart_spec
+        # depart.kind == "dates" (an explicit comma list) must not silently
+        # widen to the request window it spans (out_from..out_to) — the
+        # RT-ANYWHERE/RT-EXACT FarePairs below are filtered the same way TT
+        # rows are in _pair_timetable.
+        allowed_dates = set(depart.dates) if depart.kind == "dates" else None
         executor = http.get_executor(self.config.max_workers)
 
         futures = []
@@ -363,7 +386,9 @@ class Planner:
             events.append(event)
             if kind == "ryanair":
                 for fp in payload:  # FarePairs, already duration-filtered
-                    if fp.destination in matched:
+                    if fp.destination in matched and (
+                        allowed_dates is None or fp.out_date in allowed_dates
+                    ):
                         _offer(_farepair_to_candidate(fp))
             elif kind == "wizzair":
                 _offer(payload)
