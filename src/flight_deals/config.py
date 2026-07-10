@@ -4,10 +4,15 @@ Supports env vars, user config file, and defaults.
 """
 
 import json
+import logging
 import os
 from pathlib import Path
 from typing import Optional
 from pydantic import BaseModel, Field
+
+from flight_deals.paths import get_project_root, resolve_path
+
+logger = logging.getLogger(__name__)
 
 
 class FlightDealsConfig(BaseModel):
@@ -16,7 +21,7 @@ class FlightDealsConfig(BaseModel):
     currency: str = Field(default="EUR")
     telegram_bot_token: Optional[str] = None
     telegram_chat_id: Optional[str] = None
-    cache_ttl_hours: int = Field(default=0.25, ge=0)  # 15 minutes
+    cache_ttl_hours: float = Field(default=0.25, ge=0)  # 15 minutes
     max_workers: int = Field(default=8, ge=1, le=20)
     history_min_points_for_badge: int = Field(default=3, ge=1)
     history_window_days: int = Field(default=365, ge=7, description="Default window for historical comparisons and best-this-month")
@@ -33,7 +38,7 @@ class FlightDealsConfig(BaseModel):
 
     @property
     def data_path(self) -> Path:
-        return Path(self.data_dir)
+        return resolve_path(self.data_dir)
 
     @property
     def cache_dir(self) -> Path:
@@ -55,7 +60,7 @@ class FlightDealsConfig(BaseModel):
 
 
 def get_config_path() -> Path:
-    """Return the user config path"""
+    """Return the user config path (always under the user's home dir, not cwd)."""
     config_dir = Path.home() / ".config" / "flight-deals"
     config_dir.mkdir(parents=True, exist_ok=True)
     return config_dir / "config.json"
@@ -72,21 +77,21 @@ def load_config() -> FlightDealsConfig:
     # Start with defaults
     config_data = {}
 
-    # 1. Load from project data/config.json if exists
-    project_config = Path("data/config.json")
+    # 1. Load from project data/config.json if exists (anchored to project root, not cwd)
+    project_config = get_project_root() / "data" / "config.json"
     if project_config.exists():
         try:
             config_data.update(json.loads(project_config.read_text()))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("config: failed to parse %s, ignoring: %s", project_config, e)
 
     # 2. Load from user config
     user_config_path = get_config_path()
     if user_config_path.exists():
         try:
             config_data.update(json.loads(user_config_path.read_text()))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("config: failed to parse %s, ignoring: %s", user_config_path, e)
 
     # 3. Override with environment variables
     env_mapping = {
@@ -106,27 +111,40 @@ def load_config() -> FlightDealsConfig:
     }
 
     for env_var, field in env_mapping.items():
-        if env_var in os.environ:
-            val = os.environ[env_var]
-            if field in ("cache_ttl_hours", "max_workers", "apify_cache_ttl_hours"):
-                try:
-                    config_data[field] = int(val)
-                except ValueError:
-                    pass
-            elif field == "enable_cache" or field == "apify_enabled":
-                config_data[field] = val.lower() in ("true", "1", "yes")
-            else:
-                config_data[field] = val
+        if env_var not in os.environ:
+            continue
+        val = os.environ[env_var]
+        if field == "cache_ttl_hours":
+            try:
+                config_data[field] = float(val)
+            except ValueError:
+                logger.warning("config: %s=%r is not a valid float, ignoring", env_var, val)
+        elif field in ("max_workers", "apify_cache_ttl_hours"):
+            try:
+                config_data[field] = int(val)
+            except ValueError:
+                logger.warning("config: %s=%r is not a valid int, ignoring", env_var, val)
+        elif field in ("enable_cache", "apify_enabled"):
+            config_data[field] = val.lower() in ("true", "1", "yes")
+        else:
+            config_data[field] = val
 
     return FlightDealsConfig(**config_data)
 
 
 def save_user_config(config: FlightDealsConfig) -> None:
-    """Save config to user config file (excludes secrets in some cases)"""
+    """
+    Save config to the user config file.
+
+    Secrets are never persisted, only ever sourced from env
+    (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, APIFY_TOKEN) — see
+    docs/UPGRADE-PLAN.md Global Constraints. Written atomically (tmp + rename).
+    """
     path = get_config_path()
-    # Only save non-secret fields or let user manage token via env
-    data = config.model_dump(exclude={"apify_token", "telegram_bot_token"})
-    path.write_text(json.dumps(data, indent=2))
+    data = config.model_dump(exclude={"apify_token", "telegram_bot_token", "telegram_chat_id"})
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    tmp_path.write_text(json.dumps(data, indent=2))
+    os.replace(tmp_path, path)
 
 
 def get_config() -> FlightDealsConfig:
