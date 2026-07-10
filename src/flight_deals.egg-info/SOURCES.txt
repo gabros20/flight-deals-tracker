@@ -10,6 +10,7 @@ src/flight_deals/history.py
 src/flight_deals/models.py
 src/flight_deals/notifier.py
 src/flight_deals/orchestrator.py
+src/flight_deals/paths.py
 src/flight_deals.egg-info/PKG-INFO
 src/flight_deals.egg-info/SOURCES.txt
 src/flight_deals.egg-info/dependency_links.txt
@@ -17,7 +18,6 @@ src/flight_deals.egg-info/entry_points.txt
 src/flight_deals.egg-info/requires.txt
 src/flight_deals.egg-info/top_level.txt
 src/flight_deals/providers/apify.py
-src/flight_deals/providers/farepy_provider.py
 src/flight_deals/providers/ryanair.py
 src/flight_deals/providers/ryanair_direct.py
 src/flight_deals/providers/wizz.py

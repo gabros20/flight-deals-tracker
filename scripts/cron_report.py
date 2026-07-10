@@ -30,8 +30,5 @@ if deals:
     report = format_results(deals, "Cron: July Short Seaside Getaways from BUD (farfnd)")
     print(report)
 else:
-    # Fallback to format with example to always enforce style
-    example = [
-        {"origin": "BUD", "destination": "CTA", "price": 117.64, "currency": "EUR", "outbound_date": "2026-07-08", "return_date": "2026-07-12", "source": "ryanair-farfnd"},
-    ]
-    print(format_results(example, "Cron: July Short Seaside Getaways from BUD (example)"))
+    print(format_results([], "Cron: July Short Seaside Getaways from BUD (farfnd)"))
+    print("No live prices returned for the configured routes/dates (provider empty or down).")
