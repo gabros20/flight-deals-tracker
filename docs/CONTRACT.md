@@ -29,7 +29,7 @@ Every command prints exactly one JSON object to stdout (default) or, with
     "wizzair": "version_refreshed"
   },
   "next": [
-    "flight-deals check a1b2c3d4e5",
+    "flight-deals check a48e258b18",
     "flight-deals watch add BUD-CFU --months 2026-08 --nights 5-7"
   ],
 
@@ -73,13 +73,23 @@ Field rules:
   or a plain statement of what will happen automatically (exit 1, e.g. "the
   next scheduled run will retry").
 
+**What's frozen vs. what isn't:** `deal_id`, field names, field types, and
+enum values (`shape`, `price_confidence`, `sources` status values,
+`route_status`) are frozen by this contract — two conformant
+implementations must agree on them byte-for-byte. `summary`, `why` (§2),
+and `next`'s prose/wording, and the *ordering* of keys within `sources` or
+of entries within `results` (beyond the ranking rule above), are **not**
+byte-stable across implementations — they may be templated, generated, or
+reordered differently by different code. Don't diff/assert on those for
+byte-identical envelopes; assert on the frozen fields instead.
+
 ---
 
 ## 2. The Deal object
 
 ```jsonc
 {
-  "deal_id": "a1b2c3d4e5",
+  "deal_id": "a48e258b18",
   "shape": "S2",
   "origin": "BUD",
   "destination": "CFU",

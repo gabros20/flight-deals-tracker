@@ -262,7 +262,7 @@ def validate_envelope(env: dict) -> list[str]:
 def _example_s2_deal() -> dict:
     """The worked example from docs/CONTRACT.md §2, verbatim."""
     return {
-        "deal_id": "a1b2c3d4e5",
+        "deal_id": "a48e258b18",
         "shape": "S2",
         "origin": "BUD",
         "destination": "CFU",
@@ -299,7 +299,7 @@ def test_example_envelope_is_valid():
         "results": [_example_s2_deal()],
         "summary": "1 deal found, cheapest €89.98 BUD->CFU",
         "sources": {"ryanair": "ok"},
-        "next": ["flight-deals check a1b2c3d4e5"],
+        "next": ["flight-deals check a48e258b18"],
     }
     assert validate_envelope(env) == []
 
@@ -389,3 +389,14 @@ def test_deal_id_differs_for_different_shapes_or_dates():
     different_date = deal_id("BUD", "CFU", "2026-08-23", "2026-08-27", "S2", ["ryanair"])
     one_way = deal_id("BUD", "CFU", "2026-08-22", None, "S1", ["ryanair"])
     assert len({base, different_shape, different_date, one_way}) == 4
+
+
+def test_deal_id_golden_vector_matches_contract_worked_example():
+    """Pins the exact sha256-derived value for the docs/CONTRACT.md §2
+    worked example (BUD|CFU|2026-08-22|2026-08-27|S2|ryanair), so the
+    `deal_id` embedded in the doc and in `_example_s2_deal()` above can never
+    silently drift from what this reference derivation actually produces.
+    Tasks 6/7 must produce this same value for the same inputs."""
+    result = deal_id("BUD", "CFU", "2026-08-22", "2026-08-27", "S2", ["ryanair"])
+    assert result == "a48e258b18"
+    assert result == _example_s2_deal()["deal_id"]
