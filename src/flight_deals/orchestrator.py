@@ -1,15 +1,18 @@
+import logging
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Optional, Tuple, Dict, Any
+from typing import List, Optional, Dict, Any
 
 from flight_deals.providers.ryanair import RyanairProvider
-from flight_deals.providers.ryanair_direct import RyanairDirectProvider
 from flight_deals.providers.wizz import WizzProvider
 from flight_deals.providers.apify import ApifyProvider
 from flight_deals.registry.destinations import DestinationRegistry
-from flight_deals.models import FlightDeal, FlightLeg
+from flight_deals.models import FlightDeal
 from flight_deals.ground import GroundTransport
 from flight_deals.config import get_config
 from flight_deals.history import PriceHistoryStore
+
+logger = logging.getLogger(__name__)
 
 
 class DealOrchestrator:
@@ -17,12 +20,28 @@ class DealOrchestrator:
         self.config = get_config()
         self.registry = DestinationRegistry()
         self.ryanair = RyanairProvider()
-        self.ryanair_direct = RyanairDirectProvider()
         self.wizz = WizzProvider()
         self.apify = ApifyProvider()
         self.max_workers = self.config.max_workers
         self.ground = GroundTransport()
         self.history = PriceHistoryStore()
+        # Per-provider health for the current/last search_by_category call,
+        # printed by the CLI as a `sources:` line. Not a full status object
+        # (that's the JSON envelope, Task 6) — just enough to stop "no
+        # deals" and "provider is down" from looking identical.
+        self.provider_status: Dict[str, Dict[str, Any]] = {}
+        self._status_lock = threading.Lock()
+
+    def _note_provider(self, name: str, ok: bool, error: Optional[str] = None) -> None:
+        with self._status_lock:
+            entry = self.provider_status.setdefault(
+                name, {"ok": True, "calls": 0, "errors": 0, "last_error": None}
+            )
+            entry["calls"] += 1
+            if not ok:
+                entry["ok"] = False
+                entry["errors"] += 1
+                entry["last_error"] = error
 
     def search_by_category(
         self,
@@ -31,17 +50,25 @@ class DealOrchestrator:
         date_from: str,
         date_to: str,
         max_price: Optional[int] = None,
-        return_date_from: Optional[str] = None,
-        return_date_to: Optional[str] = None,
         connections: bool = False,
-        max_ground_minutes: Optional[int] = None,
-        ground_prefer: str = "any",
         sort_by: str = "price",
         history_window_days: int = None,
         fresh: bool = False,
     ) -> List[FlightDeal]:
+        """
+        One-way search across the destinations reachable from `origin` for
+        `category`. Round-trip and 1-stop composite search were removed
+        pending rebuild (docs/UPGRADE-PLAN.md Phase 1/5) — see the CLI's
+        `search` command, which refuses `--return-from/--return-to` and
+        `--connections` before ever calling this.
+
+        `connections=True` here only widens the candidate destination list
+        and, if configured, adds Apify multi-source results; it does not
+        build ground-transfer composites (that code never worked — it called
+        a method that didn't exist and the AttributeError was swallowed).
+        """
         origin = origin or self.config.default_origin
-        max_ground = max_ground_minutes or getattr(self.config, "max_ground_minutes", 180)
+        self.provider_status = {}
 
         if connections:
             candidates = self.registry.get_reachable_with_connections(origin, category)
@@ -52,72 +79,42 @@ class DealOrchestrator:
 
         def fetch_for_dest(dest):
             local_results = []
-            
-            # Round-trip mode - smart per-outbound return search
-            if return_date_from and return_date_to:
-                # Use migrated farfnd provider for Ryanair roundtrips (works alongside Apify for connections)
-                try:
-                    rt = self.ryanair_direct.get_roundtrip_price(origin, dest.iata, date_from, date_to)
-                    if rt:
-                        deal = FlightDeal(
-                            origin=origin, destination=dest.iata,
-                            departure_date=rt["outbound_date"],
-                            return_date=rt.get("return_date"),
-                            price=rt["price"], currency=rt["currency"],
-                            source=rt.get("source", "ryanair-farfnd"),
-                            notes="Round-trip via farfnd (local)"
-                        )
-                        local_results.append(deal)
-                except Exception:
-                    pass
-            else:
-                # One-way mode
-                try:
-                    ryanair_out = self.ryanair.get_cheapest_flights(origin, date_from, date_to, dest.iata, use_cache=not fresh) or []
-                    local_results.extend(ryanair_out)
-                except Exception:
-                    pass
-                try:
-                    wizz_out = self.wizz.get_cheapest_flights(origin, date_from, date_to, dest.iata, use_cache=not fresh) or []
-                    local_results.extend(wizz_out)
-                except Exception:
-                    pass
+
+            try:
+                ryanair_out = self.ryanair.get_cheapest_flights(origin, date_from, date_to, dest.iata, use_cache=not fresh) or []
+                local_results.extend(ryanair_out)
+                self._note_provider("ryanair", self.ryanair.last_error is None, self.ryanair.last_error)
+            except Exception as e:
+                logger.warning("orchestrator: ryanair failed for %s->%s: %s", origin, dest.iata, e)
+                self._note_provider("ryanair", False, str(e))
+
+            try:
+                wizz_out = self.wizz.get_cheapest_flights(origin, date_from, date_to, dest.iata, use_cache=not fresh) or []
+                local_results.extend(wizz_out)
+                self._note_provider("wizz", self.wizz.last_error is None, self.wizz.last_error)
+            except Exception as e:
+                logger.warning("orchestrator: wizz failed for %s->%s: %s", origin, dest.iata, e)
+                self._note_provider("wizz", False, str(e))
 
             if connections and self.apify.is_available:
                 try:
-                    apify_results = self.apify.get_cheapest_flights(origin, date_from, date_to, dest.iata)
+                    apify_results = self.apify.get_cheapest_flights(origin, date_from, date_to, dest.iata) or []
                     local_results.extend(apify_results)
-                except Exception:
-                    pass
-
-            if return_date_from and return_date_to:
-                try:
-                    ryanair_ret = self.ryanair.get_cheapest_flights(dest.iata, return_date_from, return_date_to, origin)
-                    local_results.extend(ryanair_ret)
-                except Exception:
-                    pass
-                try:
-                    wizz_ret = self.wizz.get_cheapest_flights(dest.iata, return_date_from, return_date_to, origin)
-                    local_results.extend(wizz_ret)
-                except Exception:
-                    pass
-
-                if connections and self.apify.is_available:
-                    try:
-                        apify_ret = self.apify.get_cheapest_flights(dest.iata, return_date_from, return_date_to, origin)
-                        local_results.extend(apify_ret)
-                    except Exception:
-                        pass
+                    self._note_provider("apify", self.apify.last_error is None, self.apify.last_error)
+                except Exception as e:
+                    logger.warning("orchestrator: apify failed for %s->%s: %s", origin, dest.iata, e)
+                    self._note_provider("apify", False, str(e))
 
             return local_results
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             future_to_dest = {executor.submit(fetch_for_dest, dest): dest for dest in candidates}
             for future in as_completed(future_to_dest):
+                dest = future_to_dest[future]
                 try:
                     results.extend(future.result())
-                except Exception:
-                    continue
+                except Exception as e:
+                    logger.warning("orchestrator: destination worker failed for %s: %s", dest.iata, e)
 
         if max_price:
             results = [d for d in results if d.price <= max_price]
@@ -131,97 +128,6 @@ class DealOrchestrator:
 
         deduped = list(seen.values())
 
-        # Phase 8: Build and merge real multi-airport self-transfer composites
-        if connections:
-            try:
-                composites = self._build_multi_airport_composites(
-                    origin, candidates, date_from, date_to, max_ground, ground_prefer, connections
-                )
-                # Merge and re-dedup
-                for c in composites:
-                    key = (c.origin, c.destination, c.departure_date, c.source)
-                    if key not in seen or c.price < seen[key].price:
-                        seen[key] = c
-                deduped = list(seen.values())
-            except Exception:
-                pass
-
-        # Phase 8 generalized ground enrichment (covers multi-airport and paths)
-        if connections:
-            enriched = []
-            multi_airports = set(self.registry.get_all_multi_airport_airports())
-            for deal in deduped:
-                air_duration = getattr(deal, "duration_minutes", None) or 90
-
-                should_enrich = False
-                if self.ground.is_reasonable_ground_distance(deal.origin, deal.destination):
-                    should_enrich = True
-                elif getattr(deal, "connection_path", None):
-                    should_enrich = True
-                elif deal.origin in multi_airports or deal.destination in multi_airports:
-                    should_enrich = True
-
-                if should_enrich and not getattr(deal, "ground_leg", None):
-                    # Try direct or via known multi pairs like BUD to BGY/MXP etc.
-                    gopts = self.ground.get_ground_options(
-                        deal.origin, deal.destination, prefer=ground_prefer, max_km=400
-                    )
-                    if not gopts and deal.origin == "BUD" and deal.destination in multi_airports:
-                        gopts = self.ground.get_ground_options(deal.origin, deal.destination, prefer=ground_prefer, max_km=400)
-                    if gopts:
-                        deal.ground_leg = gopts[0]
-                        ground_time = gopts[0].duration_minutes
-                        deal.total_duration_minutes = air_duration + ground_time + 90
-                        deal.efficiency_score = self.ground.compute_efficiency_score(
-                            deal.price, deal.total_duration_minutes
-                        )
-
-                if not getattr(deal, "total_duration_minutes", None):
-                    deal.total_duration_minutes = air_duration
-                    deal.efficiency_score = self.ground.compute_efficiency_score(deal.price, air_duration)
-
-                if deal.ground_leg and deal.ground_leg.duration_minutes > max_ground:
-                    continue
-
-                enriched.append(deal)
-            deduped = enriched
-
-
-
-
-
-
-
-
-
-
-        # Phase 8+ Demo: Inject visible self-transfer example for BUD connections (shows full legs + ground + efficiency)
-        if connections and origin == "BUD":
-            from flight_deals.models import FlightLeg
-            for dest in candidates[:2]:
-                if dest.iata in ["PMI", "TFS", "LPA", "AHO", "CAG"]:
-                    g = self.ground.get_ground_options("BGY", "MXP", max_km=400)
-                    if g:
-                        ground = g[0]
-                        legs = [
-                            FlightLeg(origin="BUD", destination="BGY", price=29.0, duration_minutes=105, source="ryanair"),
-                            ground,
-                            FlightLeg(origin="MXP", destination=dest.iata, price=32.0, duration_minutes=135, source="ryanair")
-                        ]
-                        example = FlightDeal(
-                            origin="BUD", destination=dest.iata, departure_date=date_from,
-                            price=61.0, currency="EUR", source="self-transfer:Milan",
-                            stops=1, duration_minutes=240,
-                            total_duration_minutes=240 + ground.duration_minutes + 90,
-                            efficiency_score=self.ground.compute_efficiency_score(61.0, 240 + ground.duration_minutes + 90),
-                            ground_leg=ground.model_dump() if hasattr(ground, "model_dump") else dict(ground),
-                            legs=legs,
-                            connection_path=[l.model_dump() if hasattr(l, "model_dump") else l for l in legs],
-                            notes=f"DEMO self-transfer: BUD→BGY + {ground.duration_minutes}m ground + MXP→{dest.iata}"
-                        )
-                        deduped.append(example)
-                        break
-
         # Sorting
         if sort_by == "total-time":
             deduped.sort(key=lambda x: getattr(x, "total_duration_minutes", 999999) or 999999)
@@ -230,9 +136,10 @@ class DealOrchestrator:
         else:
             deduped.sort(key=lambda x: x.price)
 
-        # Phase 9+: Enrich with historical price comparisons and badges (with window filtering)
+        # Enrich with historical price comparisons and badges (with window filtering)
         try:
             self.history.enrich_deals(deduped, window_days=history_window_days)
         except Exception as e:
-            pass  # history optional
+            logger.warning("orchestrator: history enrichment failed: %s", e)
+
         return deduped
