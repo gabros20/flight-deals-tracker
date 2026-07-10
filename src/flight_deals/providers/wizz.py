@@ -23,6 +23,7 @@ Two facts drive the design:
 from __future__ import annotations
 
 import logging
+import os
 import re
 import threading
 from dataclasses import dataclass, field
@@ -63,9 +64,16 @@ _HEADERS = {
     "Accept": "application/json, text/plain, */*",
 }
 
-# Module-level version cache, shared across every WizzProvider/thread and
-# guarded by a lock so concurrent workers discover at most once.
-_version_lock = threading.Lock()
+# Module-level version cache, shared across every WizzProvider/thread. All
+# reads/writes of `_version_cache` go through `_version_lock` — an `RLock` so
+# `_discover_version` can hold it across its whole check-then-scrape-then-
+# persist critical section (and still call `_persist_version`, which also
+# locks, without deadlocking). That guarantees at most one network re-scrape
+# per drift: whichever worker gets the lock first re-discovers; every worker
+# that arrives after it (blocked on the same lock) finds `_version_cache`
+# already advanced past the stale version it POSTed with and reuses it
+# directly — it never re-scrapes on its own.
+_version_lock = threading.RLock()
 _version_cache: Optional[str] = None
 
 
@@ -143,25 +151,47 @@ class WizzProvider:
         path = self._version_path()
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(version + "\n")
+            # Atomic write (tmp + os.replace), same pattern as cache.py /
+            # config.py / refresh_fx.py — never leave a half-written file if
+            # the process is killed mid-write.
+            tmp = path.with_suffix(path.suffix + f".tmp.{os.getpid()}")
+            tmp.write_text(version + "\n")
+            os.replace(tmp, path)
         except OSError as e:
             # Non-fatal: the module cache still carries the new version for the
             # life of the process; we just couldn't persist it across runs.
             logger.warning("wizz: could not persist version to %s: %s", path, e)
 
-    def _discover_version(self) -> str:
-        """Re-scrape the timetable page HTML for the current API version.
-        Raises ``ProviderDown`` if the page can't be read or no version is found."""
-        html = http.get_text(VERSION_PAGE_URL, headers={"Accept": "text/html"})
-        match = _VERSION_IN_HTML.search(html)
-        if not match:
-            raise ProviderDown(
-                "wizz: version auto-discovery found no be.wizzair.com/X.Y.Z in the timetable page"
-            )
-        version = match.group(1)
-        logger.info("wizz: discovered API version %s", version)
-        self._persist_version(version)
-        return version
+    def _discover_version(self, stale_version: Optional[str] = None) -> str:
+        """Re-scrape the timetable page HTML for the current API version, in
+        response to a drift 404/400 seen while POSTing with ``stale_version``.
+
+        Holds ``_version_lock`` for the whole check-then-scrape-then-persist
+        sequence, so concurrent workers that all drift on the same stale
+        version discover at most once: the first to acquire the lock re-
+        scrapes and persists; every other worker (blocked on the same lock)
+        wakes up, sees ``_version_cache`` already advanced past
+        ``stale_version``, and reuses it directly — no redundant re-scrape.
+
+        Raises ``ProviderDown`` if the page can't be read or no version is found.
+        """
+        with _version_lock:
+            if stale_version is not None and _version_cache and _version_cache != stale_version:
+                logger.info(
+                    "wizz: version already refreshed to %s by another worker; reusing",
+                    _version_cache,
+                )
+                return _version_cache
+            html = http.get_text(VERSION_PAGE_URL, headers={"Accept": "text/html"})
+            match = _VERSION_IN_HTML.search(html)
+            if not match:
+                raise ProviderDown(
+                    "wizz: version auto-discovery found no be.wizzair.com/X.Y.Z in the timetable page"
+                )
+            version = match.group(1)
+            logger.info("wizz: discovered API version %s", version)
+            self._persist_version(version)
+            return version
 
     # ------------------------------------------------------------------ #
     # Timetable POST (both directions) with single version-refresh retry #
@@ -201,7 +231,10 @@ class WizzProvider:
             if e.status not in _VERSION_DRIFT_STATUSES:
                 raise
             logger.warning("wizz: version %s got HTTP %s; re-discovering", version, e.status)
-            new_version = self._discover_version()  # ProviderDown if it can't
+            # Pass the stale version we just POSTed with so a concurrent
+            # worker that already refreshed past it can short-circuit
+            # (ProviderDown if discovery itself fails).
+            new_version = self._discover_version(stale_version=version)
             refreshed = True
             # Retry ONCE with the freshly discovered version. Any failure here
             # (incl. another drift status) propagates as a typed exception.
