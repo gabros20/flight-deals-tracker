@@ -221,8 +221,18 @@ def where_show(
     expr: str = typer.Argument(..., help='A tag expression, e.g. "seaside & (italy | spain)"'),
     pretty: bool = typer.Option(False, "--pretty"),
 ):
-    """Print the airports matching a where-expression."""
-    from flight_deals.registry.where import WhereParseError
+    """Print the airports matching a where-expression.
+
+    Unknown/misspelled tags (e.g. a typo like ``seasid``) never fail
+    silently: the response gains ``unknown_tags`` and a ``hint`` with the
+    nearest known tag(s). Case is not "unknown" — tags are matched
+    case-insensitively. If every identifier in the expression is unknown,
+    this exits 2 (nothing could possibly have matched); if only some are
+    unknown, it exits 0 with whatever results the known parts produced.
+    """
+    import difflib
+
+    from flight_deals.registry.where import WhereParseError, extract_identifiers
 
     try:
         matches = registry.matching(expr)
@@ -230,17 +240,41 @@ def where_show(
         typer.echo(json.dumps({"error": str(e), "hint": e.hint}))
         raise typer.Exit(2)
 
+    all_idents = extract_identifiers(expr)
+    unknown = registry.unknown_tags(expr)
+    hint = None
+    if unknown:
+        known_universe = sorted(registry.known_tag_universe())
+        suggestions = []
+        for tag in unknown:
+            close = difflib.get_close_matches(tag, known_universe, n=1, cutoff=0.6)
+            suggestions.append(f"{tag!r} - did you mean: {close[0]}?" if close else f"{tag!r} is unknown")
+        hint = "; ".join(suggestions)
+
+    if unknown and all_idents and set(unknown) == set(all_idents):
+        typer.echo(json.dumps({
+            "error": f"unknown tag(s): {', '.join(unknown)}",
+            "unknown_tags": unknown,
+            "hint": hint,
+        }))
+        raise typer.Exit(2)
+
     airports = [
         {"iata": a.iata, "city": a.city, "country": a.country, "tags": a.tags}
         for a in matches
     ]
     payload = {"expr": expr, "count": len(airports), "airports": airports}
+    if unknown:
+        payload["unknown_tags"] = unknown
+        payload["hint"] = hint
     if not pretty:
         typer.echo(json.dumps(payload))
         return
     console.print(f"[bold]{len(airports)}[/bold] airports match [cyan]{expr}[/cyan]")
     for a in airports:
         console.print(f"  {a['iata']} - {a['city']}, {a['country']} ({', '.join(a['tags'])})")
+    if unknown:
+        console.print(f"[yellow]unknown tags: {', '.join(unknown)}[/yellow] ({hint})")
 
 
 @app.command()

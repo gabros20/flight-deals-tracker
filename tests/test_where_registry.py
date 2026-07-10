@@ -166,6 +166,65 @@ def test_hub_is_derived_tag():
     assert "hub" not in vie.tags
 
 
+# --------------------------------------------------------------------------- #
+# Unknown/misspelled tag detection                                             #
+# --------------------------------------------------------------------------- #
+def test_unknown_tags_detects_typo():
+    reg = DestinationRegistry()
+    assert reg.unknown_tags("seasid & italy") == ["seasid"]
+
+
+def test_unknown_tags_case_insensitive_is_not_unknown():
+    reg = DestinationRegistry()
+    assert reg.unknown_tags("Italy") == []
+    assert reg.unknown_tags("SEASIDE & Italy") == []
+
+
+def test_unknown_tags_empty_when_all_known():
+    reg = DestinationRegistry()
+    assert reg.unknown_tags("seaside & (italy | spain)") == []
+
+
+def test_known_tag_universe_includes_aliases_and_derived():
+    reg = DestinationRegistry()
+    universe = reg.known_tag_universe()
+    assert "italian" in universe  # alias
+    assert "hub" in universe      # derived
+    assert "seaside" in universe  # terrain taxonomy
+
+
+def test_get_reachable_unknown_bare_tag_returns_empty_and_logs(caplog):
+    reg = DestinationRegistry()
+    import logging
+    with caplog.at_level(logging.WARNING, logger="flight_deals.registry.destinations"):
+        result = reg.get_reachable("BUD", "Italyy")  # malformed/typo, no operators
+    assert result == []
+    assert any("unknown tags" in r.message for r in caplog.records)
+
+
+def test_get_reachable_fallback_is_case_and_alias_aware():
+    reg = DestinationRegistry()
+    # "Italian" (capitalized alias) can't be parsed as a bare-token match by
+    # matching()/where_parse only if something upstream chokes; the fallback
+    # path must still resolve it the same way matching() would (lowercase +
+    # alias expansion), not silently do a raw, case-sensitive get_by_tag.
+    from flight_deals.registry.where import WhereParseError as _WPE
+
+    class _BoomMatching(DestinationRegistry):
+        def matching(self, expr, carrier_flags=None):
+            raise _WPE("forced", hint="forced fallback for test")
+
+    boomy = _BoomMatching.__new__(_BoomMatching)
+    boomy.__dict__.update(reg.__dict__)
+    got = {a.iata for a in boomy.get_reachable("BUD", "ITALIAN")}
+    # Compare against the ordinary (non-forced) get_reachable success path for
+    # the alias's target tag, so both sides go through the same
+    # known-direct-route soft filter -- only the "how did we get `italy`
+    # resolved" step differs (matching() vs. the WhereParseError fallback).
+    expected = {a.iata for a in reg.get_reachable("BUD", "italy")}
+    assert got == expected and got
+
+
 def test_carrier_flags_graceful_offline(monkeypatch):
     reg = DestinationRegistry()
 
@@ -303,3 +362,28 @@ def test_cli_where_show_pretty():
     result = runner.invoke(app, ["where", "show", "canaries", "--pretty"])
     assert result.exit_code == 0
     assert "TFS" in result.output
+
+
+def test_cli_where_show_partial_unknown_tag_exit0_with_hint():
+    # "italy" is real; "seasid" is a typo -> partial results, exit 0, hinted.
+    result = runner.invoke(app, ["where", "show", "seasid & italy"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["unknown_tags"] == ["seasid"]
+    assert "seaside" in data["hint"]  # difflib nearest match
+
+
+def test_cli_where_show_all_unknown_tags_exit2_with_hint():
+    result = runner.invoke(app, ["where", "show", "notarealtag"])
+    assert result.exit_code == 2
+    payload = json.loads(result.output.strip().splitlines()[0])
+    assert payload["unknown_tags"] == ["notarealtag"]
+    assert payload["hint"]
+
+
+def test_cli_where_show_is_case_insensitive_no_unknown_tags():
+    result = runner.invoke(app, ["where", "show", "Italy"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["count"] > 0
+    assert "unknown_tags" not in data  # case difference is not "unknown"

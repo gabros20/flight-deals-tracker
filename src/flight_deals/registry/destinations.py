@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from flight_deals.models import Airport
 from flight_deals.paths import resolve_path
-from flight_deals.registry.where import WhereParseError, where_parse
+from flight_deals.registry.where import WhereParseError, extract_identifiers, where_parse
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +140,29 @@ class DestinationRegistry:
         node = where_parse(expr, ALIASES)
         return [a for a in self.airports if node.eval(self._tagset(a, carrier_flags))]
 
+    def known_tag_universe(self) -> Set[str]:
+        """All identifiers a where-expression may legally reference: every
+        taxonomy tag set, derived (auto) tags, and alias names. Used to
+        detect unknown/misspelled tags instead of silently matching nothing.
+        """
+        return (
+            COUNTRY_TAGS | REGION_TAGS | TERRAIN_TAGS | VIBE_TAGS | SEASONAL_TAGS
+            | DERIVED_TAGS | set(ALIASES.keys())
+        )
+
+    def unknown_tags(self, expr: str) -> List[str]:
+        """Identifiers referenced in ``expr`` (lower-cased) that are not part
+        of :meth:`known_tag_universe` — i.e. likely typos/misspellings such
+        as ``"seasid"`` or off-taxonomy tags such as ``"italy-ish"``.
+
+        Case is not a source of "unknown": identifiers are lower-cased at
+        tokenize time (see ``registry.where``), so ``Italy`` == ``italy`` and
+        is never reported here.
+        """
+        known = self.known_tag_universe()
+        idents = extract_identifiers(expr)
+        return sorted(t for t in idents if t not in known)
+
     def where_list(self) -> Dict[str, Any]:
         """Tag inventory with counts, aliases, and derived (auto) tags."""
         counts: Dict[str, int] = {}
@@ -210,8 +233,27 @@ class DestinationRegistry:
             try:
                 candidates = self.matching(category)
             except WhereParseError:
-                # Tolerate a bare unknown token as a plain tag (never crash a sweep)
-                candidates = self.get_by_tag(category)
+                # Tolerate a malformed/bare token as a plain tag (never crash
+                # a sweep) — but apply the *same* lowercase + alias handling
+                # that matching()/where_parse would have used, so this
+                # fallback doesn't silently behave differently (review item:
+                # get_reachable dual-path inconsistency).
+                key = category.strip().lower()
+                resolved = ALIASES.get(key, key)
+                if any(op in resolved for op in "&|!()"):
+                    try:
+                        candidates = self.matching(resolved)
+                    except WhereParseError:
+                        candidates = self.get_by_tag(key)
+                else:
+                    candidates = self.get_by_tag(resolved)
+            if not candidates:
+                unknown = self.unknown_tags(category)
+                if unknown:
+                    logger.warning(
+                        "registry: get_reachable(origin=%s, category=%r) matched no "
+                        "airports; unknown tags: %s", origin, category, unknown,
+                    )
         else:
             candidates = list(self.airports)
         candidates = [a for a in candidates if a.iata != origin]
