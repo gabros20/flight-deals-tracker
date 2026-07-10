@@ -27,7 +27,7 @@ deliberately not merged — different write cadences, different readers.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -98,3 +98,28 @@ def latest(deal_id: str) -> Optional[Dict[str, Any]]:
 def first(deal_id: str) -> Optional[Dict[str, Any]]:
     recs = records(deal_id)
     return recs[0] if recs else None
+
+
+def prune_past_dated(today: date) -> int:
+    """Delete snapshot files whose deal has departed (``out_date < today``) — a
+    past-dated deal can't be re-checked or re-alerted, so its observation log is
+    dead weight (UPGRADE-PLAN §4: brief prunes past-dated snapshots). Returns
+    the number of deal files removed."""
+    d = _deals_dir()
+    if not d.exists():
+        return 0
+    removed = 0
+    for f in d.glob("*.jsonl"):
+        recs = store.read_jsonl(f)
+        if not recs:
+            continue
+        out_date = recs[-1].get("out_date")
+        if not out_date:
+            continue
+        try:
+            if date.fromisoformat(out_date) < today:
+                f.unlink(missing_ok=True)
+                removed += 1
+        except (ValueError, TypeError):
+            continue
+    return removed

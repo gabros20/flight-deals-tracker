@@ -33,6 +33,7 @@ class FlightDealsConfig(BaseModel):
     history_min_points_for_badge: int = Field(default=3, ge=1)
     history_window_days: int = Field(default=365, ge=7, description="Default window for historical comparisons and best-this-month")
     price_drop_threshold: float = Field(default=0.15, ge=0.0, le=0.5, description="Alert if price is this fraction below historical avg")
+    realert_drop_pct: float = Field(default=15.0, ge=0.0, le=100.0, description="While a watch is suppressed, re-alert only on a further drop of at least this percent below the last alerted price (chosen above Wizz's ~10% noise floor)")
     data_dir: str = Field(default="data")
     enable_cache: bool = True
     alerts_log_path: str = Field(default="data/price_alerts.csv")

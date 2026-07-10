@@ -379,14 +379,33 @@ def _pretty(env: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def telegram_text(env: Dict[str, Any]) -> str:
-    """A digest string built from the SAME envelope (used by Task 8's notifier).
-    Plain text, safe as a Telegram message body."""
-    lines = [env.get("summary", "")]
+def _html_escape(s: str) -> str:
+    """Escape the three characters Telegram's HTML parse mode reserves."""
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def telegram_text(env: Dict[str, Any], *, html: bool = False) -> str:
+    """The digest string built from the SAME envelope (Global Constraint 2 /
+    UPGRADE-PLAN §6 — one renderer, no second data path; Task 8's notifier sends
+    exactly this).
+
+    ``html=False`` -> plain text. ``html=True`` -> Telegram HTML parse-mode
+    markup: the summary is bolded, each deal line carries a ``<a href>`` deep
+    link (preserved from the envelope's ``links``) so a URL with an unescaped
+    ``_`` can't silently 400 the way Markdown parse mode did (UPGRADE-PLAN §6).
+    Reserved characters are escaped in HTML mode."""
+    esc = _html_escape if html else (lambda s: s)
+    summary = env.get("summary", "")
+    lines = [f"<b>{esc(summary)}</b>" if html else summary]
     for i, d in enumerate(env.get("results", [])[:10], 1):
         dates = d["out_date"] + (f"–{d['return_date']}" if d.get("return_date") else "")
         conf = "" if d["price_confidence"] == "exact" else " ~"
-        lines.append(
-            f"{i}. {d['origin']}→{d['destination']} €{d['price_eur']:.0f}{conf} {dates}"
-        )
+        route = f"{d['origin']}→{d['destination']}"
+        body = f"{i}. {route} €{d['price_eur']:.0f}{conf} {dates}"
+        if html:
+            link = next(iter((d.get("links") or {}).values()), None)
+            body = esc(body)
+            if link:
+                body = f'{body} · <a href="{esc(link)}">book</a>'
+        lines.append(body)
     return "\n".join(lines)

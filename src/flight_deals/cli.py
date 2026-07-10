@@ -44,7 +44,7 @@ def get_orchestrator() -> DealOrchestrator:
 def get_notifier() -> TelegramNotifier:
     global _notifier
     if _notifier is None:
-        _notifier = TelegramNotifier(config=config)
+        _notifier = TelegramNotifier()
     return _notifier
 
 
@@ -336,7 +336,7 @@ def track(
         if abs(change) >= threshold:
             msg = f"PRICE ALERT: {origin}-{destination} {date_out} changed {change:+.1f}% → {current.price} {current.currency}"
             console.print(f"[bold red]{msg}[/bold red]")
-            get_notifier().send_deal(msg)
+            get_notifier().send(msg)
         else:
             console.print(f"Current: {current.price} {current.currency} (prev {previous}, {change:+.1f}%)")
     else:
@@ -547,6 +547,305 @@ def multi_airports():
     """Removed pending rebuild — see docs/UPGRADE-PLAN.md."""
     _removed_pending_rebuild()
     raise typer.Exit(2)
+
+
+# --------------------------------------------------------------------------- #
+# Saved searches + watches (Task 8): searches add|list|rm|show|due, watch …    #
+# --------------------------------------------------------------------------- #
+def _month_window(month: Optional[str], months: Optional[str]) -> str:
+    """Turn a --month / --months option into a depart DSL string. A single
+    month passes through (the DSL understands ``YYYY-MM``); a comma list of
+    months widens to a window spanning the first day of the first to the last
+    day of the last month."""
+    from datetime import date as _date
+
+    def _last_day(ym: str) -> str:
+        y, m = (int(x) for x in ym.split("-"))
+        nxt = _date(y + 1, 1, 1) if m == 12 else _date(y, m + 1, 1)
+        return _date.fromordinal(nxt.toordinal() - 1).isoformat()
+
+    if months:
+        items = [m.strip() for m in months.split(",") if m.strip()]
+        if not items:
+            raise ValueError("--months was empty")
+        items.sort()
+        return f"{items[0]}-01..{_last_day(items[-1])}"
+    if month:
+        return month.strip()
+    raise ValueError("a watch needs a time window: pass --month YYYY-MM or --months YYYY-MM,YYYY-MM")
+
+
+def _per_run_calls(spec_dict: dict) -> Optional[int]:
+    """Best-effort per-run call estimate for a saved spec (stated on add)."""
+    from flight_deals.engine.planner import compile_plan
+    from flight_deals.engine.spec import parse_spec as _ps
+    try:
+        return compile_plan(_ps(spec_dict), registry).estimated_calls
+    except Exception:
+        return None
+
+
+def _emit_search_saved(record: dict) -> None:
+    from flight_deals.state import searches as _s
+    payload = {
+        "saved": record["name"],
+        "watch": _s.is_watch(record),
+        "schedule": record.get("schedule"),
+        "alert": record.get("alert"),
+        "spec": record["spec"],
+        "per_run_calls": _per_run_calls(record["spec"]),
+    }
+    typer.echo(json.dumps(payload))
+
+
+searches_app = typer.Typer(help="Saved searches: the specs brief runs on a schedule.")
+app.add_typer(searches_app, name="searches")
+
+
+@searches_app.command("add")
+def searches_add(
+    spec: str = typer.Option(..., "--spec", help="Spec as inline JSON, a file path, or '-' for stdin"),
+    name: str = typer.Option(None, "--name", help="Saved-search name (default: from the spec/file)"),
+    schedule: str = typer.Option(None, "--schedule", help='e.g. "daily 08:30", "weekly mon 08:30", "every 6h"'),
+    max_price: float = typer.Option(None, "--max-price", help="Attach an alert block (turns this into a watch)"),
+    agent_prompt: str = typer.Option(None, "--agent-prompt"),
+):
+    """Create or replace (idempotent) a saved search from a spec."""
+    from flight_deals.state import searches as _s
+
+    try:
+        raw = _load_spec_input(spec)
+    except Exception as e:
+        _emit_spec_error("bad_spec_input", f"could not read --spec: {e}", False)
+        raise typer.Exit(2)
+
+    spec_dict = raw.get("spec", raw) if isinstance(raw, dict) else raw
+    resolved_name = name or (raw.get("name") if isinstance(raw, dict) else None)
+    if not resolved_name:
+        _emit_spec_error("missing_name", "pass --name for the saved search, e.g. --name august-seaside", False)
+        raise typer.Exit(2)
+    alert = {"max_price": max_price, "notify": "telegram"} if max_price is not None else (
+        raw.get("alert") if isinstance(raw, dict) else None)
+    sched = schedule or (raw.get("schedule") if isinstance(raw, dict) else None)
+    prompt = agent_prompt or (raw.get("agent_prompt") if isinstance(raw, dict) else None)
+
+    try:
+        record = _s.add(name=resolved_name, spec=spec_dict, schedule=sched, alert=alert, agent_prompt=prompt)
+    except _s.SearchError as e:
+        _emit_spec_error("invalid_search", e.hint, False)
+        raise typer.Exit(2)
+    _emit_search_saved(record)
+
+
+@searches_app.command("list")
+def searches_list(pretty: bool = typer.Option(False, "--pretty")):
+    """List every saved search."""
+    from flight_deals.state import searches as _s
+    records = _s.list_all()
+    if not pretty:
+        typer.echo(json.dumps([
+            {"name": r["name"], "schedule": r.get("schedule"), "watch": _s.is_watch(r),
+             "alert": r.get("alert")} for r in records
+        ]))
+        return
+    if not records:
+        console.print("[yellow]No saved searches yet.[/yellow]")
+        return
+    for r in records:
+        tag = "[watch]" if _s.is_watch(r) else "[search]"
+        console.print(f"  {tag} {r['name']}  schedule={r.get('schedule') or '-'}  alert={r.get('alert') or '-'}")
+
+
+@searches_app.command("show")
+def searches_show(name: str = typer.Argument(...), pretty: bool = typer.Option(False, "--pretty")):
+    """Show one saved search in full."""
+    from flight_deals.state import searches as _s
+    record = _s.load(name)
+    if record is None:
+        typer.echo(json.dumps({"error": "unknown_search", "hint": f"no saved search named {name!r} — run 'flight-deals searches list'"}))
+        raise typer.Exit(2)
+    if not pretty:
+        typer.echo(json.dumps(record))
+        return
+    console.print_json(json.dumps(record))
+
+
+@searches_app.command("rm")
+def searches_rm(name: str = typer.Argument(...)):
+    """Delete a saved search."""
+    from flight_deals.state import searches as _s
+    existed = _s.remove(name)
+    if not existed:
+        typer.echo(json.dumps({"error": "unknown_search", "hint": f"no saved search named {name!r}"}))
+        raise typer.Exit(2)
+    typer.echo(json.dumps({"removed": _s.normalize_name(name)}))
+
+
+@searches_app.command("due")
+def searches_due(pretty: bool = typer.Option(False, "--pretty")):
+    """List saved searches currently due to run (by their schedule vs last run)."""
+    from flight_deals.state import searches as _s
+    now = datetime.now(timezone.utc)
+    records = _s.due(now)
+    names = [r["name"] for r in records]
+    if not pretty:
+        typer.echo(json.dumps({"due": names, "count": len(names)}))
+        return
+    if not names:
+        console.print("[dim]Nothing due right now.[/dim]")
+        return
+    for n in names:
+        console.print(f"  {n}")
+
+
+watch_app = typer.Typer(help="Watches: saved searches with a price-alert threshold.")
+app.add_typer(watch_app, name="watch")
+
+
+@watch_app.command("add")
+def watch_add(
+    route: str = typer.Argument(None, help="A route like BUD-CFU (route watch)"),
+    where: str = typer.Option(None, "--where", "--category", help="A where-expression (category watch)"),
+    month: str = typer.Option(None, "--month", help="Watched month YYYY-MM"),
+    months: str = typer.Option(None, "--months", help="Comma list of months YYYY-MM,YYYY-MM"),
+    nights: str = typer.Option(None, "--nights", help='Nights range, e.g. "4-7" (omit for one-way)'),
+    max_price: float = typer.Option(None, "--max-price", help="Alert threshold, EUR (route watch)"),
+    budget: float = typer.Option(None, "--budget", help="Alert threshold + search budget, EUR (category watch)"),
+    origins_opt: str = typer.Option(None, "--from", "--origins", help="Origin IATA(s) (default from config)"),
+    spec_file: str = typer.Option(None, "--spec", help="Build the watch from a spec file/inline JSON instead"),
+    name: str = typer.Option(None, "--name", help="Watch name (default: derived from route/where)"),
+    schedule: str = typer.Option("daily 08:30", "--schedule", help="Run schedule (default: daily 08:30)"),
+):
+    """Add a watch = a saved search plus an alert threshold. Three forms:
+
+    \b
+      watch add BUD-CFU --months 2026-08,2026-09 --nights 4-7 --max-price 150
+      watch add --where "seaside & italy" --month 2026-08 --nights 5-8 --budget 120
+      watch add --spec my-search.yaml --name august --max-price 150
+
+    Idempotent: re-adding the same name updates it."""
+    from flight_deals.state import searches as _s
+
+    origins = _parse_origins(origins_opt)
+
+    try:
+        if spec_file:
+            raw = _load_spec_input(spec_file)
+            spec_dict = raw.get("spec", raw) if isinstance(raw, dict) else raw
+            threshold = max_price if max_price is not None else budget
+            if threshold is None:
+                threshold = (raw.get("alert") or {}).get("max_price") if isinstance(raw, dict) else None
+            if threshold is None:
+                raise ValueError("a watch needs an alert threshold: pass --max-price (or --budget)")
+            wname = name or (raw.get("name") if isinstance(raw, dict) else None)
+            if not wname:
+                raise ValueError("pass --name for a --spec watch")
+            sched = schedule or (raw.get("schedule") if isinstance(raw, dict) else None)
+        elif route:
+            if "-" not in route:
+                raise ValueError('route must look like BUD-CFU (origin-destination)')
+            o, d = [p.strip().upper() for p in route.split("-", 1)]
+            depart = _month_window(month, months)
+            spec_dict = {"origins": [o], "destinations": [d], "depart": depart}
+            if nights:
+                spec_dict["nights"] = nights
+            if max_price is None:
+                raise ValueError("a route watch needs --max-price (the alert threshold)")
+            threshold = max_price
+            wname = name or f"{o}-{d}".lower()
+            sched = schedule
+        elif where:
+            depart = _month_window(month, months)
+            spec_dict = {"origins": origins, "where": where, "depart": depart}
+            if nights:
+                spec_dict["nights"] = nights
+            threshold = budget if budget is not None else max_price
+            if threshold is None:
+                raise ValueError("a category watch needs --budget (the alert threshold)")
+            if budget is not None:
+                spec_dict["budget"] = budget
+            wname = name or where
+            sched = schedule
+        else:
+            raise ValueError("give a route (BUD-CFU), a --where expression, or a --spec file")
+
+        alert = {"max_price": float(threshold), "notify": "telegram"}
+        record = _s.add(name=wname, spec=spec_dict, schedule=sched, alert=alert)
+    except (_s.SearchError,) as e:
+        _emit_spec_error("invalid_watch", e.hint, False)
+        raise typer.Exit(2)
+    except ValueError as e:
+        _emit_spec_error("invalid_watch", str(e), False)
+        raise typer.Exit(2)
+    _emit_search_saved(record)
+
+
+@watch_app.command("list")
+def watch_list(pretty: bool = typer.Option(False, "--pretty")):
+    """List watches (saved searches carrying an alert block)."""
+    from flight_deals.state import searches as _s
+    watches = [r for r in _s.list_all() if _s.is_watch(r)]
+    if not pretty:
+        typer.echo(json.dumps([
+            {"name": r["name"], "schedule": r.get("schedule"), "alert": r.get("alert"),
+             "spec": r["spec"]} for r in watches
+        ]))
+        return
+    if not watches:
+        console.print("[yellow]No watches yet.[/yellow]")
+        return
+    for r in watches:
+        console.print(f"  {r['name']}  max €{r['alert'].get('max_price')}  schedule={r.get('schedule')}")
+
+
+@watch_app.command("rm")
+def watch_rm(name: str = typer.Argument(...)):
+    """Remove a watch (same store as searches rm)."""
+    searches_rm(name)
+
+
+# --------------------------------------------------------------------------- #
+# brief — the monitoring loop (Task 8)                                         #
+# --------------------------------------------------------------------------- #
+@app.command()
+def brief(
+    send: bool = typer.Option(False, "--send", help="Send the digest to Telegram"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Print the Telegram chunks instead of sending"),
+    all_searches: bool = typer.Option(False, "--all", help="Run every saved search, ignoring schedule"),
+    fresh: bool = typer.Option(False, "--fresh", help="Bypass cache, fetch fresh prices"),
+    max_calls: int = typer.Option(40, "--max-calls"),
+    pretty: bool = typer.Option(False, "--pretty"),
+):
+    """Run every due saved search, diff confirmed prices against the alert
+    state machine, fire exactly-once alerts, prune stale state, and emit one
+    digest envelope. ``--send`` pushes it to Telegram; a failed send exits 1.
+    A second concurrent brief exits 1 ("already running")."""
+    from flight_deals import output
+    from flight_deals.engine.brief import run_brief, should_send
+    from flight_deals.state.store import flock_guard
+
+    with flock_guard("brief"):
+        result = run_brief(
+            force_all=all_searches, registry=registry, history_store=history_store,
+            max_calls=max_calls, fresh=fresh,
+        )
+        typer.echo(output.render(result.envelope, pretty=pretty))
+
+        send_failed = False
+        if dry_run:
+            # Always preview the digest we *would* send, offline.
+            digest = output.telegram_text(result.envelope, html=True)
+            get_notifier().send(digest, dry_run=True)
+        elif send and should_send(result):
+            # Only message when there's something to report (no empty-digest spam).
+            digest = output.telegram_text(result.envelope, html=True)
+            if not get_notifier().send(digest):
+                send_failed = True
+
+        if send_failed:
+            raise typer.Exit(1)
+        if result.exit_code:
+            raise typer.Exit(result.exit_code)
 
 
 if __name__ == "__main__":

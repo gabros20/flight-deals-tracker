@@ -112,6 +112,25 @@ class ResponseCache:
             count += 1
         return count
 
+    def prune_expired(self) -> int:
+        """Delete cache entries past their per-endpoint TTL (brief's prune pass,
+        UPGRADE-PLAN §4). Returns the number removed. A corrupt/unreadable entry
+        is also removed (it can never be a useful hit)."""
+        removed = 0
+        now = datetime.now(timezone.utc)
+        for f in self.cache_dir.glob("*.json"):
+            try:
+                data = json.loads(f.read_text())
+                cached_at = datetime.fromisoformat(data["cached_at"])
+                ttl = timedelta(seconds=self.ttls.get(self._kind(data.get("endpoint", "")), 0))
+                if now - cached_at > ttl:
+                    f.unlink(missing_ok=True)
+                    removed += 1
+            except Exception:
+                f.unlink(missing_ok=True)
+                removed += 1
+        return removed
+
 
 class FlightCache:
     def __init__(self, cache_dir: Optional[Path] = None, ttl_hours: Optional[float] = None):

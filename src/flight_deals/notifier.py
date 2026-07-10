@@ -1,56 +1,108 @@
+"""Telegram notifier v2 (UPGRADE-PLAN §6, brief req 5).
+
+A deliberate rewrite of the legacy notifier, which used Markdown parse mode
+(silently 400s on an unescaped ``_`` in a booking URL) and swallowed every
+failure. This version:
+
+* uses **HTML** parse mode (robust for the deep links in a digest);
+* **chunks** a long message at ~3500 chars (under Telegram's 4096 cap) on line
+  boundaries, sending each chunk as its own message;
+* sources credentials **only** from the environment (``TELEGRAM_BOT_TOKEN`` /
+  ``TELEGRAM_CHAT_ID``) — never a config file (Global Constraint 8);
+* on a failed send **logs the response body** and returns ``False`` so the
+  caller (``brief``) exits non-zero and the cron log surfaces it;
+* supports ``dry_run``: prints the chunks that *would* be sent, no network.
+
+The message body itself is built by ``output.telegram_text`` from the frozen
+envelope — the notifier never formats deals itself (one renderer rule).
+"""
+
+from __future__ import annotations
+
+import logging
 import os
+from typing import List, Optional
+
 import requests
-from typing import Optional
-from flight_deals.config import get_config, FlightDealsConfig
-from flight_deals.formatters import format_results
+
+logger = logging.getLogger(__name__)
+
+TELEGRAM_API = "https://api.telegram.org"
+CHUNK_LIMIT = 3500  # under the 4096 hard cap, room for HTML entity expansion
+
+
+def chunk_message(text: str, limit: int = CHUNK_LIMIT) -> List[str]:
+    """Split ``text`` into <=``limit``-char chunks on line boundaries. A single
+    line longer than ``limit`` is hard-split so no chunk ever exceeds the cap."""
+    chunks: List[str] = []
+    current = ""
+    for line in text.split("\n"):
+        while len(line) > limit:
+            # A pathologically long single line: hard-split it.
+            if current:
+                chunks.append(current)
+                current = ""
+            chunks.append(line[:limit])
+            line = line[limit:]
+        candidate = line if not current else current + "\n" + line
+        if len(candidate) > limit:
+            chunks.append(current)
+            current = line
+        else:
+            current = candidate
+    if current:
+        chunks.append(current)
+    return chunks or [""]
 
 
 class TelegramNotifier:
-    def __init__(self, token: Optional[str] = None, chat_id: Optional[str] = None, config: Optional[FlightDealsConfig] = None):
-        cfg = config or get_config()
-        self.token = token or cfg.telegram_bot_token or os.getenv("TELEGRAM_BOT_TOKEN")
-        self.chat_id = chat_id or cfg.telegram_chat_id or os.getenv("TELEGRAM_CHAT_ID")
-        self.enabled = bool(self.token and self.chat_id)
+    """Env-credentialed Telegram sender. Construct with explicit token/chat_id
+    only in tests; production always reads the environment."""
 
-    def send_deal(self, message: str, parse_mode: str = "Markdown") -> bool:
-        if not self.enabled:
-            print(f"[TelegramNotifier] (dry-run) Would send: {message}")
+    def __init__(self, token: Optional[str] = None, chat_id: Optional[str] = None):
+        self.token = token or os.getenv("TELEGRAM_BOT_TOKEN")
+        self.chat_id = chat_id or os.getenv("TELEGRAM_CHAT_ID")
+
+    @property
+    def configured(self) -> bool:
+        return bool(self.token and self.chat_id)
+
+    def send(self, text: str, *, dry_run: bool = False, parse_mode: str = "HTML") -> bool:
+        """Send ``text`` (chunked) to the configured chat. Returns ``True`` on
+        full success, ``False`` on any failure (logged). ``dry_run`` prints the
+        chunks instead of sending and always returns ``True``."""
+        chunks = chunk_message(text)
+
+        if dry_run:
+            for i, c in enumerate(chunks, 1):
+                print(f"--- telegram chunk {i}/{len(chunks)} ({len(c)} chars) ---")
+                print(c)
+            return True
+
+        if not self.configured:
+            logger.error(
+                "telegram: not configured — set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID"
+            )
             return False
 
-        url = f"https://api.telegram.org/bot{self.token}/sendMessage"
-        payload = {
-            "chat_id": self.chat_id,
-            "text": message,
-            "parse_mode": parse_mode,
-            "disable_web_page_preview": True,
-        }
-
-        try:
-            resp = requests.post(url, json=payload, timeout=15)
-            if resp.status_code == 200:
-                print(f"[Telegram] Message sent successfully to {self.chat_id}")
-                return True
-            else:
-                print(f"[Telegram] Failed to send: {resp.text}")
+        url = f"{TELEGRAM_API}/bot{self.token}/sendMessage"
+        for i, c in enumerate(chunks, 1):
+            payload = {
+                "chat_id": self.chat_id,
+                "text": c,
+                "parse_mode": parse_mode,
+                "disable_web_page_preview": True,
+            }
+            try:
+                resp = requests.post(url, json=payload, timeout=15)
+            except requests.RequestException as e:
+                logger.error("telegram: send failed (chunk %d/%d): %s", i, len(chunks), e)
                 return False
-        except Exception as e:
-            print(f"[Telegram] Error sending message: {e}")
-            return False
-
-
-    def send_deals(self, deals: list, title: str = "Flight Deals") -> bool:
-        """Send a list of deals using the enforced emoji + link format"""
-        formatted = format_results(deals, title)
-        return self.send_deal(formatted)
-
-    def send_price_alert(self, origin: str, destination: str, date: str, price: float, currency: str, change_pct: float, booking_link: str = ""):
-        """Convenience method for price drop alerts"""
-        msg = (
-            f"✈️ *PRICE ALERT*\n"
-            f"{origin} → {destination} on {date}\n"
-            f"New price: *{price} {currency}*\n"
-            f"Change: {change_pct:+.1f}%\n"
-        )
-        if booking_link:
-            msg += f"[Book now]({booking_link})"
-        return self.send_deal(msg)
+            if resp.status_code != 200:
+                logger.error(
+                    "telegram: send failed (chunk %d/%d) HTTP %s: %s",
+                    i, len(chunks), resp.status_code, resp.text,
+                )
+                return False
+        logger.info("telegram: sent %d chunk(s) to %s", len(chunks), self.chat_id)
+        return True
