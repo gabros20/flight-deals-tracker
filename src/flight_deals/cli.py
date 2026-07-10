@@ -299,6 +299,21 @@ def check(
 
 
 @app.command()
+def wake(
+    name: str = typer.Argument(..., help="A saved search name (see 'flight-deals searches list')"),
+    pretty: bool = typer.Option(False, "--pretty"),
+):
+    """Bundle a saved search for an agentic review session (SEARCH-DESIGN §6):
+    its spec + agent_prompt + last persisted run + history context for the
+    routes it returned + the fixed list of allowed spec-mutation moves. Reads
+    saved state only — no network. Unknown name exits 2 with a hint."""
+    from flight_deals.engine.wake import build_wake
+
+    env, code = build_wake(name, history_store=history_store)
+    _emit_intent(env, code, pretty)
+
+
+@app.command()
 def track(
     origin: str = typer.Option(None, "--origin", "-o"),
     destination: str = typer.Option(..., "--destination", "-d"),
@@ -682,14 +697,25 @@ def searches_rm(name: str = typer.Argument(...)):
 
 
 @searches_app.command("due")
-def searches_due(pretty: bool = typer.Option(False, "--pretty")):
-    """List saved searches currently due to run (by their schedule vs last run)."""
+def searches_due(
+    pretty: bool = typer.Option(False, "--pretty"),
+    agentic: bool = typer.Option(
+        False, "--agentic",
+        help="Restrict to due searches carrying an agent_prompt (the agentic-review periphery, SEARCH-DESIGN §6). "
+             "Wake each with `flight-deals wake <name>`.",
+    ),
+):
+    """List saved searches currently due to run (by their schedule vs last run).
+    ``--agentic`` narrows this to searches meant for a scheduled agent session
+    rather than the deterministic ``brief`` loop."""
     from flight_deals.state import searches as _s
     now = datetime.now(timezone.utc)
     records = _s.due(now)
+    if agentic:
+        records = [r for r in records if r.get("agent_prompt")]
     names = [r["name"] for r in records]
     if not pretty:
-        typer.echo(json.dumps({"due": names, "count": len(names)}))
+        typer.echo(json.dumps({"due": names, "count": len(names), "agentic": agentic}))
         return
     if not names:
         console.print("[dim]Nothing due right now.[/dim]")

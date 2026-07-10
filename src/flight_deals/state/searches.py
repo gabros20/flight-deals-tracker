@@ -46,6 +46,7 @@ logger = logging.getLogger(__name__)
 SCHEMA_VERSION = 1
 SEARCHES_SUBDIR = "data/searches"
 RUNS_FILENAME = ".runs.json"
+RESULTS_SUBDIR = ".results"
 
 _NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 _WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
@@ -74,6 +75,10 @@ def _path(name: str) -> Path:
 
 def _runs_path() -> Path:
     return searches_dir() / RUNS_FILENAME
+
+
+def _result_path(name: str) -> Path:
+    return searches_dir() / RESULTS_SUBDIR / f"{name}.json"
 
 
 def normalize_name(name: str) -> str:
@@ -165,7 +170,7 @@ def list_all(*, skipped: Optional[List[Dict[str, str]]] = None) -> List[Dict[str
 
 
 def remove(name: str) -> bool:
-    """Delete a saved search and its run stamp. Returns True if it existed."""
+    """Delete a saved search, its run stamp, and its cached last-result."""
     name = normalize_name(name)
     p = _path(name)
     existed = p.exists()
@@ -174,7 +179,39 @@ def remove(name: str) -> bool:
     if name in runs.get("runs", {}):
         runs["runs"].pop(name, None)
         _save_runs(runs)
+    _result_path(name).unlink(missing_ok=True)
     return existed
+
+
+# --------------------------------------------------------------------------- #
+# last-result cache (``.results/<name>.json`` — wake's bundle, Task 9 req 4)   #
+# --------------------------------------------------------------------------- #
+def save_last_result(name: str, envelope: Dict[str, Any], when: datetime) -> None:
+    """Persist the last envelope a saved search produced (from ``brief`` or a
+    manual ``run``), so ``wake`` can bundle it without re-querying providers.
+    Atomic write, versioned, one file per search — never grows unbounded."""
+    when = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+    record = {
+        "schema_version": SCHEMA_VERSION,
+        "name": name,
+        "ran_at": when.astimezone(timezone.utc).isoformat(),
+        "results": envelope.get("results", []),
+        "summary": envelope.get("summary"),
+        "sources": envelope.get("sources", {}),
+    }
+    if envelope.get("route_status") is not None:
+        record["route_status"] = envelope["route_status"]
+    store.atomic_write_json(_result_path(name), record)
+
+
+def load_last_result(name: str) -> Optional[Dict[str, Any]]:
+    """The last persisted result for ``name``, or ``None`` if it has never run
+    (or its file is unreadable — same tolerant handling as a saved search)."""
+    try:
+        return store.read_versioned(_result_path(name), current=SCHEMA_VERSION)
+    except store.MigrationError as e:
+        logger.warning("searches: last-result cache for %r unreadable, treating as none: %s", name, e)
+        return None
 
 
 def is_watch(record: Dict[str, Any]) -> bool:

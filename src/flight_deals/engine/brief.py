@@ -182,6 +182,10 @@ def run_brief(
 
         ran.append(name)
         searches.stamp_run(name, now)
+        try:
+            searches.save_last_result(name, env, now)
+        except Exception as e:  # noqa: BLE001 — the cache is a convenience for `wake`
+            logger.warning("brief: could not persist last-result cache for %r: %s", name, e)
 
         # This search's own sources, before the cross-search merge below —
         # used to detect an all-providers-down day (every executed search had
