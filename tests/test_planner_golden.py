@@ -71,6 +71,22 @@ def test_run_golden(name):
     assert env == expected["envelope"]
 
 
+def test_plan_golden_shapes_on():
+    """Compile golden for a shapes-enabled spec (S2 direct + S3 extended-origin
+    + S4 open-jaw): the plan is byte-stable and its call math is honest —
+    RT-ANYWHERE per extended origin and CAL descriptors for the matched pair."""
+    spec = _load_spec("shapes_on")
+    plan_dict = compile_plan(spec).to_dict()
+    golden = GOLDENS / "plan_shapes_on.json"
+    if _regen():
+        golden.write_text(json.dumps(plan_dict, indent=2) + "\n")
+    expected = json.loads(golden.read_text())
+    assert plan_dict == expected
+    shapes = {c["shape"] for c in plan_dict["calls"]}
+    assert shapes == {"S2", "S3", "S4"}
+    assert plan_dict["estimated_calls"] == len(plan_dict["calls"])
+
+
 def test_run_golden_single_dest_is_one_exact_deal():
     """Sanity anchor for the single-dest golden (so a silent golden regen can't
     hide a regression): exactly one exact-confidence deal, and its deal_id is

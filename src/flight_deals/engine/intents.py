@@ -344,6 +344,20 @@ def check_deal(
         )
         return env, 2
 
+    # Composite shapes (S3 extended-origin, S4 open-jaw) don't have a single
+    # bookable route to re-price directly — re-checking them exactly needs the
+    # shape's own composition path (not yet wired for `check`). Be honest rather
+    # than re-pricing them as if direct.
+    if snap.get("shape") not in ("S1", "S2"):
+        env = output.envelope(
+            results=[], sources={},
+            summary=f"deal {deal_id} is a {snap.get('shape')} composite trip — "
+                    "re-check it by re-running the getaway that found it "
+                    "(--shapes ...); per-shape re-check isn't wired into `check` yet",
+            next=[], route_status="no_match",
+        )
+        return env, 0
+
     registry = registry or DestinationRegistry()
     planner = planner or Planner(registry=registry)
     first_snap = snapshots.first(deal_id)
