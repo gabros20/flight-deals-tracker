@@ -1,5 +1,4 @@
 import logging
-import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -41,6 +40,7 @@ def aggregate_status(events: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
     (Task 3 req 8). "Worst status wins": any non-ok event marks the provider
     failed and records its detail.
     """
+    ok_statuses = {"ok", "version_refreshed"}
     summary: Dict[str, Dict[str, Any]] = {}
     for ev in events:
         name = ev["provider"]
@@ -48,11 +48,17 @@ def aggregate_status(events: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
             name, {"ok": True, "status": "ok", "calls": 0, "errors": 0, "last_error": None}
         )
         entry["calls"] += 1
-        if ev["status"] != "ok":
+        st = ev["status"]
+        if st not in ok_statuses:
+            # A real failure wins over everything (incl. a version_refreshed).
             entry["ok"] = False
             entry["errors"] += 1
-            entry["status"] = ev["status"]
+            entry["status"] = st
             entry["last_error"] = ev.get("detail")
+        elif st == "version_refreshed" and entry["ok"] and entry["status"] == "ok":
+            # Successful, but note the auto version refresh (Task 4) unless a
+            # failure has already been recorded for this provider.
+            entry["status"] = "version_refreshed"
     return summary
 
 
@@ -72,10 +78,6 @@ class DealOrchestrator:
         # `sources:` line. Populated race-free from returned events, not by
         # threads writing a shared dict.
         self.provider_status: Dict[str, Dict[str, Any]] = {}
-        # Wizz is still the legacy []+last_error provider (Task 4 rebuilds it).
-        # A single shared instance's last_error races under concurrency, so its
-        # call+read is serialized here until the rebuild.
-        self._wizz_lock = threading.Lock()
 
     # ------------------------------------------------------------------ #
     # Race-free concurrent gather                                        #
@@ -116,25 +118,20 @@ class DealOrchestrator:
             return [], {"provider": "ryanair", "status": "error", "detail": str(e)}
 
     def _wizz_oneway(self, origin, dest, date_from, date_to, fresh) -> Tuple[List[FlightDeal], Dict[str, Any]]:
-        # Legacy wizz: serialize the call+last_error read so the shared instance
-        # can't have its last_error clobbered by another thread mid-read.
-        with self._wizz_lock:
-            try:
-                raw = self.wizz.get_cheapest_flights(
-                    origin, date_from, date_to, dest.iata, use_cache=not fresh
-                ) or []
-                err = getattr(self.wizz, "last_error", None)
-            except Exception as e:
-                return [], {"provider": "wizz", "status": "error", "detail": str(e)}
-        if err:
-            return [], {"provider": "wizz", "status": "error", "detail": err}
-        # fx is Task 4: nothing non-EUR is allowed into results/stats
-        # (Global Constraint 4). Drop non-EUR wizz deals rather than mix
-        # currencies; wizz becomes fully usable once fx.py lands.
-        eur = [d for d in raw if (d.currency or "EUR").upper() == "EUR"]
-        if len(eur) != len(raw):
-            logger.info("orchestrator: dropped %d non-EUR wizz deals (fx is Task 4)", len(raw) - len(eur))
-        return eur, {"provider": "wizz", "status": "ok"}
+        # Rebuilt Wizz (Task 4): typed exceptions out, prices already EUR via
+        # fx.to_eur, and the version-refresh flag returned per-call (never shared
+        # mutable state) so `version_refreshed` is reported race-free.
+        try:
+            deals, refreshed = self.wizz.oneway_deals(
+                origin, dest.iata, date_from, date_to, use_cache=not fresh
+            )
+            return deals, {"provider": "wizz", "status": "version_refreshed" if refreshed else "ok"}
+        except ProviderError as e:
+            logger.warning("orchestrator: wizz %s->%s failed: %s", origin, dest.iata, e)
+            return [], {"provider": "wizz", "status": status_for_exception(e), "detail": str(e)}
+        except Exception as e:
+            logger.warning("orchestrator: wizz %s->%s unexpected: %s", origin, dest.iata, e)
+            return [], {"provider": "wizz", "status": "error", "detail": str(e)}
 
     def search_by_category(
         self,
@@ -176,10 +173,14 @@ class DealOrchestrator:
         if max_price:
             results = [d for d in results if d.price <= max_price]
 
-        # Deduplicate: keep cheapest per (origin, dest, date, source)
+        # Merge across carriers: for one route+date served by both Ryanair and
+        # Wizz, keep the CHEAPER fare (its `source` tags the winning carrier),
+        # rather than showing near-duplicate rows (Task 4 req 4). Ties keep the
+        # first seen deterministically. All prices are EUR by here (Wizz went
+        # through fx.to_eur), so the comparison is currency-safe.
         seen: Dict[tuple, FlightDeal] = {}
         for d in results:
-            key = (d.origin, d.destination, d.departure_date, d.source)
+            key = (d.origin, d.destination, d.departure_date)
             if key not in seen or d.price < seen[key].price:
                 seen[key] = d
         deduped = list(seen.values())

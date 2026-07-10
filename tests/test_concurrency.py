@@ -110,7 +110,7 @@ def test_one_of_eight_failures_is_visible_under_concurrency(monkeypatch):
     monkeypatch.setattr(orch.registry, "get_reachable", lambda *a, **k: list(_FAKE_DESTS))
     # SAME shared instance the thread-pool workers all call into.
     monkeypatch.setattr(orch.ryanair, "get_cheapest_flights", _flaky_ryanair)
-    monkeypatch.setattr(orch.wizz, "get_cheapest_flights", lambda *a, **k: [])
+    monkeypatch.setattr(orch.wizz, "oneway_deals", lambda *a, **k: ([], False))
 
     results = orch.search_by_category(
         "european-islands", "BUD", "2026-08-01", "2026-08-03", fresh=True
@@ -134,7 +134,7 @@ def test_run_repeatedly_never_loses_the_failure(monkeypatch):
         orch = DealOrchestrator()
         monkeypatch.setattr(orch.registry, "get_reachable", lambda *a, **k: list(_FAKE_DESTS))
         monkeypatch.setattr(orch.ryanair, "get_cheapest_flights", _flaky_ryanair)
-        monkeypatch.setattr(orch.wizz, "get_cheapest_flights", lambda *a, **k: [])
+        monkeypatch.setattr(orch.wizz, "oneway_deals", lambda *a, **k: ([], False))
 
         results = orch.search_by_category(
             "european-islands", "BUD", "2026-08-01", "2026-08-03", fresh=True
