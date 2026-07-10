@@ -1,0 +1,163 @@
+{
+  "calls": [
+    {
+      "provider": "ryanair",
+      "endpoint": "roundTripFares",
+      "mode": "anywhere",
+      "shape": "S2",
+      "params": {
+        "origin": "BUD",
+        "out_from": "2026-08-22",
+        "out_to": "2026-08-24",
+        "duration_from": 5,
+        "duration_to": 8
+      }
+    },
+    {
+      "provider": "wizzair",
+      "endpoint": "timetable",
+      "mode": "timetable",
+      "shape": "S2",
+      "params": {
+        "origin": "BUD",
+        "destination": "CFU",
+        "date_from": "2026-08-22",
+        "date_to": "2026-09-01"
+      }
+    },
+    {
+      "provider": "wizzair",
+      "endpoint": "timetable",
+      "mode": "timetable",
+      "shape": "S2",
+      "params": {
+        "origin": "BUD",
+        "destination": "CHQ",
+        "date_from": "2026-08-22",
+        "date_to": "2026-09-01"
+      }
+    },
+    {
+      "provider": "wizzair",
+      "endpoint": "timetable",
+      "mode": "timetable",
+      "shape": "S2",
+      "params": {
+        "origin": "BUD",
+        "destination": "EFL",
+        "date_from": "2026-08-22",
+        "date_to": "2026-09-01"
+      }
+    },
+    {
+      "provider": "wizzair",
+      "endpoint": "timetable",
+      "mode": "timetable",
+      "shape": "S2",
+      "params": {
+        "origin": "BUD",
+        "destination": "HER",
+        "date_from": "2026-08-22",
+        "date_to": "2026-09-01"
+      }
+    },
+    {
+      "provider": "wizzair",
+      "endpoint": "timetable",
+      "mode": "timetable",
+      "shape": "S2",
+      "params": {
+        "origin": "BUD",
+        "destination": "JMK",
+        "date_from": "2026-08-22",
+        "date_to": "2026-09-01"
+      }
+    },
+    {
+      "provider": "wizzair",
+      "endpoint": "timetable",
+      "mode": "timetable",
+      "shape": "S2",
+      "params": {
+        "origin": "BUD",
+        "destination": "JTR",
+        "date_from": "2026-08-22",
+        "date_to": "2026-09-01"
+      }
+    },
+    {
+      "provider": "wizzair",
+      "endpoint": "timetable",
+      "mode": "timetable",
+      "shape": "S2",
+      "params": {
+        "origin": "BUD",
+        "destination": "KGS",
+        "date_from": "2026-08-22",
+        "date_to": "2026-09-01"
+      }
+    },
+    {
+      "provider": "wizzair",
+      "endpoint": "timetable",
+      "mode": "timetable",
+      "shape": "S2",
+      "params": {
+        "origin": "BUD",
+        "destination": "KLX",
+        "date_from": "2026-08-22",
+        "date_to": "2026-09-01"
+      }
+    },
+    {
+      "provider": "wizzair",
+      "endpoint": "timetable",
+      "mode": "timetable",
+      "shape": "S2",
+      "params": {
+        "origin": "BUD",
+        "destination": "PVK",
+        "date_from": "2026-08-22",
+        "date_to": "2026-09-01"
+      }
+    },
+    {
+      "provider": "wizzair",
+      "endpoint": "timetable",
+      "mode": "timetable",
+      "shape": "S2",
+      "params": {
+        "origin": "BUD",
+        "destination": "RHO",
+        "date_from": "2026-08-22",
+        "date_to": "2026-09-01"
+      }
+    },
+    {
+      "provider": "wizzair",
+      "endpoint": "timetable",
+      "mode": "timetable",
+      "shape": "S2",
+      "params": {
+        "origin": "BUD",
+        "destination": "SKG",
+        "date_from": "2026-08-22",
+        "date_to": "2026-09-01"
+      }
+    },
+    {
+      "provider": "wizzair",
+      "endpoint": "timetable",
+      "mode": "timetable",
+      "shape": "S2",
+      "params": {
+        "origin": "BUD",
+        "destination": "ZTH",
+        "date_from": "2026-08-22",
+        "date_to": "2026-09-01"
+      }
+    }
+  ],
+  "estimated_calls": 13,
+  "estimated_seconds": 13.0
+}
