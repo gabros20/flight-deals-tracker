@@ -154,6 +154,25 @@ def set_rate(rate: float) -> None:
 # --------------------------------------------------------------------------- #
 _thread_local = threading.local()
 
+# --------------------------------------------------------------------------- #
+# Session bookkeeping + a process-wide worker pool (SESSION-LIFECYCLE fix)     #
+# --------------------------------------------------------------------------- #
+# Task 3 review carry-over (binding): a fresh ThreadPoolExecutor per search
+# spawned fresh threads, each of which lazily created a NEW per-thread
+# ``requests.Session`` that was never closed — unbounded session growth and
+# zero cross-search keep-alive. The fix has two parts, both here so the whole
+# stack shares one policy:
+#   1. Every session created by ``_session()`` is registered in
+#      ``_session_registry`` so growth is observable (``session_count()``); a
+#      regression test asserts it does not grow across repeated ``execute()``.
+#   2. ``get_executor()`` hands out ONE process-wide pool that is reused across
+#      every ``planner.execute()`` call, so its worker threads (and therefore
+#      their per-thread sessions) are bounded and long-lived.
+_session_lock = threading.Lock()
+_session_registry: "set[requests.Session]" = set()
+_executor = None  # type: ignore[var-annotated]
+_executor_lock = threading.Lock()
+
 # 3 rotating realistic desktop User-Agents. Ryanair/Wizz fingerprint obvious
 # bot UAs; these are current-ish desktop Chrome/Safari/Firefox strings.
 USER_AGENTS = [
@@ -172,7 +191,55 @@ def _session() -> requests.Session:
     if s is None:
         s = requests.Session()
         _thread_local.session = s
+        with _session_lock:
+            _session_registry.add(s)
     return s
+
+
+def session_count() -> int:
+    """Number of live per-thread sessions created so far this process. Used by
+    the session-lifecycle regression test to prove repeated ``execute()`` does
+    not leak sessions (see planner)."""
+    with _session_lock:
+        return len(_session_registry)
+
+
+def get_executor(max_workers: int = 8):
+    """Return the ONE process-wide worker pool, creating it on first use.
+
+    Reused across every ``planner.execute()`` so worker threads — and their
+    per-thread ``requests.Session`` objects — are bounded and long-lived
+    instead of leaking one set per search (Task 3 review carry-over).
+    """
+    global _executor
+    from concurrent.futures import ThreadPoolExecutor
+
+    with _executor_lock:
+        if _executor is None:
+            _executor = ThreadPoolExecutor(
+                max_workers=max(1, max_workers), thread_name_prefix="fd-http"
+            )
+        return _executor
+
+
+def shutdown_executor() -> None:
+    """Shut down the process-wide pool and close every per-thread session it
+    created. Explicit teardown for long-lived hosts/tests; normal CLI runs let
+    the pool live for the process lifetime (that's the point — keep-alive)."""
+    global _executor
+    with _executor_lock:
+        ex = _executor
+        _executor = None
+    if ex is not None:
+        ex.shutdown(wait=True)
+    with _session_lock:
+        for s in _session_registry:
+            try:
+                s.close()
+            except Exception:  # best-effort teardown
+                pass
+        _session_registry.clear()
+    _thread_local.session = None
 
 
 def _default_headers() -> Dict[str, str]:

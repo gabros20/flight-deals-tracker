@@ -56,21 +56,13 @@ class FarePair(BaseModel):
     inbound: FareLeg
 
 
-class ProviderStatus(BaseModel):
-    """
-    Per-provider health for one search, aggregated race-free by the
-    orchestrator and rendered as the ``sources`` line / map. ``status`` uses the
-    frozen enum from docs/CONTRACT.md §1.
-    """
-    provider: str
-    status: Literal["ok", "error", "blocked", "parse_error", "version_refreshed"] = "ok"
-    detail: Optional[str] = None
-    calls: int = 0
-    errors: int = 0
+# NOTE (Task 6): the dead ``ProviderStatus`` pydantic model was removed. Per-
+# provider health has exactly ONE representation across the codebase — the
+# dict produced by ``orchestrator.aggregate_status`` (``{provider: {ok, status,
+# calls, errors, last_error}}``), which the planner reuses and ``output.py``
+# projects down to the frozen ``sources`` map (``{provider: status_string}``).
+# There is no second status type to keep in sync.
 
-    @property
-    def ok(self) -> bool:
-        return self.status in ("ok", "version_refreshed")
 
 class Airport(BaseModel):
     iata: str = Field(..., min_length=3, max_length=3)
