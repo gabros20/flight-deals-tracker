@@ -69,6 +69,47 @@ def test_bad_expressions_raise_with_hint(bad):
     assert exc.value.hint  # actionable hint always present
 
 
+def test_case_insensitive_tags():
+    assert _ev("Italy", {"italy"})
+    assert _ev("SEASIDE & Italy", {"seaside", "italy"})
+
+
+# --------------------------------------------------------------------------- #
+# Adversarial input guards — a pathological expression must raise a clean     #
+# WhereParseError (exit-2 path), never a raw RecursionError/traceback.        #
+# --------------------------------------------------------------------------- #
+def test_deep_nested_parens_raises_clean_error():
+    expr = "(" * 600 + "a" + ")" * 600
+    with pytest.raises(WhereParseError) as exc:
+        where_parse(expr, {})
+    assert exc.value.hint
+
+
+def test_long_not_chain_raises_clean_error():
+    expr = "!" * 1500 + "a"
+    with pytest.raises(WhereParseError) as exc:
+        where_parse(expr, {})
+    assert exc.value.hint
+
+
+def test_token_count_cap_raises_clean_error():
+    expr = " | ".join(f"t{i}" for i in range(300))  # ~599 tokens > MAX_TOKENS
+    with pytest.raises(WhereParseError) as exc:
+        where_parse(expr, {})
+    assert exc.value.hint
+
+
+def test_alias_fanout_cap_raises_clean_error():
+    # Each level doubles: a0 -> a1 & a1 -> (a2 & a2) & (a2 & a2) -> ... This
+    # would blow past MAX_ALIAS_EXPANSIONS (2**20 >> 10_000) long before the
+    # (bounded, ~20-deep) alias-chain recursion could ever threaten the stack.
+    aliases = {f"a{i}": f"a{i + 1} & a{i + 1}" for i in range(20)}
+    aliases["a20"] = "x"
+    with pytest.raises(WhereParseError) as exc:
+        where_parse("a0", aliases)
+    assert exc.value.hint
+
+
 # --------------------------------------------------------------------------- #
 # Aliases                                                                      #
 # --------------------------------------------------------------------------- #
