@@ -4,12 +4,14 @@ Uses JSON with TTL. Supports stats and advanced invalidation.
 """
 
 import json
-import time
+import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 from flight_deals.models import FlightDeal
 from flight_deals.config import get_config
+
+logger = logging.getLogger(__name__)
 
 
 class FlightCache:
@@ -44,7 +46,8 @@ class FlightCache:
             for item in data["deals"]:
                 deals.append(FlightDeal(**item))
             return deals
-        except Exception:
+        except Exception as e:
+            logger.warning("cache: corrupt entry %s, treating as miss: %s", path.name, e)
             return None
 
     def set(self, provider: str, origin: str, date_from: str, date_to: str, deals: List[FlightDeal], destination: Optional[str] = None):
@@ -63,8 +66,8 @@ class FlightCache:
 
         try:
             path.write_text(json.dumps(payload, indent=2))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("cache: failed to write %s: %s", path.name, e)
 
     def clear(self):
         """Remove all cached entries"""
@@ -98,7 +101,8 @@ class FlightCache:
                     ts = datetime.fromisoformat(data.get("timestamp", ""))
                     if ts < cutoff:
                         remove = True
-                except Exception:
+                except Exception as e:
+                    logger.warning("cache: corrupt entry %s during invalidate, removing: %s", f.name, e)
                     remove = True  # corrupt file
 
             if remove or (not cutoff and (provider or origin)):
@@ -123,7 +127,8 @@ class FlightCache:
                 timestamps.append(ts)
                 providers.add(data.get("provider", "unknown"))
                 origins.add(data.get("origin", "unknown"))
-            except Exception:
+            except Exception as e:
+                logger.warning("cache: skipping corrupt entry %s in stats: %s", f.name, e)
                 continue
 
         oldest = min(timestamps).isoformat() if timestamps else None
@@ -156,6 +161,7 @@ class FlightCache:
                     "cached_at": data.get("timestamp"),
                     "num_deals": len(data.get("deals", [])),
                 })
-            except Exception:
+            except Exception as e:
+                logger.warning("cache: corrupt entry %s: %s", f.name, e)
                 entries.append({"file": f.name, "error": "corrupt"})
         return entries

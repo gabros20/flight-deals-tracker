@@ -1,11 +1,13 @@
 import csv
-from datetime import datetime, date, timedelta
+import logging
+from datetime import datetime, date, timedelta, timezone
 from pathlib import Path
 from typing import List, Optional, Dict, Any
-from collections import defaultdict
 
 from flight_deals.models import PriceSnapshot, FlightDeal, HistoricalComparison
 from flight_deals.config import get_config, FlightDealsConfig
+
+logger = logging.getLogger(__name__)
 
 
 class PriceHistoryStore:
@@ -60,10 +62,10 @@ class PriceHistoryStore:
             return None
         try:
             return datetime.fromisoformat(dstr[:10]).date() if "T" in dstr or "-" in dstr else date.fromisoformat(dstr)
-        except Exception:
+        except (ValueError, TypeError):
             try:
                 return date.fromisoformat(dstr.split("T")[0])
-            except Exception:
+            except (ValueError, TypeError):
                 return None
 
     def _filter_by_window(self, rows: List[Dict], window_days: Optional[int] = None) -> List[Dict]:
@@ -100,7 +102,7 @@ class PriceHistoryStore:
 
     def append_from_deal(self, deal: FlightDeal, timestamp: Optional[datetime] = None):
         """Store a full deal as snapshot (supports composites)."""
-        ts = timestamp or datetime.utcnow()
+        ts = timestamp or datetime.now(timezone.utc)
         conn_path = getattr(deal, "connection_path", []) or []
         total = getattr(deal, "price", 0)
         snap = PriceSnapshot(
@@ -225,7 +227,8 @@ class PriceHistoryStore:
                 snapshots.append(snap)
                 if len(snapshots) >= limit:
                     break
-            except Exception:
+            except (ValueError, KeyError) as e:
+                logger.warning("history: skipping malformed row: %s", e)
                 continue
         return snapshots
 
@@ -318,7 +321,7 @@ class PriceHistoryStore:
 
     def _log_alert(self, alert: Dict[str, Any]):
         """Append alert to file-based alerts log (git friendly CSV)."""
-        ts = datetime.utcnow().isoformat()
+        ts = datetime.now(timezone.utc).isoformat()
         with open(self.alerts_path, "a", newline="") as f:
             writer = csv.writer(f)
             writer.writerow([
