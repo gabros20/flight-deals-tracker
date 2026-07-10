@@ -1,7 +1,10 @@
 import json
-from pathlib import Path
+import logging
 from typing import List, Optional, Set, Dict
 from flight_deals.models import Airport
+from flight_deals.paths import resolve_path
+
+logger = logging.getLogger(__name__)
 
 
 # Known direct connections from popular Ryanair & Wizz bases (easily extendable)
@@ -53,8 +56,8 @@ CONNECTION_HUBS: Dict[str, List[str]] = {
 
 
 class DestinationRegistry:
-    def __init__(self, data_path: str = "data/destinations.json"):
-        self.data_path = Path(data_path)
+    def __init__(self, data_path: Optional[str] = None):
+        self.data_path = resolve_path(data_path or "data/destinations.json")
         self.airports: List[Airport] = []
         self._load()
 
@@ -62,6 +65,8 @@ class DestinationRegistry:
         if self.data_path.exists():
             data = json.loads(self.data_path.read_text())
             self.airports = [Airport(**item) for item in data]
+        else:
+            logger.warning("registry: destinations file not found at %s; registry will be empty", self.data_path)
 
     def get_by_tag(self, tag: str) -> List[Airport]:
         return [a for a in self.airports if tag in a.tags]
@@ -84,45 +89,6 @@ class DestinationRegistry:
                 return reachable
 
         return candidates
-
-    def get_reachable_with_connections(
-        self, 
-        origin: str, 
-        category: Optional[str] = None, 
-        max_stops: int = 1
-    ) -> List[Airport]:
-        """
-        Return destinations reachable DIRECT or with 1 stop (via popular hubs).
-        For connections, we include interesting destinations even if no direct LCC flight.
-        """
-        direct = self.get_reachable(origin, category)
-        if max_stops < 1:
-            return direct
-
-        all_candidates = self.get_by_tag(category) if category else self.airports
-        all_candidates = [a for a in all_candidates if a.iata != origin]
-
-        hubs = CONNECTION_HUBS.get(origin.upper(), [])
-        connected = set(a.iata for a in direct)
-
-        # Add destinations that are interesting and reachable via common hubs
-        # (user can then search BUD->hub + hub->dest or use other airlines)
-        for a in all_candidates:
-            if a.iata not in connected:
-                # Prioritize places that are popular 1-stop targets or have good tags
-                if any(tag in a.tags for tag in ["european-islands", "seaside", "italian-gems"]):
-                    connected.add(a.iata)
-
-        # Return full airport objects
-        result = [a for a in all_candidates if a.iata in connected]
-        # Dedup while preserving some order (direct first)
-        seen = set()
-        final = []
-        for a in direct + result:
-            if a.iata not in seen:
-                seen.add(a.iata)
-                final.append(a)
-        return final
 
     def get_all_tags(self) -> Set[str]:
         tags: Set[str] = set()
