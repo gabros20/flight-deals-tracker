@@ -1,13 +1,7 @@
-# Core (mirrors pyproject.toml [project.dependencies])
-typer>=0.9.0
+# Core (mirrors pyproject.toml [project.dependencies] — pyproject is authoritative)
+typer>=0.9
+rich>=13
 pydantic>=2.0
-python-dateutil>=2.8
 requests>=2.31
-rich>=13.0
-
-# Optional: enables the legacy one-way Ryanair provider (src/flight_deals/providers/ryanair.py).
-# Not required for `pip install -e .` to succeed or import to work — the provider
-# degrades to "unavailable" (reported via sources) if this isn't installed.
-# Rebuilt on the free farfnd endpoint in Phase 1 (see docs/UPGRADE-PLAN.md), at
-# which point this line goes away.
-ryanair-py>=0.3.0
+python-dateutil>=2.8
+PyYAML>=6.0
