@@ -165,6 +165,9 @@ def plan(
         for c in plan_dict["calls"]:
             console.print(f"  {c['provider']}/{c['endpoint']} [{c['mode']}] {c['shape']} {c['params']}")
     else:
+        # Documented exception to the one-renderer rule: `plan` emits the CallPlan
+        # shape (CONTRACT §6), which is its OWN schema — not the result envelope
+        # output.render owns — so it is serialized directly here.
         typer.echo(json.dumps(plan_dict))
 
 

@@ -257,6 +257,67 @@ def test_confirm_call_count_is_bounded_by_the_margin_band_not_the_pool():
 
 
 # --------------------------------------------------------------------------- #
+# route_status recompute after confirm (intents.execute_spec)                 #
+# --------------------------------------------------------------------------- #
+def test_confirm_empties_a_nonempty_set_recomputes_route_status():
+    """The planner returned a within-budget candidate on its ESTIMATE, but the
+    exact confirm re-query comes back OVER budget and the strict budget filter
+    drops it — the final set is empty, so route_status must be recomputed to
+    'no_match' (there WERE candidates), not left as the pre-confirm None."""
+    planner = Planner()
+    planner.ryanair.roundtrip_fares = lambda *a, **k: []
+
+    def fake_tt(origin, dest, date_from, date_to, use_cache=True):
+        if dest != "CFU":
+            return ([], [])
+        if not use_cache:  # exact re-query: 50 + 50 = 100, OVER the €80 budget
+            return ([_df("BUD", "CFU", "2026-08-23", 50.0)],
+                    [_df("CFU", "BUD", "2026-08-29", 50.0)])
+        return ([_df("BUD", "CFU", "2026-08-23", 35.0)],   # estimate: 70, under budget
+                [_df("CFU", "BUD", "2026-08-29", 35.0)])
+
+    planner.wizz.timetable = fake_tt
+    _, snap = _collector()
+    env, code = run_search(
+        where="greece & seaside", depart="2026-08-22..2026-08-24", nights="5-8",
+        budget=80, origins=["BUD"], carriers=["wizzair"], planner=planner,
+        history_store=_FakeHistory(), snapshotter=snap, today=FIXED_TODAY, now=FIXED_NOW,
+    )
+    assert code == 0
+    assert env["results"] == []
+    assert env["route_status"] == "no_match"  # had candidates, confirm removed all
+
+
+def test_confirm_rescue_fills_a_previously_empty_set_clears_route_status():
+    """Mirror image: the planner's strict budget cut left results EMPTY (the
+    estimate was over budget), so route_status was 'no_match' pre-confirm. The
+    margin-band confirm re-query comes back under budget and back-fills the set —
+    route_status must be recomputed to None (a non-empty result is a success)."""
+    planner = Planner()
+    planner.ryanair.roundtrip_fares = lambda *a, **k: []
+
+    def fake_tt(origin, dest, date_from, date_to, use_cache=True):
+        if dest != "CFU":
+            return ([], [])
+        if not use_cache:  # exact re-query: 37 + 38 = 75, UNDER the €80 budget
+            return ([_df("BUD", "CFU", "2026-08-23", 37.0)],
+                    [_df("CFU", "BUD", "2026-08-29", 38.0)])
+        return ([_df("BUD", "CFU", "2026-08-23", 44.0)],   # estimate: 88, over budget
+                [_df("CFU", "BUD", "2026-08-29", 44.0)])
+
+    planner.wizz.timetable = fake_tt
+    _, snap = _collector()
+    env, code = run_search(
+        where="greece & seaside", depart="2026-08-22..2026-08-24", nights="5-8",
+        budget=80, origins=["BUD"], carriers=["wizzair"], planner=planner,
+        history_store=_FakeHistory(), snapshotter=snap, today=FIXED_TODAY, now=FIXED_NOW,
+    )
+    assert code == 0
+    assert len(env["results"]) == 1 and env["results"][0]["destination"] == "CFU"
+    assert "route_status" not in env  # rescue cleared the pre-confirm no_match
+
+
+# --------------------------------------------------------------------------- #
 # oneway (S1)                                                                 #
 # --------------------------------------------------------------------------- #
 def test_oneway_produces_s1_deals():
