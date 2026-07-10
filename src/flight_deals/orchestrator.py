@@ -55,18 +55,17 @@ class DealOrchestrator:
             
             # Round-trip mode - smart per-outbound return search
             if return_date_from and return_date_to:
+                # Use migrated farfnd provider for Ryanair roundtrips (works alongside Apify for connections)
                 try:
-                    rt = self.ryanair.get_roundtrip_price(
-                        origin, dest.iata, date_from, date_to,
-                        return_date_from, return_date_to, use_cache=not fresh
-                    )
+                    rt = self.ryanair_direct.get_roundtrip_price(origin, dest.iata, date_from, date_to)
                     if rt:
                         deal = FlightDeal(
                             origin=origin, destination=dest.iata,
                             departure_date=rt["outbound_date"],
-                            price=rt["total_price"], currency=rt["currency"],
-                            source="ryanair",
-                            notes=f"Round-trip (€{rt['outbound_price']} + €{rt['return_price']})"
+                            return_date=rt.get("return_date"),
+                            price=rt["price"], currency=rt["currency"],
+                            source=rt.get("source", "ryanair-farfnd"),
+                            notes="Round-trip via farfnd (local)"
                         )
                         local_results.append(deal)
                 except Exception:

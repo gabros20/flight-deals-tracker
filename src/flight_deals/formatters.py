@@ -36,6 +36,9 @@ def format_deal(deal: Dict[str, Any], index: int) -> str:
     ]
     if source:
         lines.append(f"   Source: {source}")
+    if deal.get("notes"):
+        notes = deal["notes"]
+        lines.append(f"   {notes}")
     return "\n".join(lines)
 
 

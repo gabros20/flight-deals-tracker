@@ -5,3 +5,8 @@ __pycache__/
 data/price_history.csv
 .env
 *.log
+data/cache/
+__pycache__/
+.pytest_cache/
+.venv/
+evidence/
