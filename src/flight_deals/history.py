@@ -1,3 +1,16 @@
+"""Price history: a CSV of every priced observation from the cron ``run``/
+``track`` path, plus a JSON alert log.
+
+Two-store split (Task 7): this CSV is the **authoritative source for
+price-context and typical-price stats** (medians, "best this month",
+drop-threshold alerts) — it is only ever fed by the scheduled ``run``/
+``track`` sweep. The append-only JSONL snapshots in ``state/snapshots.py``
+are the authoritative source for deal identity and check-time deltas instead,
+fed by every displayed deal (``getaway``/``oneway``/``check``). ``getaway``
+*reads* this CSV (via ``PriceHistoryStore.compare``) for its "why" context
+but never writes to it — only the cron path appends rows here.
+"""
+
 import csv
 import logging
 from datetime import datetime, date, timedelta, timezone
