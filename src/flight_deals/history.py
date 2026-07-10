@@ -12,7 +12,9 @@ but never writes to it — only the cron path appends rows here.
 """
 
 import csv
+import io
 import logging
+import os
 from datetime import datetime, date, timedelta, timezone
 from pathlib import Path
 from typing import List, Optional, Dict, Any
@@ -111,21 +113,30 @@ class PriceHistoryStore:
         return filtered
 
     def append(self, snapshot: PriceSnapshot):
-        """Append a basic snapshot (file-based)."""
-        with open(self.csv_path, "a", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow([
-                snapshot.timestamp_utc.isoformat(),
-                snapshot.origin,
-                snapshot.destination,
-                snapshot.departure_date,
-                snapshot.return_date or "",
-                snapshot.price,
-                snapshot.currency,
-                snapshot.source,
-                str(snapshot.connection_path) if snapshot.connection_path else "",
-                snapshot.total_price or snapshot.price,
-            ])
+        """Append a basic snapshot via a single ``O_APPEND`` write (mirrors
+        ``state.store.append_jsonl``): the whole CSV row is serialized first,
+        then written in one ``os.write`` so concurrent appenders never interleave
+        a partial row. The header is (re)created first if the file is missing."""
+        self._ensure_header()  # keep header correct even if the file vanished
+        buf = io.StringIO()
+        csv.writer(buf).writerow([
+            snapshot.timestamp_utc.isoformat(),
+            snapshot.origin,
+            snapshot.destination,
+            snapshot.departure_date,
+            snapshot.return_date or "",
+            snapshot.price,
+            snapshot.currency,
+            snapshot.source,
+            str(snapshot.connection_path) if snapshot.connection_path else "",
+            snapshot.total_price or snapshot.price,
+        ])
+        line = buf.getvalue().encode("utf-8")
+        fd = os.open(self.csv_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
+        try:
+            os.write(fd, line)
+        finally:
+            os.close(fd)
         self._cached_rows = None  # invalidate cache
 
     def append_from_deal(self, deal: FlightDeal, timestamp: Optional[datetime] = None):
