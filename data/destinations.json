@@ -220,8 +220,7 @@
       "tags": [
         "greece",
         "city-break",
-        "culture",
-        "seaside"
+        "culture"
       ]
     },
     {
@@ -1079,10 +1078,10 @@
     },
     "BTS": {
       "from": "BUD",
-      "minutes": 120,
+      "minutes": 150,
       "est_cost_eur": 12,
       "mode": "bus",
-      "note": "BUD->BTS FlixBus/RegioJet ~2h, EUR 10-15 (static curation, 2026)"
+      "note": "BUD->BTS FlixBus/RegioJet ~2h30m, EUR 10-15 (static curation, 2026)"
     }
   },
   "open_jaw_pairs": [

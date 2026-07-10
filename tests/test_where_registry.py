@@ -314,6 +314,29 @@ def test_origin_ground_and_open_jaw_seeds_present():
         assert frozenset((a, b)) in seed_pairs, f"missing open-jaw seed {a}<->{b}"
 
 
+def test_region_tags_imply_their_country_tag():
+    """A region tag (sicily/sardinia/crete/cyclades/canaries/baleares) is
+    shorthand for "this specific place within its country" — the country
+    tag must always be present too, or country-level queries silently miss
+    the airport (review item: region<->country coherence)."""
+    region_to_country = {
+        "canaries": "spain",
+        "baleares": "spain",
+        "sicily": "italy",
+        "sardinia": "italy",
+        "crete": "greece",
+        "cyclades": "greece",
+    }
+    reg = DestinationRegistry()
+    violations = []
+    for a in reg.airports:
+        tags = set(a.tags)
+        for region, country in region_to_country.items():
+            if region in tags and country not in tags:
+                violations.append((a.iata, region, country))
+    assert not violations, f"region tags missing their country tag: {violations}"
+
+
 def test_brief_required_airports_present():
     reg = DestinationRegistry()
     known = {a.iata for a in reg.airports}
