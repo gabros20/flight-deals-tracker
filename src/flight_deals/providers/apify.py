@@ -4,12 +4,14 @@ Uses the cheapest multi-airline actor for connections and broader coverage.
 Actor: makework36/flight-price-scraper (Google Flights + Kiwi + LCCs)
 """
 
+import logging
 import requests
-import backoff
 from typing import List, Optional, Dict, Any
 from flight_deals.models import FlightDeal
 from flight_deals.config import FlightDealsConfig, get_config
 from flight_deals.cache import FlightCache
+
+logger = logging.getLogger(__name__)
 
 
 class ApifyProvider:
@@ -20,6 +22,7 @@ class ApifyProvider:
         self.name = "apify"
         self.actor_id = self.config.apify_actor_id
         self.base_url = "https://api.apify.com/v2"
+        self.last_error: Optional[str] = None
 
     @property
     def is_available(self) -> bool:
@@ -41,7 +44,6 @@ class ApifyProvider:
             input_data["destination"] = destination_airport
         return input_data
 
-    @backoff.on_exception(backoff.expo, Exception, max_tries=2)
     def _call_apify(self, input_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         if not self.is_available:
             return []
@@ -66,6 +68,8 @@ class ApifyProvider:
         date_to: str,
         destination_airport: Optional[str] = None,
     ) -> List[FlightDeal]:
+        self.last_error = None
+
         if not self.is_available:
             return []
 
@@ -112,11 +116,11 @@ class ApifyProvider:
                 deals.append(deal)
 
             if self._cache and deals:
-                self._cache.set("apify", origin, date_from, date_to, destination_airport, deals)
+                self._cache.set("apify", origin, date_from, date_to, deals, destination_airport)
 
             return deals
 
         except Exception as e:
-            # Fail silently for cost and UX reasons; log in real use
-            print(f"[ApifyProvider] Warning: {e}")
+            self.last_error = str(e)
+            logger.warning("apify: request failed for %s->%s: %s", origin, destination_airport, e)
             return []
