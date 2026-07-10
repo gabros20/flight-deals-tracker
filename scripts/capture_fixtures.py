@@ -21,12 +21,23 @@ src/flight_deals/providers/ryanair_direct.py):
 
 Politeness: >=2s between requests (--sleep), realistic rotating desktop
 User-Agent strings, a single retry-free attempt per fixture (this is a
-recorder, not a resilient client — Task 3/4 build the real retry logic). On
-403/429/connection failure we give up on that ONE fixture, log why, and
-write a clearly-marked synthetic placeholder instead of failing the whole
-run. Nothing here is sanitized (all of this is public, unauthenticated
-data) except huge arrays, which are truncated to <=20 entries with a
-"_truncated": true marker alongside the truncated list.
+recorder, not a resilient client — Task 3/4 build the real retry logic).
+
+Failure handling: a response is only ever treated as a successful capture
+when its HTTP status is < 400, OR it's the one fixture
+(wizz_wrong_version_404) where a non-200 IS the point — that fixture passes
+an `expected_status`, and matching it counts as success with an explicit
+`_expected_status` marker. Every other case — HTTP 403/429/5xx (checked via
+`resp.status_code`, since a non-2xx response does NOT raise
+`requests.RequestException`) as well as outright connection failures/
+timeouts (which do raise it) — gives up on that ONE fixture, logs why, and
+writes a clearly-marked synthetic placeholder (`"_synthetic": true`) with
+the real status code and a body excerpt recorded under `_capture_failure`
+(or `_synthetic_reason` for connection-level failures with no response at
+all), instead of failing the whole run or, worse, mislabeling a blocked
+response as `_captured_live: true`. Nothing here is sanitized (all of this
+is public, unauthenticated data) except huge arrays, which are truncated to
+<=20 entries with a "_truncated": true marker alongside the truncated list.
 """
 
 from __future__ import annotations
@@ -165,16 +176,9 @@ def capture_farfnd_roundtrip_exact(cap: Capture, out_dir: Path) -> dict:
     }
     try:
         resp = cap.get(FARFND_ROUNDTRIP_URL, params=params, headers={"Accept": "application/json", "Referer": "https://www.ryanair.com/"})
-        body = safe_json(resp)
-        write_json(out_dir / f"{name}.json", {
-            "_captured_live": True,
-            "_url": FARFND_ROUNDTRIP_URL,
-            "_params": params,
-            "_status_code": resp.status_code,
-            "body": truncate(body) if body is not None else None,
-            "_raw_text_on_parse_failure": None if body is not None else resp.text[:2000],
-        })
-        return {"name": name, "status": "captured", "http_status": resp.status_code}
+        payload, result = evaluate_response(resp, name, FARFND_ROUNDTRIP_URL, params, SYNTHETIC_FARFND_ROUNDTRIP)
+        write_json(out_dir / f"{name}.json", payload)
+        return result
     except requests.RequestException as e:
         return synthetic_fallback(out_dir, name, params, FARFND_ROUNDTRIP_URL, reason=str(e), body=SYNTHETIC_FARFND_ROUNDTRIP)
 
@@ -202,16 +206,9 @@ def capture_farfnd_roundtrip_anywhere(cap: Capture, out_dir: Path) -> dict:
     }
     try:
         resp = cap.get(FARFND_ROUNDTRIP_URL, params=params, headers={"Accept": "application/json", "Referer": "https://www.ryanair.com/"})
-        body = safe_json(resp)
-        write_json(out_dir / f"{name}.json", {
-            "_captured_live": True,
-            "_url": FARFND_ROUNDTRIP_URL,
-            "_params": params,
-            "_status_code": resp.status_code,
-            "body": truncate(body) if body is not None else None,
-            "_raw_text_on_parse_failure": None if body is not None else resp.text[:2000],
-        })
-        return {"name": name, "status": "captured", "http_status": resp.status_code}
+        payload, result = evaluate_response(resp, name, FARFND_ROUNDTRIP_URL, params, SYNTHETIC_FARFND_ANYWHERE)
+        write_json(out_dir / f"{name}.json", payload)
+        return result
     except requests.RequestException as e:
         return synthetic_fallback(out_dir, name, params, FARFND_ROUNDTRIP_URL, reason=str(e), body=SYNTHETIC_FARFND_ANYWHERE)
 
@@ -225,16 +222,9 @@ def capture_farfnd_cheapest_per_day(cap: Capture, out_dir: Path) -> dict:
         params = {"outboundMonthOfDate": month.isoformat(), "currency": "EUR"}
         try:
             resp = cap.get(url, params=params, headers={"Accept": "application/json", "Referer": "https://www.ryanair.com/"})
-            body = safe_json(resp)
-            write_json(out_dir / f"{name}.json", {
-                "_captured_live": True,
-                "_url": url,
-                "_params": params,
-                "_status_code": resp.status_code,
-                "body": truncate(body) if body is not None else None,
-                "_raw_text_on_parse_failure": None if body is not None else resp.text[:2000],
-            })
-            results.append({"name": name, "status": "captured", "http_status": resp.status_code})
+            payload, result = evaluate_response(resp, name, url, params, SYNTHETIC_FARFND_CHEAPEST_PER_DAY)
+            write_json(out_dir / f"{name}.json", payload)
+            results.append(result)
         except requests.RequestException as e:
             results.append(synthetic_fallback(out_dir, name, params, url, reason=str(e), body=SYNTHETIC_FARFND_CHEAPEST_PER_DAY))
     return {"name": "farfnd_cheapest_per_day", "status": "captured", "sub": results}
@@ -259,16 +249,9 @@ def capture_farfnd_empty_nonexistent(cap: Capture, out_dir: Path) -> dict:
     }
     try:
         resp = cap.get(FARFND_ROUNDTRIP_URL, params=params, headers={"Accept": "application/json", "Referer": "https://www.ryanair.com/"})
-        body = safe_json(resp)
-        write_json(out_dir / f"{name}.json", {
-            "_captured_live": True,
-            "_url": FARFND_ROUNDTRIP_URL,
-            "_params": params,
-            "_status_code": resp.status_code,
-            "body": truncate(body) if body is not None else None,
-            "_raw_text_on_parse_failure": None if body is not None else resp.text[:2000],
-        })
-        return {"name": name, "status": "captured", "http_status": resp.status_code}
+        payload, result = evaluate_response(resp, name, FARFND_ROUNDTRIP_URL, params, SYNTHETIC_FARFND_EMPTY)
+        write_json(out_dir / f"{name}.json", payload)
+        return result
     except requests.RequestException as e:
         return synthetic_fallback(out_dir, name, params, FARFND_ROUNDTRIP_URL, reason=str(e), body=SYNTHETIC_FARFND_EMPTY)
 
@@ -280,6 +263,17 @@ def capture_wizz_version_snippet(cap: Capture, out_dir: Path) -> tuple[dict, str
     name = "wizz_version_discovery_snippet"
     try:
         resp = cap.get(WIZZ_VERSION_PAGE_URL, headers={"Accept": "text/html"})
+        if resp.status_code >= 400:
+            logger.warning(
+                "%s: HTTP %s treated as capture failure; writing synthetic placeholder",
+                name, resp.status_code,
+            )
+            write_text(out_dir / f"{name}.html", (
+                f"<!-- _synthetic: true; _capture_failure_status_code: {resp.status_code}; "
+                f"_capture_failure_body_excerpt: {resp.text[:500]!r} -->\n"
+                f"<script>var apiHost = \"be.wizzair.com/29.5.0\";</script>\n"
+            ))
+            return {"name": name, "status": "synthetic", "reason": f"http {resp.status_code}"}, None
         text = resp.text
         match = re.search(r"be\.wizzair\.com/(\d+\.\d+\.\d+)", text)
         if match:
@@ -330,16 +324,9 @@ def capture_wizz_timetable(cap: Capture, out_dir: Path, version: str) -> dict:
     headers = {"Content-Type": "application/json;charset=UTF-8", "Accept": "application/json, text/plain, */*"}
     try:
         resp = cap.post(url, json_body=payload, headers=headers)
-        body = safe_json(resp)
-        write_json(out_dir / f"{name}.json", {
-            "_captured_live": True,
-            "_url": url,
-            "_payload": payload,
-            "_status_code": resp.status_code,
-            "body": truncate(body) if body is not None else None,
-            "_raw_text_on_parse_failure": None if body is not None else resp.text[:2000],
-        })
-        return {"name": name, "status": "captured", "http_status": resp.status_code}
+        result_payload, result = evaluate_response(resp, name, url, payload, SYNTHETIC_WIZZ_TIMETABLE, is_post=True)
+        write_json(out_dir / f"{name}.json", result_payload)
+        return result
     except requests.RequestException as e:
         return synthetic_fallback(out_dir, name, payload, url, reason=str(e), body=SYNTHETIC_WIZZ_TIMETABLE, is_post=True)
 
@@ -362,19 +349,18 @@ def capture_wizz_wrong_version_404(cap: Capture, out_dir: Path) -> dict:
     try:
         resp = cap.post(url, json_body=payload, headers=headers)
         # We WANT a non-200 here (404, by design, since 0.0.0 is never a
-        # real version) — that's the fixture. A 200 would mean Wizz changed
-        # behavior; still capture it, verbatim, and note the surprise.
-        body = safe_json(resp)
-        write_json(out_dir / f"{name}.json", {
-            "_captured_live": True,
-            "_url": url,
-            "_payload": payload,
-            "_status_code": resp.status_code,
-            "_note": "expected non-200 (this uses a deliberately invalid version string)" if resp.status_code == 200 else None,
-            "body": truncate(body) if body is not None else None,
-            "_raw_text_on_parse_failure": None if body is not None else resp.text[:2000],
-        })
-        return {"name": name, "status": "captured", "http_status": resp.status_code}
+        # real version) — that's the fixture, so 404 is the `expected_status`
+        # and still counts as a successful (live) capture, explicitly marked
+        # with `_expected_status: 404`. Any OTHER >=400 status (e.g. a 403
+        # block instead of the expected 404) is a genuine capture failure
+        # and falls through to the synthetic placeholder like every other
+        # fixture. A surprise 200 (Wizz changed behavior) is also captured
+        # verbatim, just without the `_expected_status` marker.
+        payload_out, result = evaluate_response(
+            resp, name, url, payload, SYNTHETIC_WIZZ_404, is_post=True, expected_status=404,
+        )
+        write_json(out_dir / f"{name}.json", payload_out)
+        return result
     except requests.RequestException as e:
         return synthetic_fallback(out_dir, name, payload, url, reason=str(e), body=SYNTHETIC_WIZZ_404, is_post=True)
 
@@ -384,6 +370,59 @@ def safe_json(resp: requests.Response):
         return resp.json()
     except ValueError:
         return None
+
+
+def evaluate_response(
+    resp: requests.Response,
+    name: str,
+    url: str,
+    params_or_payload: dict,
+    synthetic_body: dict,
+    is_post: bool = False,
+    expected_status: int | None = None,
+) -> tuple[dict, dict]:
+    """Decide whether `resp` is a usable live capture or a capture failure,
+    and build the payload to write plus the summary result dict.
+
+    A response counts as a capture failure whenever `resp.status_code >=
+    400`, UNLESS `expected_status` is given and matches (the
+    wizz_wrong_version_404 fixture, where the whole point is a non-200).
+    Failures NEVER get `_captured_live: true` — they get `_synthetic: true`
+    plus the real status code and a short body excerpt under
+    `_capture_failure`, so a future re-run of this script can't silently
+    mislabel a 403/429 block as a live capture.
+    """
+    body = safe_json(resp)
+    is_expected_status = expected_status is not None and resp.status_code == expected_status
+
+    if resp.status_code >= 400 and not is_expected_status:
+        excerpt = (json.dumps(body)[:500] if body is not None else resp.text[:500])
+        logger.warning(
+            "%s: HTTP %s treated as capture failure; writing synthetic placeholder",
+            name, resp.status_code,
+        )
+        payload = {
+            "_synthetic": True,
+            "_capture_failure": {"status_code": resp.status_code, "body_excerpt": excerpt},
+            "_url": url,
+            ("_payload" if is_post else "_params"): params_or_payload,
+            "body": synthetic_body,
+        }
+        result = {"name": name, "status": "synthetic", "reason": f"http {resp.status_code}"}
+        return payload, result
+
+    payload = {
+        "_captured_live": True,
+        "_url": url,
+        ("_payload" if is_post else "_params"): params_or_payload,
+        "_status_code": resp.status_code,
+        "body": truncate(body) if body is not None else None,
+        "_raw_text_on_parse_failure": None if body is not None else resp.text[:2000],
+    }
+    if expected_status is not None:
+        payload["_expected_status"] = expected_status
+    result = {"name": name, "status": "captured", "http_status": resp.status_code}
+    return payload, result
 
 
 def synthetic_fallback(out_dir: Path, name: str, params_or_payload: dict, url: str, reason: str, body: dict, is_post: bool = False) -> dict:
