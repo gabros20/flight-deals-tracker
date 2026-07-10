@@ -41,20 +41,6 @@ def test_wizz_provider_initialization():
     assert isinstance(w.version, str)
 
 
-def test_roundtrip_empty_results():
-    """Roundtrip should return empty list when no deals"""
-    o = DealOrchestrator()
-    pairs = o.find_roundtrip_deals(
-        origin="BUD",
-        destination="XXX",
-        outbound_from="2026-07-01",
-        outbound_to="2026-07-05",
-        return_from="2026-07-10",
-        return_to="2026-07-15",
-    )
-    assert pairs == []
-
-
 def test_orchestrator_handles_mixed_providers():
     """Orchestrator should combine results from both providers without crashing"""
     o = DealOrchestrator()

@@ -1,10 +1,60 @@
+import json
+
 import pytest
+import requests
 from typer.testing import CliRunner
+
 from flight_deals.cli import app
 
 runner = CliRunner()
+
 
 def test_cli_help():
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
     assert "usage" in result.output.lower() or "help" in result.output.lower()
+
+
+def _blow_up(*args, **kwargs):
+    raise AssertionError("network I/O attempted during --help")
+
+
+def test_help_performs_no_network_io(monkeypatch):
+    """
+    `--help` must never touch the network. Regression for the bug where
+    `orchestrator = DealOrchestrator()` at module import time constructed a
+    WizzProvider, which sniffs the current API version over HTTP on
+    construction — meaning `flight-deals --help` silently made a network
+    call. Orchestrator/notifier are now lazy (see cli.get_orchestrator()).
+    """
+    monkeypatch.setattr(requests.Session, "request", _blow_up)
+    monkeypatch.setattr(requests, "get", _blow_up)
+    monkeypatch.setattr(requests, "post", _blow_up)
+
+    result = runner.invoke(app, ["--help"])
+    assert result.exit_code == 0
+
+    # Sanity-check the guard itself is wired up correctly.
+    with pytest.raises(AssertionError):
+        requests.get("https://example.com")
+
+
+REMOVED_STUBS = [
+    ["roundtrip"],
+    ["collect"],
+    ["alerts"],
+    ["history"],
+    ["multi-airports"],
+    ["search", "-c", "seaside", "--date-from", "2026-08-01", "--date-to", "2026-08-05", "--connections"],
+    ["search", "-c", "seaside", "--date-from", "2026-08-01", "--date-to", "2026-08-05",
+     "--return-from", "2026-08-10", "--return-to", "2026-08-12"],
+]
+
+
+@pytest.mark.parametrize("args", REMOVED_STUBS, ids=lambda a: " ".join(a))
+def test_removed_commands_exit_2_with_json_error(args):
+    """Removed/broken surface (Phase 0) must error honestly, not crash or fake a result."""
+    result = runner.invoke(app, args)
+    assert result.exit_code == 2
+    payload = json.loads(result.output.strip().splitlines()[0])
+    assert payload == {"error": "removed_pending_rebuild", "hint": "see docs/UPGRADE-PLAN.md"}
