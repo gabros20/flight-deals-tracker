@@ -22,6 +22,7 @@ _KIND_FOR_ENDPOINT = {
     "roundTripFares": "search",
     "cheapestPerDay": "calendar",
     "routes": "routes",
+    "timetable": "search",  # Wizz day-level minima — treat like a search result
 }
 
 
