@@ -1,6 +1,6 @@
 from typing import Literal, Union, List, Optional, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 
 Confidence = Literal["exact", "approximate"]
 
@@ -84,14 +84,25 @@ class FlightLeg(BaseModel):
     departure_date: Optional[str] = None
 
 class GroundLeg(BaseModel):
-    """Represents a ground transport leg between two airports."""
+    """Represents a ground transport leg between two airports.
+
+    Field naming (CONTRACT §7 open item, RESOLVED 2026-07-11): the cost field is
+    ``cost_eur`` — the name CONTRACT §2 froze for ground legs and the ground
+    summary. It accepts the legacy ``estimated_cost_eur`` key on input (older
+    ``data/ground_transfers.json`` rows, embedded history dicts) via a validation
+    alias, so nothing that wrote the old key breaks; the attribute and the
+    serialised key are both ``cost_eur``.
+    """
     type: Literal["ground"] = "ground"
     from_iata: str
     to_iata: str
-    mode: str  # "driving", "public_transit"
+    mode: str  # "driving", "public_transit", "train", "bus"
     duration_minutes: int
     distance_km: float
-    estimated_cost_eur: Optional[float] = None
+    cost_eur: Optional[float] = Field(
+        default=None,
+        validation_alias=AliasChoices("cost_eur", "estimated_cost_eur"),
+    )
     notes: str = ""
     options: List[str] = Field(default_factory=list)
 

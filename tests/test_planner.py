@@ -43,10 +43,19 @@ def _farepair(dest, out_date, ret_date, total, carrier="ryanair", conf="exact"):
 
 
 # --- compile refusals ------------------------------------------------------ #
-def test_compile_refuses_non_direct_shape():
+def test_compile_refuses_via_hub_shape():
+    """via-hub (S5) is the only shape still refused (Task 10 enabled S3/S4)."""
     with pytest.raises(PlannerRefusal) as ei:
         compile_plan(_spec(shapes=["via-hub"]))
-    assert "not yet enabled" in ei.value.hint
+    assert "via-hub" in ei.value.hint
+    assert "not enabled" in ei.value.hint
+
+
+def test_compile_accepts_extended_origin_and_open_jaw():
+    """extended-origin (S3) and open-jaw (S4) compile without a refusal."""
+    plan = compile_plan(_spec(shapes=["direct", "extended-origin", "open-jaw"]))
+    assert any(c.shape == "S3" for c in plan.calls)
+    assert any(c.shape == "S4" for c in plan.calls)
 
 
 def test_compile_one_way_uses_oneway_anywhere():

@@ -111,7 +111,7 @@ class GroundTransport:
                     mode="driving",
                     duration_minutes=est_min,
                     distance_km=round(dist, 1),
-                    estimated_cost_eur=round(dist * 0.15, 1),
+                    cost_eur=round(dist * 0.15, 1),
                     notes="Estimated via haversine (OSRM fallback)"
                 )
                 self._simple_cache[key] = leg
@@ -127,7 +127,7 @@ class GroundTransport:
                 mode="driving",
                 duration_minutes=duration_min,
                 distance_km=distance_km,
-                estimated_cost_eur=round(distance_km * 0.12, 1),
+                cost_eur=round(distance_km * 0.12, 1),
                 notes="Via OSRM (OpenStreetMap)"
             )
             self._simple_cache[key] = leg
@@ -203,7 +203,7 @@ class GroundTransport:
                         mode=mode,
                         duration_minutes=duration_min,
                         distance_km=round(dist, 1),
-                        estimated_cost_eur=15.0,
+                        cost_eur=15.0,
                         notes=notes
                     ))
 

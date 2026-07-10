@@ -95,13 +95,14 @@ def test_run_bad_depart_exits_2_with_hint():
 
 
 def test_run_disabled_shape_exits_2_with_hint():
+    """via-hub (S5) is still refused; extended-origin/open-jaw are enabled."""
     result = runner.invoke(app, ["run", "--spec",
                                  '{"origins":["BUD"],"where":"seaside","depart":"2026-08",'
                                  '"nights":"5-8","shapes":["via-hub"]}'])
     assert result.exit_code == 2
     env = json.loads(result.output)
     assert env["error"]
-    assert "not yet enabled" in env["hint"]
+    assert "via-hub" in env["hint"] and "not enabled" in env["hint"]
 
 
 def test_run_over_max_calls_exits_2_with_narrow_hint():

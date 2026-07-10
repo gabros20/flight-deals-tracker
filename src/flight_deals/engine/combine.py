@@ -64,5 +64,7 @@ def enrich(deals: List[Dict[str, Any]], history_store, *, window_days: Optional[
             cmp = history_store.compare(d["origin"], d["destination"], d["price_eur"], window_days=window_days)
         except Exception:
             cmp = {"count": 0, "median": None, "sufficient": False, "pct_vs_typical": None}
-        d["why"] = _why(d, cmp)
+        # History rewrites the base sentence; re-append the honest ground clause
+        # (S3/S4) so a shaped deal never loses its "incl. bus"/"open-jaw" detail.
+        d["why"] = _why(d, cmp) + output.ground_why_suffix(d)
         d["group"] = _group(d, cmp)

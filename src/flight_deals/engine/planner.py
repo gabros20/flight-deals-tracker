@@ -104,8 +104,10 @@ class CallDescriptor:
             0 if self.mode == "anywhere" else 1,
             self.provider,
             self.endpoint,
+            self.mode,
             p.get("origin", ""),
             p.get("destination", ""),
+            str(p.get("month", "")),
         )
 
 
@@ -160,11 +162,15 @@ def compile_plan(spec, registry: Optional[DestinationRegistry] = None, *, rate: 
     span."""
     registry = registry or DestinationRegistry()
 
-    disabled = [s for s in spec.shapes if s != "direct"]
-    if disabled:
+    # Enabled shapes: direct (S1/S2), extended-origin (S3), open-jaw (S4).
+    # via-hub (S5) stays refused — it needs the time-verification funnel (Task
+    # 5c / SEARCH-DESIGN §2, S5) that isn't built.
+    refused = [s for s in spec.shapes if s == "via-hub"]
+    if refused:
         raise PlannerRefusal(
-            f"shape(s) {', '.join(disabled)} not yet enabled",
-            'shape not yet enabled (Task 10); use "shapes":["direct"] for now',
+            "shape via-hub not yet enabled",
+            'via-hub (self-transfer) is not enabled yet; drop it from "shapes" '
+            '(use e.g. "shapes":["direct","extended-origin","open-jaw"])',
         )
     depart = spec.depart_spec
     round_trip = spec.is_round_trip
@@ -225,9 +231,77 @@ def compile_plan(spec, registry: Optional[DestinationRegistry] = None, *, rate: 
                     },
                 ))
 
+    shapes = set(spec.shapes)
+    origins = sorted({o.upper() for o in spec.origins})
+
+    # ------------------------------------------------------------------ #
+    # S3 extended-origin (round-trip only): a Ryanair RT-ANYWHERE sweep   #
+    # from each ground-reachable extended origin (VIE/BTS from BUD).      #
+    # ------------------------------------------------------------------ #
+    # Per SEARCH-DESIGN §4's call-plan example, S3 is FR RT-ANYWHERE ONLY
+    # (no Wizz TT from the extended origin) — one call per extended origin,
+    # keeping the sweep cheap. Wizz-from-extended-origin is a future refinement.
+    if "extended-origin" in shapes and round_trip and want_ryanair:
+        for base in origins:
+            for via, info in sorted(registry.origin_ground.items()):
+                if str(info.get("from", "")).upper() != base:
+                    continue
+                calls.append(CallDescriptor(
+                    provider="ryanair", endpoint="roundTripFares", mode="anywhere", shape="S3",
+                    params={
+                        "origin": via,
+                        "base_origin": base,
+                        "out_from": depart.out_from,
+                        "out_to": depart.out_to,
+                        "duration_from": lo,
+                        "duration_to": hi,
+                    },
+                ))
+
+    # ------------------------------------------------------------------ #
+    # S4 open-jaw (round-trip only): Ryanair CAL for each open-jaw pair   #
+    # whose BOTH airports are in the where-matched set. Fly O->D1, ground #
+    # D1->D2, fly D2->O — both directions of each pair are considered, so #
+    # we need CAL(O->D1), CAL(O->D2) (outbound months) and CAL(D1->O),    #
+    # CAL(D2->O) (return months). Descriptors deduped by (origin,dest,month).#
+    # ------------------------------------------------------------------ #
+    if "open-jaw" in shapes and round_trip and want_ryanair:
+        matched_set = set(matched)
+        out_months = _months_spanning(depart.out_from, depart.out_to)
+        ret_months = _months_spanning(
+            (date.fromisoformat(depart.out_from) + timedelta(days=lo)).isoformat(),
+            (date.fromisoformat(depart.out_to) + timedelta(days=hi)).isoformat(),
+        )
+        cal_needed: set = set()
+        for base in origins:
+            for pair in registry.get_open_jaw_pairs():
+                a, b = str(pair["a"]).upper(), str(pair["b"]).upper()
+                if a not in matched_set or b not in matched_set:
+                    continue
+                for d1, d2 in ((a, b), (b, a)):
+                    for m in out_months:
+                        cal_needed.add((base, d1, m))   # outbound O -> D1
+                    for m in ret_months:
+                        cal_needed.add((d2, base, m))   # inbound  D2 -> O
+        for (o, d, m) in sorted(cal_needed):
+            calls.append(CallDescriptor(
+                provider="ryanair", endpoint="cheapestPerDay", mode="calendar", shape="S4",
+                params={"origin": o, "destination": d, "month": m},
+            ))
+
     calls.sort(key=lambda c: c.sort_key())
     n = len(calls)
     return CallPlan(calls=calls, estimated_calls=n, estimated_seconds=round(n / rate, 1))
+
+
+def _months_spanning(start_iso: str, end_iso: str) -> List[str]:
+    """The ``YYYY-MM`` months (inclusive) spanned by ``[start_iso, end_iso]``."""
+    start, end = date.fromisoformat(start_iso), date.fromisoformat(end_iso)
+    months, cur = [], date(start.year, start.month, 1)
+    while cur <= end:
+        months.append(cur.strftime("%Y-%m"))
+        cur = date(cur.year + 1, 1, 1) if cur.month == 12 else date(cur.year, cur.month + 1, 1)
+    return months
 
 
 def check_max_calls(plan: CallPlan, max_calls: int) -> None:
@@ -236,8 +310,8 @@ def check_max_calls(plan: CallPlan, max_calls: int) -> None:
     if plan.estimated_calls > max_calls:
         raise PlannerRefusal(
             f"plan needs {plan.estimated_calls} calls, over the --max-calls {max_calls} cap",
-            f"narrow the search (tighter --where, fewer origins) or raise the cap: "
-            f"--max-calls {plan.estimated_calls}",
+            f"drop a shape (--shapes direct), narrow the search (tighter --where, "
+            f"fewer origins), or raise the cap: --max-calls {plan.estimated_calls}",
         )
 
 
@@ -259,12 +333,21 @@ class _Candidate:
     carriers: List[str]
     legs: List[Dict[str, Any]]
     shape: str = "S2"
+    ground: Optional[Dict[str, Any]] = None
+    # Dedup key override (S4 open-jaw). ``None`` -> ("point", origin, destination):
+    # S1/S2/S3 to the same destination compete (cheapest wins, so an extended
+    # origin surfaces only when it genuinely beats direct). S4 is a distinct
+    # two-city product keyed by the unordered airport pair.
+    dedup: Optional[Tuple] = None
 
     def rank_key(self) -> Tuple:
         # cheapest wins; on a price tie an exact fare beats an approximate one;
         # then carriers string for a fully deterministic order.
         approx = self.price_confidence != "exact"
         return (self.price_eur, approx, "+".join(self.carriers))
+
+    def dedup_key(self) -> Tuple:
+        return self.dedup if self.dedup is not None else ("point", self.origin, self.destination)
 
 
 def _dayfare_to_candidate(df: DayFare, carrier: str, confidence: str) -> _Candidate:
@@ -311,6 +394,77 @@ def _farepair_to_candidate(fp: FarePair) -> _Candidate:
                 flight_number=fp.inbound.flight_number, duration_minutes=fp.inbound.duration_minutes,
             ),
         ],
+    )
+
+
+def _extended_origin_candidate(fp: FarePair, base_origin: str, ground: Dict[str, Any]) -> _Candidate:
+    """S3 extended-origin: a Ryanair RT-ANYWHERE pair from the extended origin
+    (VIE/BTS) wrapped with the round-trip ground leg to/from the base origin.
+    The trip's endpoints are ``base_origin``/``destination``; the flown airport
+    (VIE) appears only inside ``legs``. Total = fare + 2×ground cost (out+back)."""
+    via = fp.origin  # e.g. VIE
+    g_min = int(ground.get("minutes") or 0)
+    g_cost = float(ground.get("est_cost_eur") or 0.0)
+    g_mode = ground.get("mode", "bus")
+    total = round(fp.total_price_eur + 2 * g_cost, 2)
+    legs = [
+        output.ground_leg(base_origin, via, g_mode, g_min, cost_eur=g_cost),
+        output.flight_leg(
+            fp.outbound.origin, fp.outbound.destination, "ryanair", fp.outbound.date,
+            fp.outbound.price_eur, departure_time=fp.outbound.departure_time,
+            flight_number=fp.outbound.flight_number, duration_minutes=fp.outbound.duration_minutes,
+        ),
+        output.flight_leg(
+            fp.inbound.origin, fp.inbound.destination, "ryanair", fp.inbound.date,
+            fp.inbound.price_eur, departure_time=fp.inbound.departure_time,
+            flight_number=fp.inbound.flight_number, duration_minutes=fp.inbound.duration_minutes,
+        ),
+        output.ground_leg(via, base_origin, g_mode, g_min, cost_eur=g_cost),
+    ]
+    return _Candidate(
+        origin=base_origin,
+        destination=fp.destination,
+        out_date=fp.out_date,
+        return_date=fp.return_date,
+        nights=fp.nights,
+        price_eur=total,
+        price_confidence="exact",
+        carriers=["ryanair"],
+        shape="S3",
+        legs=legs,
+        ground=output.ground_summary(2 * g_min, round(2 * g_cost, 2), g_mode),
+    )
+
+
+def _openjaw_candidate(
+    base: str, d1: str, d2: str, out_fare: DayFare, ret_fare: DayFare, nights: int,
+    ground_minutes: int, ground_cost: float, ground_mode: str,
+) -> _Candidate:
+    """S4 open-jaw: fly ``base->d1``, ground ``d1->d2``, fly ``d2->base``. Two
+    exact one-way Ryanair legs (CAL) + one ground hop. The trip's ``destination``
+    is the fly-in airport ``d1``; the fly-home airport ``d2`` and the hop live in
+    ``legs``. Total = leg1 + leg2 + ground cost (one hop, not doubled)."""
+    total = round(out_fare.price_eur + ret_fare.price_eur + ground_cost, 2)
+    legs = [
+        output.flight_leg(base, d1, "ryanair", out_fare.date, out_fare.price_eur,
+                          departure_time=out_fare.departure_time),
+        output.ground_leg(d1, d2, ground_mode, ground_minutes, cost_eur=ground_cost),
+        output.flight_leg(d2, base, "ryanair", ret_fare.date, ret_fare.price_eur,
+                          departure_time=ret_fare.departure_time),
+    ]
+    return _Candidate(
+        origin=base,
+        destination=d1,
+        out_date=out_fare.date,
+        return_date=ret_fare.date,
+        nights=nights,
+        price_eur=total,
+        price_confidence="exact",
+        carriers=["ryanair"],
+        shape="S4",
+        legs=legs,
+        ground=output.ground_summary(ground_minutes, ground_cost, ground_mode),
+        dedup=("openjaw", base, frozenset({d1, d2})),
     )
 
 
@@ -449,6 +603,61 @@ class Planner:
             logger.warning("planner: wizz TT %s->%s failed: %s", p.get("origin"), p.get("destination"), e)
             return ("wizzair", None, {"provider": "wizzair", "status": status_for_exception(e), "detail": str(e)})
 
+    def _run_calendar(self, call: CallDescriptor, fresh: bool):
+        """Ryanair CAL (cheapestPerDay) for one route+month — the S4 open-jaw
+        day-level enumeration. Returns exact per-day one-way minima."""
+        p = call.params
+        try:
+            fares = self.ryanair.cheapest_per_day(
+                p["origin"], p["destination"], p["month"], use_cache=not fresh,
+            )
+            return ("ryanair_cal", fares, {"provider": "ryanair", "status": "ok"})
+        except Exception as e:
+            logger.warning("planner: ryanair CAL %s->%s %s failed: %s",
+                           p.get("origin"), p.get("destination"), p.get("month"), e)
+            return ("ryanair_cal", [], {"provider": "ryanair", "status": status_for_exception(e), "detail": str(e)})
+
+    def _build_openjaw(self, spec, matched, cal_fares):
+        """Pair the CAL day-level minima into S4 open-jaw candidates: for each
+        registry pair whose both airports are matched, take the cheapest
+        (outbound O->D1, inbound D2->O) combo within the nights range across
+        BOTH fly-in directions, add the D1<->D2 ground hop. One candidate per
+        unordered pair (cheapest direction wins)."""
+        lo, hi = spec.nights_range
+        depart = spec.depart_spec
+        o_from = date.fromisoformat(depart.out_from)
+        o_to = date.fromisoformat(depart.out_to)
+        allowed_dates = set(depart.dates) if depart.kind == "dates" else None
+        out: List[_Candidate] = []
+        for base in sorted({o.upper() for o in spec.origins}):
+            for pair in self.registry.get_open_jaw_pairs():
+                a, b = str(pair["a"]).upper(), str(pair["b"]).upper()
+                if a not in matched or b not in matched:
+                    continue
+                g_min = int(pair.get("ground_minutes") or 0)
+                g_cost = float(pair.get("est_cost_eur") or 0.0)
+                g_mode = pair.get("mode", "train")
+                best = None  # (total, d1, d2, out_fare, ret_fare, nights)
+                for d1, d2 in ((a, b), (b, a)):
+                    outs = [f for f in cal_fares.get((base, d1), [])
+                            if o_from <= date.fromisoformat(f.date) <= o_to]
+                    if allowed_dates is not None:
+                        outs = [f for f in outs if f.date in allowed_dates]
+                    rets = cal_fares.get((d2, base), [])
+                    for of in outs:
+                        od = date.fromisoformat(of.date)
+                        for rf in rets:
+                            n = (date.fromisoformat(rf.date) - od).days
+                            if lo <= n <= hi:
+                                total = round(of.price_eur + rf.price_eur + g_cost, 2)
+                                if best is None or total < best[0]:
+                                    best = (total, d1, d2, of, rf, n)
+                if best is None:
+                    continue
+                _t, d1, d2, of, rf, n = best
+                out.append(_openjaw_candidate(base, d1, d2, of, rf, n, g_min, g_cost, g_mode))
+        return out
+
     def execute(self, plan: CallPlan, spec, *, fresh: bool = False) -> Dict[str, Any]:
         """Run the plan concurrently on the shared pool. Returns a dict with
         ``results`` (rendered Deal dicts, final budget+rank cut on estimates),
@@ -466,36 +675,53 @@ class Planner:
         allowed_dates = set(depart.dates) if depart.kind == "dates" else None
         executor = http.get_executor(self.config.max_workers)
 
-        futures = []
+        futures = {}
         for call in plan.calls:
             if call.mode == "anywhere" and call.endpoint == "roundTripFares":
-                futures.append(executor.submit(self._run_anywhere, call, fresh))
+                futures[executor.submit(self._run_anywhere, call, fresh)] = call
             elif call.mode == "anywhere" and call.endpoint == "oneWayFares":
-                futures.append(executor.submit(self._run_oneway_anywhere, call, fresh))
+                futures[executor.submit(self._run_oneway_anywhere, call, fresh)] = call
             elif call.mode == "timetable":
-                futures.append(executor.submit(self._run_timetable, call, spec, fresh))
+                futures[executor.submit(self._run_timetable, call, spec, fresh)] = call
+            elif call.mode == "calendar":
+                futures[executor.submit(self._run_calendar, call, fresh)] = call
 
-        # best candidate per (origin, destination)
-        best: Dict[Tuple[str, str], _Candidate] = {}
+        # best candidate per dedup key (see _Candidate.dedup_key)
+        best: Dict[Tuple, _Candidate] = {}
         events: List[Dict[str, Any]] = []
+        cal_fares: Dict[Tuple[str, str], List[DayFare]] = {}  # (origin,dest) -> DayFares (S4)
 
         def _offer(cand: Optional[_Candidate]):
             if cand is None:
                 return
-            key = (cand.origin, cand.destination)
+            key = cand.dedup_key()
             cur = best.get(key)
             if cur is None or cand.rank_key() < cur.rank_key():
                 best[key] = cand
 
         for fut in as_completed(futures):
+            call = futures[fut]
             kind, payload, event = fut.result()
             events.append(event)
             if kind == "ryanair":
-                for fp in payload:  # FarePairs, already duration-filtered
-                    if fp.destination in matched and (
-                        allowed_dates is None or fp.out_date in allowed_dates
-                    ):
-                        _offer(_farepair_to_candidate(fp))
+                # RT-ANYWHERE pairs: S2 (direct) or S3 (from an extended origin).
+                if call.shape == "S3":
+                    ground = self.registry.get_origin_ground(call.params["origin"]) or {}
+                    base = call.params.get("base_origin", "")
+                    for fp in payload:
+                        if fp.destination in matched and (
+                            allowed_dates is None or fp.out_date in allowed_dates
+                        ):
+                            _offer(_extended_origin_candidate(fp, base, ground))
+                else:
+                    for fp in payload:  # FarePairs, already duration-filtered
+                        if fp.destination in matched and (
+                            allowed_dates is None or fp.out_date in allowed_dates
+                        ):
+                            _offer(_farepair_to_candidate(fp))
+            elif kind == "ryanair_cal":
+                for df in payload:
+                    cal_fares.setdefault((df.origin, df.destination), []).append(df)
             elif kind == "ryanair_ow":
                 # One-way DayFares (S1): clip to the outbound window + matched set.
                 o_from = date.fromisoformat(depart.out_from)
@@ -510,6 +736,11 @@ class Planner:
                     _offer(_dayfare_to_candidate(df, "ryanair", "exact"))
             elif kind == "wizzair":
                 _offer(payload)
+
+        # S4 open-jaw: local pairing over the CAL day-level minima gathered above.
+        if "open-jaw" in set(spec.shapes) and spec.is_round_trip and cal_fares:
+            for cand in self._build_openjaw(spec, matched, cal_fares):
+                _offer(cand)
 
         aggregated = aggregate_status(events)
         provider_failed = any(not v["ok"] for v in aggregated.values())
@@ -561,7 +792,8 @@ class Planner:
 
     @staticmethod
     def _render(c: _Candidate) -> Dict[str, Any]:
-        return output.build_deal(
+        round_trip = c.shape in ("S2", "S3", "S4")
+        deal = output.build_deal(
             shape=c.shape,
             origin=c.origin,
             destination=c.destination,
@@ -571,8 +803,12 @@ class Planner:
             price_confidence=c.price_confidence,
             carriers=c.carriers,
             legs=c.legs,
-            why=output.why_string(c.price_eur, c.price_confidence, round_trip=c.shape == "S2"),
+            ground=c.ground,
+            why=output.why_string(c.price_eur, c.price_confidence, round_trip=round_trip),
         )
+        # Append the honest ground-transfer clause for shaped deals (S3/S4).
+        deal["why"] = deal["why"] + output.ground_why_suffix(deal)
+        return deal
 
     # -- one-shot: compile + guard + execute + build envelope --------------- #
     def run(self, spec, *, max_calls: int = DEFAULT_MAX_CALLS, fresh: bool = False) -> Tuple[Dict[str, Any], int]:

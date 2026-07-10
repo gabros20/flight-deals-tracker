@@ -226,17 +226,18 @@ def _emit_intent(env: dict, exit_code: int, pretty: bool) -> None:
         raise typer.Exit(exit_code)
 
 
-def _run_intent(*, where, depart, nights, budget, origins_opt, max_calls, fresh, max_results, pretty, to=None):
+def _run_intent(*, where, depart, nights, budget, origins_opt, max_calls, fresh, max_results, pretty, to=None, shapes=None):
     from flight_deals.engine.intents import IntentError, run_search
     from flight_deals.engine.planner import PlannerRefusal
     from flight_deals.engine.spec import SpecError
     from flight_deals.registry.where import WhereParseError
 
+    shapes_list = [s.strip().lower() for s in shapes.split(",") if s.strip()] if shapes else None
     try:
         env, code = run_search(
             where=where, depart=depart, nights=nights, budget=budget, to=to,
             origins=_parse_origins(origins_opt), max_results=max_results,
-            max_calls=max_calls, fresh=fresh, registry=registry,
+            max_calls=max_calls, fresh=fresh, registry=registry, shapes=shapes_list,
         )
     except (IntentError, SpecError, PlannerRefusal) as e:
         _emit_spec_error(type(e).__name__, e.hint, pretty)
@@ -255,17 +256,25 @@ def getaway(
     nights: str = typer.Option(..., "--nights", help='Nights range for the round-trip, e.g. "5-8"'),
     budget: float = typer.Option(None, "--budget", help="Max total price per person, EUR"),
     origins_opt: str = typer.Option(None, "--from", "--origins", help="Origin IATA(s), comma-separated (default from config)"),
+    shapes: str = typer.Option(
+        "direct", "--shapes",
+        help='Trip shapes, comma-separated: direct,extended-origin,open-jaw (default direct). '
+             'extended-origin adds nearby-airport sweeps (VIE/BTS) with ground cost; '
+             'open-jaw pairs fly-in/fly-home city pairs. via-hub is not yet enabled.',
+    ),
     max_calls: int = typer.Option(40, "--max-calls"),
     max_results: int = typer.Option(10, "--max-results"),
     fresh: bool = typer.Option(False, "--fresh", help="Bypass cache, fetch fresh prices"),
     pretty: bool = typer.Option(False, "--pretty"),
 ):
-    """Find round-trip getaway deals (S2). Translates intent flags into a spec,
-    runs the planner, confirms approximate fares with an exact re-query, enriches
-    with price history, and snapshots each deal. JSON envelope on stdout."""
+    """Find round-trip getaway deals. Direct round-trips (S2) by default;
+    ``--shapes`` opts into extended-origin (S3) and open-jaw (S4). Translates
+    intent flags into a spec, runs the planner, confirms approximate/estimated
+    fares with an exact re-query, enriches with price history, and snapshots each
+    deal. JSON envelope on stdout."""
     _run_intent(where=where, depart=depart, nights=nights, budget=budget, to=to,
                 origins_opt=origins_opt, max_calls=max_calls, fresh=fresh,
-                max_results=max_results, pretty=pretty)
+                max_results=max_results, pretty=pretty, shapes=shapes)
 
 
 @app.command()

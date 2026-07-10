@@ -99,6 +99,80 @@ def flight_leg(
     }
 
 
+def ground_leg(
+    from_iata: str,
+    to_iata: str,
+    mode: str,
+    duration_minutes: int,
+    *,
+    cost_eur: Optional[float] = None,
+    distance_km: Optional[float] = None,
+) -> Dict[str, Any]:
+    """A ground-transfer leg dict (CONTRACT §2). ``cost_eur`` is the estimate for
+    THIS leg (an S3 round-trip ground is two such legs; an S4 hop is one)."""
+    return {
+        "type": "ground",
+        "from_iata": from_iata,
+        "to_iata": to_iata,
+        "mode": mode,
+        "duration_minutes": duration_minutes,
+        "distance_km": distance_km,
+        "cost_eur": None if cost_eur is None else round(float(cost_eur), 2),
+    }
+
+
+def ground_summary(duration_minutes: int, cost_eur: Optional[float], mode: str) -> Dict[str, Any]:
+    """The Deal-level ``ground`` convenience mirror (CONTRACT §2): total ground
+    duration + total cost across all ground legs of the trip, plus the mode."""
+    return {
+        "duration_minutes": duration_minutes,
+        "cost_eur": None if cost_eur is None else round(float(cost_eur), 2),
+        "mode": mode,
+    }
+
+
+def _fmt_hm(minutes: Optional[int]) -> str:
+    if not minutes:
+        return ""
+    h, m = divmod(int(minutes), 60)
+    if h and m:
+        return f"{h}h{m:02d}m"
+    if h:
+        return f"{h}h"
+    return f"{m}m"
+
+
+def ground_why_suffix(deal: Dict[str, Any]) -> str:
+    """The honest ground-transfer clause appended to a shaped deal's ``why``
+    (SEARCH-DESIGN §2). Empty for S1/S2 (no ground). For S3 it names the
+    round-trip bus/train to the extended origin ("incl. ~€42 bus BUD⇄VIE,
+    2×2h45m"); for S4 the open-jaw hop ("fly into NAP, train ~4h €35, fly home
+    from BRI"). Derived from the deal's own ``ground``/``legs`` so it can never
+    drift from the priced legs."""
+    shape = deal.get("shape")
+    g = deal.get("ground")
+    if not g:
+        return ""
+    mode = g.get("mode", "transfer")
+    cost = g.get("cost_eur")
+    cost_str = f"€{cost:.0f}" if cost is not None else ""
+    flight_legs = [l for l in deal.get("legs", []) if l.get("type") == "flight"]
+    if shape == "S3":
+        base = deal["origin"]
+        via = flight_legs[0]["origin"] if flight_legs else "?"
+        one_way = _fmt_hm((g.get("duration_minutes") or 0) // 2)
+        pieces = [p for p in (f"~{cost_str}" if cost_str else "", mode, f"{base}⇄{via}") if p]
+        tail = f" (2×{one_way})" if one_way else ""
+        return f" incl. {' '.join(pieces)}{tail}"
+    if shape == "S4":
+        d1 = deal["destination"]
+        d2 = flight_legs[-1]["origin"] if flight_legs else "?"
+        dur = _fmt_hm(g.get("duration_minutes"))
+        hop = " ".join(p for p in (mode, f"~{dur}" if dur else "", cost_str) if p)
+        return f" (fly into {d1}, {hop}, fly home from {d2})"
+    return ""
+
+
 def build_deal(
     *,
     shape: str,

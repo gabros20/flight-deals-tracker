@@ -86,6 +86,7 @@ def run_search(
     max_calls: int = 40,
     fresh: bool = False,
     carriers: Optional[List[str]] = None,
+    shapes: Optional[List[str]] = None,
     registry: Optional[DestinationRegistry] = None,
     planner: Optional[Planner] = None,
     history_store: Any = None,
@@ -134,6 +135,8 @@ def run_search(
         spec_dict["budget"] = budget
     if carriers:
         spec_dict["carriers"] = carriers
+    if shapes:
+        spec_dict["shapes"] = shapes
 
     spec = parse_spec(spec_dict)  # raises SpecError (exit 2 in CLI)
     _validate_not_past(spec.depart_spec, today)
@@ -192,7 +195,7 @@ def execute_spec(
     if do_confirm:
         band = outcome.get("confirm_band", results)
         if band:
-            confirm_mod.confirm(band, wizz=planner.wizz)
+            confirm_mod.confirm(band, wizz=planner.wizz, ryanair=planner.ryanair)
             if spec.budget is not None:
                 band = [d for d in band if d["price_eur"] <= float(spec.budget)]
             band.sort(key=lambda d: (d["price_eur"], d["price_confidence"] != "exact", d["destination"]))
