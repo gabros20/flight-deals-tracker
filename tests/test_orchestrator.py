@@ -113,3 +113,48 @@ def test_cross_carrier_merge_keeps_cheaper(monkeypatch):
     same = [d for d in results if d.destination == "CTA" and d.departure_date == "2026-08-23"]
     assert len(same) == 1
     assert same[0].source == "wizz" and same[0].price == 50.0
+
+
+def test_cross_carrier_tie_break_prefers_exact_ryanair_survives_both_orders():
+    """
+    Same route+date, EQUAL price: an `approximate` Wizz fare vs an `exact`
+    Ryanair fare. Ryanair must survive regardless of which one appears first
+    in the merge's input — `results` order is a function of
+    `ThreadPoolExecutor`/`as_completed` completion order, so the tie-break
+    must not depend on it (Task 4 fix). Feeds `merge_cross_carrier` directly
+    in both orders rather than trying to coax real thread scheduling, which
+    is the only way to *prove* the outcome is order-independent rather than
+    "happened to pass this run".
+    """
+    from flight_deals.models import FlightDeal
+    from flight_deals.orchestrator import merge_cross_carrier
+
+    ryanair_deal = FlightDeal(origin="BUD", destination="CTA", departure_date="2026-08-23",
+                              price=60.0, currency="EUR", source="ryanair")
+    wizz_deal = FlightDeal(origin="BUD", destination="CTA", departure_date="2026-08-23",
+                           price=60.0, currency="EUR", source="wizz",
+                           source_details={"price_confidence": "approximate"})
+
+    for ordering in ([ryanair_deal, wizz_deal], [wizz_deal, ryanair_deal]):
+        deduped = merge_cross_carrier(ordering)
+        assert len(deduped) == 1
+        assert deduped[0].source == "ryanair"
+        assert deduped[0].price == 60.0
+
+
+def test_cross_carrier_merge_still_keeps_cheaper_when_prices_differ():
+    """Sanity check `merge_cross_carrier` in isolation: a real price
+    difference (not a tie) still picks the cheaper fare regardless of order."""
+    from flight_deals.models import FlightDeal
+    from flight_deals.orchestrator import merge_cross_carrier
+
+    cheap = FlightDeal(origin="BUD", destination="CTA", departure_date="2026-08-23",
+                       price=50.0, currency="EUR", source="wizz",
+                       source_details={"price_confidence": "approximate"})
+    pricey = FlightDeal(origin="BUD", destination="CTA", departure_date="2026-08-23",
+                        price=80.0, currency="EUR", source="ryanair")
+
+    for ordering in ([cheap, pricey], [pricey, cheap]):
+        deduped = merge_cross_carrier(ordering)
+        assert len(deduped) == 1
+        assert deduped[0].source == "wizz" and deduped[0].price == 50.0

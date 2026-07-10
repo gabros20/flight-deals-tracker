@@ -31,6 +31,43 @@ def status_for_exception(exc: BaseException) -> str:
     return "error"
 
 
+def _tie_break_key(d: FlightDeal) -> Tuple[bool, str]:
+    """
+    Deterministic ordering used ONLY to break an exact price tie in the
+    cross-carrier merge below (Task 4 fix). Ryanair's `cheapestPerDay` is an
+    exact fare (no `price_confidence` in `source_details`); Wizz's timetable
+    is `approximate` (+-10%). On equal price, an exact fare must win over an
+    approximate one; if that's still tied, fall back to `source` so the result
+    never depends on thread completion order.
+    """
+    is_approximate = d.source_details.get("price_confidence") == "approximate"
+    return (is_approximate, d.source)
+
+
+def merge_cross_carrier(deals: List[FlightDeal]) -> List[FlightDeal]:
+    """
+    Merge across carriers: for one route+date served by both Ryanair and Wizz,
+    keep the CHEAPER fare (its `source` tags the winning carrier) rather than
+    showing near-duplicate rows (Task 4 req 4). All prices are EUR by here
+    (Wizz went through fx.to_eur), so the comparison is currency-safe.
+
+    A standalone, order-independent function (not inlined in the caller) so
+    it can be exercised directly with `deals` in either order: on an exact
+    price TIE, the winner is decided purely by `(price, _tie_break_key)` —
+    exact confidence beats approximate, then `source` lexicographically —
+    NEVER by which element happened to come first in the input list (which,
+    inlined, would silently depend on `ThreadPoolExecutor`/`as_completed`
+    completion order across workers).
+    """
+    seen: Dict[tuple, FlightDeal] = {}
+    for d in deals:
+        key = (d.origin, d.destination, d.departure_date)
+        existing = seen.get(key)
+        if existing is None or (d.price, _tie_break_key(d)) < (existing.price, _tie_break_key(existing)):
+            seen[key] = d
+    return list(seen.values())
+
+
 def aggregate_status(events: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
     """
     Merge per-call status events (each produced *locally* by the worker that
@@ -173,17 +210,10 @@ class DealOrchestrator:
         if max_price:
             results = [d for d in results if d.price <= max_price]
 
-        # Merge across carriers: for one route+date served by both Ryanair and
-        # Wizz, keep the CHEAPER fare (its `source` tags the winning carrier),
-        # rather than showing near-duplicate rows (Task 4 req 4). Ties keep the
-        # first seen deterministically. All prices are EUR by here (Wizz went
-        # through fx.to_eur), so the comparison is currency-safe.
-        seen: Dict[tuple, FlightDeal] = {}
-        for d in results:
-            key = (d.origin, d.destination, d.departure_date)
-            if key not in seen or d.price < seen[key].price:
-                seen[key] = d
-        deduped = list(seen.values())
+        # Cross-carrier merge/tie-break lives in `merge_cross_carrier` (Task 4
+        # fix) so it's order-independent by construction and directly testable
+        # in both insertion orders — see tests/test_orchestrator.py.
+        deduped = merge_cross_carrier(results)
 
         if sort_by == "total-time":
             deduped.sort(key=lambda x: getattr(x, "total_duration_minutes", 999999) or 999999)
