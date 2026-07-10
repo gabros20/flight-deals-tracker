@@ -1,0 +1,13 @@
+{
+  "_synthetic": true,
+  "_note": "Documented shape of https://www.ryanair.com/api/views/locate/searchWidget/routes/en/airport/BUD — no live fixture was captured at contract-freeze time (Task 2). Each entry is a route object with arrivalAirport.code (IATA). Trimmed to a representative handful.",
+  "_url": "https://www.ryanair.com/api/views/locate/searchWidget/routes/en/airport/BUD",
+  "_status_code": 200,
+  "body": [
+    {"arrivalAirport": {"code": "CFU", "name": "Corfu"}, "connectingAirport": null, "operator": "RYANAIR"},
+    {"arrivalAirport": {"code": "CTA", "name": "Catania"}, "connectingAirport": null, "operator": "RYANAIR"},
+    {"arrivalAirport": {"code": "AGP", "name": "Malaga"}, "connectingAirport": null, "operator": "RYANAIR"},
+    {"arrivalAirport": {"code": "STN", "name": "London Stansted"}, "connectingAirport": null, "operator": "RYANAIR"},
+    {"arrivalAirport": {"code": "PMO", "name": "Palermo"}, "connectingAirport": null, "operator": "RYANAIR"}
+  ]
+}

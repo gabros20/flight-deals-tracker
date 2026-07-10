@@ -1,34 +1,44 @@
 #!/usr/bin/env python3
 """
-Cron report generator using migrated farfnd provider.
-Always uses the enforced emoji + link format.
+Cron report generator using the rebuilt farfnd Ryanair provider (Task 3).
+Prints an honest report; never fabricates deals.
 """
 import sys
 sys.path.insert(0, "src")
 
-from datetime import date
-from flight_deals.providers.ryanair_direct import RyanairDirectProvider
+from flight_deals.providers.ryanair import RyanairProvider
+from flight_deals.http import ProviderError
 from flight_deals.formatters import format_results
 
-p = RyanairDirectProvider()
+p = RyanairProvider()
 deals = []
 
-# Example July short stays (customize per cron)
+# Example short stays (customize per cron)
 tests = [
-    ("BUD", "CTA", date(2026,7,8), date(2026,7,12)),
-    ("BUD", "CFU", date(2026,7,8), date(2026,7,15)),
+    ("BUD", "CTA", "2026-07-08", "2026-07-12"),
+    ("BUD", "CFU", "2026-07-08", "2026-07-15"),
 ]
 
 for o, d, dep, ret in tests:
-    res = p.get_roundtrip_price(o, d, dep, ret)
-    if res:
-        res["origin"] = o
-        res["destination"] = d
-        deals.append(res)
+    try:
+        pairs = p.roundtrip_fares(o, d, out_from=dep, out_to=dep, ret_from=ret, ret_to=ret)
+    except ProviderError as e:
+        print(f"provider error for {o}->{d}: {e}", file=sys.stderr)
+        continue
+    for fp in pairs:
+        deals.append({
+            "origin": fp.origin,
+            "destination": fp.destination,
+            "price": fp.total_price_eur,
+            "currency": "EUR",
+            "outbound_date": fp.out_date,
+            "return_date": fp.return_date,
+            "source": "ryanair-farfnd",
+        })
 
+title = "Cron: Short Seaside Getaways from BUD (farfnd)"
 if deals:
-    report = format_results(deals, "Cron: July Short Seaside Getaways from BUD (farfnd)")
-    print(report)
+    print(format_results(deals, title))
 else:
-    print(format_results([], "Cron: July Short Seaside Getaways from BUD (farfnd)"))
+    print(format_results([], title))
     print("No live prices returned for the configured routes/dates (provider empty or down).")
