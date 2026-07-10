@@ -10,7 +10,6 @@ from flight_deals.history import PriceHistoryStore
 from flight_deals.notifier import TelegramNotifier
 from flight_deals.models import PriceSnapshot
 from flight_deals.registry.destinations import DestinationRegistry
-from flight_deals.formatters import format_results
 from flight_deals.config import get_config, save_user_config
 
 
@@ -54,75 +53,43 @@ def _removed_pending_rebuild() -> None:
     typer.echo(json.dumps({"error": "removed_pending_rebuild", "hint": "see docs/UPGRADE-PLAN.md"}))
 
 
-def _print_sources(orch: DealOrchestrator) -> None:
-    """Per-provider health for the last search, so failures are visible instead of silent."""
-    status = orch.provider_status
-    if not status:
-        return
-    parts = [f"{name}={st.get('status', 'ok' if st.get('ok') else 'error')}" for name, st in sorted(status.items())]
-    console.print(f"[dim]sources: {', '.join(parts)}[/dim]")
-
-
 @app.command()
 def search(
-    category: str = typer.Option(..., "--category", "-c"),
+    category: str = typer.Option(..., "--category", "-c", help='Where-expression, e.g. "seaside" or "italy | spain" (maps onto --where)'),
     origin: str = typer.Option(None, "--from", "-f"),
     date_from: str = typer.Option(..., "--date-from"),
     date_to: str = typer.Option(..., "--date-to"),
     return_from: str = typer.Option(None, "--return-from"),
     return_to: str = typer.Option(None, "--return-to"),
-    max_price: int = typer.Option(None, "--max-price"),
+    max_price: float = typer.Option(None, "--max-price"),
     connections: bool = typer.Option(
         False, "--connections", "--with-stops",
         help="Removed pending rebuild (see docs/UPGRADE-PLAN.md); flag is accepted but errors.",
     ),
-    sort_by: str = typer.Option("price", "--sort-by", help="price|total-time|efficiency"),
-    history_window: int = typer.Option(None, "--history-window", help="Days of history to use for comparisons (default from config)"),
+    sort_by: str = typer.Option("price", "--sort-by", help="Accepted for backward compatibility; ignored — oneway sorts by price then confidence."),
+    history_window: int = typer.Option(None, "--history-window", help="Accepted for backward compatibility; ignored — history window comes from config."),
     fresh: bool = typer.Option(False, "--fresh", help="Bypass cache and fetch fresh prices"),
+    max_calls: int = typer.Option(40, "--max-calls"),
+    max_results: int = typer.Option(10, "--max-results"),
+    pretty: bool = typer.Option(False, "--pretty"),
 ):
-    """[DEPRECATED for agents — use `oneway`] Search one-way deals by category.
-    The `oneway` verb is the agent-facing replacement (JSON envelope, --where
-    expressions, estimate→confirm, snapshots). Round-trip (--return-from/
-    --return-to) and --connections remain removed — see docs/UPGRADE-PLAN.md."""
+    """[DEPRECATED] Search one-way deals by category; kept for backward
+    compatibility — use `oneway`/`getaway` instead. A TRUE alias of `oneway`:
+    --category becomes the --where expression, --from/--date-from/--date-to/
+    --max-price map onto origins/depart/budget, --fresh passes through, and
+    the result is the standard JSON envelope (CONTRACT §1). --sort-by and
+    --history-window are accepted but ignored (the oneway/intents pipeline
+    sorts by price then confidence, and its history window comes from
+    config). --connections and --return-from/--return-to remain removed
+    pending the round-trip rebuild — see docs/UPGRADE-PLAN.md."""
     if return_from or return_to or connections:
         _removed_pending_rebuild()
         raise typer.Exit(2)
 
-    origin = origin or config.default_origin
-    orch = get_orchestrator()
-    deals = orch.search_by_category(
-        category=category,
-        origin=origin,
-        fresh=fresh,
-        date_from=date_from,
-        date_to=date_to,
-        max_price=max_price,
-        sort_by=sort_by,
-        history_window_days=history_window,
-    )
-    if not deals:
-        console.print("[yellow]No deals found[/yellow]")
-        _print_sources(orch)
-        return
-
-    title = f"Deals for {category} from {origin}"
-    deal_dicts = []
-    for deal in deals[:25]:
-        d = {
-            "origin": getattr(deal, "origin", ""),
-            "destination": getattr(deal, "destination", ""),
-            "price": getattr(deal, "price", 0),
-            "currency": getattr(deal, "currency", "EUR"),
-            "outbound_date": getattr(deal, "departure_date", ""),
-            "return_date": getattr(deal, "return_date", "") or "",
-            "source": getattr(deal, "source", ""),
-        }
-        deal_dicts.append(d)
-    formatted = format_results(deal_dicts, title)
-    console.print(formatted)
-    note = f"Showing top {min(25, len(deals))} of {len(deals)} deals"
-    console.print(f"[dim]{note}[/dim]")
-    _print_sources(orch)
+    depart = f"{date_from}..{date_to}"
+    _run_intent(where=category, depart=depart, nights=None, budget=max_price,
+                origins_opt=origin, max_calls=max_calls, fresh=fresh,
+                max_results=max_results, pretty=pretty)
 
 
 @app.command()

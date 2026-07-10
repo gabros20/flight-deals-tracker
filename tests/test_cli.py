@@ -87,3 +87,30 @@ def test_check_unknown_deal_exits_2():
 def test_getaway_and_oneway_and_check_registered():
     out = runner.invoke(app, ["--help"]).output.lower()
     assert "getaway" in out and "oneway" in out and "check" in out
+
+
+# --- `search` is a TRUE alias of `oneway` (Task 7 fix wave) ----------------- #
+# The legacy Rich-text output path is retired: `search` now runs the same
+# intents pipeline as `oneway` (--category -> --where, --from -> origins,
+# --date-from/--date-to -> --depart window, --max-price -> --budget) and
+# always prints the standard JSON envelope (CONTRACT §1), never Rich text.
+def test_search_past_date_exits_2_with_hint():
+    result = runner.invoke(app, ["search", "-c", "seaside", "--date-from", "2020-01-01",
+                                  "--date-to", "2020-01-05"])
+    assert result.exit_code == 2
+    env = json.loads(result.output)
+    assert env["error"] and "hint" in env
+
+
+def test_search_bad_origin_exits_2_suggesting_iata():
+    result = runner.invoke(app, ["search", "-c", "seaside", "--date-from", "2026-08-22",
+                                  "--date-to", "2026-08-24", "--from", "BUDA"])
+    assert result.exit_code == 2
+    env = json.loads(result.output)
+    assert "BUD" in env["hint"]
+
+
+def test_search_help_notes_deprecation_and_kept_for_compat():
+    out = runner.invoke(app, ["search", "--help"]).output.lower()
+    assert "oneway" in out or "getaway" in out
+    assert "backward compat" in out
