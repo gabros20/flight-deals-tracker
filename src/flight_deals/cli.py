@@ -59,7 +59,7 @@ def _print_sources(orch: DealOrchestrator) -> None:
     status = orch.provider_status
     if not status:
         return
-    parts = [f"{name}={'ok' if st['ok'] else 'error'}" for name, st in sorted(status.items())]
+    parts = [f"{name}={st.get('status', 'ok' if st.get('ok') else 'error')}" for name, st in sorted(status.items())]
     console.print(f"[dim]sources: {', '.join(parts)}[/dim]")
 
 
@@ -142,10 +142,19 @@ def track(
     origin = origin or config.default_origin
     orch = get_orchestrator()
 
-    # Try both providers
-    deals = orch.ryanair.get_cheapest_flights(origin, date_out, date_out, destination)
+    # Try both providers; typed provider failures must not crash `track`.
+    from flight_deals.http import ProviderError
+
+    deals = []
+    try:
+        deals = orch.ryanair.get_cheapest_flights(origin, date_out, date_out, destination)
+    except (ProviderError, Exception) as e:
+        console.print(f"[dim]ryanair unavailable: {e}[/dim]")
     if not deals:
-        deals = orch.wizz.get_cheapest_flights(origin, date_out, date_out, destination)
+        try:
+            deals = orch.wizz.get_cheapest_flights(origin, date_out, date_out, destination) or []
+        except Exception as e:
+            console.print(f"[dim]wizz unavailable: {e}[/dim]")
 
     if not deals:
         console.print("[red]No current price found for this route[/red]")
