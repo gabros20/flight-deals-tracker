@@ -196,6 +196,53 @@ def destinations(tag: str = typer.Option(None, "--tag")):
         console.print(f"{a.iata} - {a.city} ({', '.join(a.tags)})")
 
 
+where_app = typer.Typer(help="Inspect the tag taxonomy and the --where algebra.")
+app.add_typer(where_app, name="where")
+
+
+@where_app.command("list")
+def where_list(pretty: bool = typer.Option(False, "--pretty")):
+    """List tags (with counts), aliases, and auto-derived tags."""
+    data = registry.where_list()
+    if not pretty:
+        typer.echo(json.dumps(data))
+        return
+    console.print("[bold]Tags[/bold] (tag: airports)")
+    for tag, count in data["tags"].items():
+        console.print(f"  {tag}: {count}")
+    console.print("\n[bold]Aliases[/bold] (name -> expression)")
+    for name, expansion in data["aliases"].items():
+        console.print(f"  {name} -> {expansion}")
+    console.print("\n[bold]Derived[/bold] (auto, from route data): " + ", ".join(data["derived"]))
+
+
+@where_app.command("show")
+def where_show(
+    expr: str = typer.Argument(..., help='A tag expression, e.g. "seaside & (italy | spain)"'),
+    pretty: bool = typer.Option(False, "--pretty"),
+):
+    """Print the airports matching a where-expression."""
+    from flight_deals.registry.where import WhereParseError
+
+    try:
+        matches = registry.matching(expr)
+    except WhereParseError as e:
+        typer.echo(json.dumps({"error": str(e), "hint": e.hint}))
+        raise typer.Exit(2)
+
+    airports = [
+        {"iata": a.iata, "city": a.city, "country": a.country, "tags": a.tags}
+        for a in matches
+    ]
+    payload = {"expr": expr, "count": len(airports), "airports": airports}
+    if not pretty:
+        typer.echo(json.dumps(payload))
+        return
+    console.print(f"[bold]{len(airports)}[/bold] airports match [cyan]{expr}[/cyan]")
+    for a in airports:
+        console.print(f"  {a['iata']} - {a['city']}, {a['country']} ({', '.join(a['tags'])})")
+
+
 @app.command()
 def history():
     """Removed pending rebuild — see docs/UPGRADE-PLAN.md. Use 'history-stats' for aggregate stats."""
