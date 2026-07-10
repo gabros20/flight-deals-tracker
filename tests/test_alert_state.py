@@ -73,16 +73,25 @@ def test_rise_back_into_band_does_nothing(tmp_path):
     assert m.get("w", "BUD-CFU", "2026-08")["last_alert_price"] == 120.0
 
 
-def test_expiry_re_arms_next_crossing(tmp_path):
+def test_expiry_re_arms_same_key_and_refires(tmp_path):
+    """Same (search, route, month) key throughout: a confirmed crossing fires,
+    the clock advances past the watched month's ``expires_at``, and a new
+    confirmed crossing on that SAME key must alert again (re-armed), not stay
+    permanently suppressed. This exercises the in-``evaluate`` re-arm branch
+    (an entry whose month has ended is popped before the crossing check) —
+    unlike a two-different-months test, this one fails if that branch is
+    deleted (see below)."""
     m = _machine(tmp_path)
     with freeze_time("2026-07-01T08:30:00+00:00"):
         assert m.evaluate(search_name="w", deal=_deal(140), max_price=150, now=datetime.now(timezone.utc)) is True
-    # After the watched month (2026-08) ends, the same in-band price fires again.
+    assert m.get("w", "BUD-CFU", "2026-08")["state"] == "alerted"
+
+    # After the watched month (2026-08) ends, the SAME key's next confirmed
+    # crossing (same price, still in-band) must fire again.
     with freeze_time("2026-09-05T08:30:00+00:00"):
-        assert m.evaluate(
-            search_name="w", deal=_deal(140, out_date="2026-10-10"), max_price=150,
-            now=datetime.now(timezone.utc),
-        ) is True
+        assert m.evaluate(search_name="w", deal=_deal(140), max_price=150, now=datetime.now(timezone.utc)) is True
+    entry = m.get("w", "BUD-CFU", "2026-08")
+    assert entry["state"] == "alerted" and entry["last_alert_price"] == 140.0
 
 
 def test_approximate_never_alerts(tmp_path):
