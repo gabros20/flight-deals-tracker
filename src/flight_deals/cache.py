@@ -3,9 +3,11 @@ Simple file-based caching for flight search results.
 Uses JSON with TTL. Supports stats and advanced invalidation.
 """
 
+import hashlib
 import json
 import logging
-from datetime import datetime, timedelta
+import os
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 from flight_deals.models import FlightDeal
@@ -14,8 +16,104 @@ from flight_deals.config import get_config
 logger = logging.getLogger(__name__)
 
 
+# Endpoint -> cache "kind" (which per-endpoint TTL applies). Endpoints are the
+# short logical names the provider passes to ResponseCache, not raw URLs.
+_KIND_FOR_ENDPOINT = {
+    "roundTripFares": "search",
+    "cheapestPerDay": "calendar",
+    "routes": "routes",
+}
+
+
+class ResponseCache:
+    """
+    Cache v2 (Task 3 req 4): caches raw provider response *bodies* keyed by
+    ``provider + endpoint + all query params`` (return window and duration
+    included), with **per-endpoint TTLs** and **atomic writes**.
+
+    Storing the raw body (not parsed models) keeps the cache provider-agnostic
+    and means a schema fix never invalidates on-disk shape — the provider
+    parses cached and live bodies through the exact same code path.
+    """
+
+    #: default TTLs in seconds, overridden from config in __init__
+    DEFAULT_TTLS = {
+        "search": 30 * 60,
+        "calendar": 6 * 3600,
+        "routes": 7 * 86400,
+    }
+
+    def __init__(self, cache_dir: Optional[Path] = None, ttls: Optional[Dict[str, float]] = None):
+        cfg = get_config()
+        self.cache_dir = cache_dir or (cfg.cache_dir / "v2")
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        if ttls is not None:
+            self.ttls = dict(ttls)
+        else:
+            self.ttls = {
+                "search": cfg.cache_ttl_search_minutes * 60,
+                "calendar": cfg.cache_ttl_calendar_hours * 3600,
+                "routes": cfg.cache_ttl_routes_days * 86400,
+            }
+
+    @staticmethod
+    def _kind(endpoint: str) -> str:
+        return _KIND_FOR_ENDPOINT.get(endpoint, "search")
+
+    def _key(self, provider: str, endpoint: str, params: Dict[str, Any]) -> str:
+        # Canonical, order-independent hash of the params (sorted keys).
+        blob = json.dumps(params, sort_keys=True, separators=(",", ":"), default=str)
+        digest = hashlib.sha256(f"{provider}|{endpoint}|{blob}".encode("utf-8")).hexdigest()[:16]
+        return f"{provider}_{endpoint}_{digest}.json"
+
+    def _path(self, provider: str, endpoint: str, params: Dict[str, Any]) -> Path:
+        return self.cache_dir / self._key(provider, endpoint, params)
+
+    def get(self, provider: str, endpoint: str, params: Dict[str, Any]) -> Optional[Any]:
+        """Return the cached response body, or None on miss / expiry / corruption."""
+        path = self._path(provider, endpoint, params)
+        if not path.exists():
+            return None
+        try:
+            data = json.loads(path.read_text())
+            cached_at = datetime.fromisoformat(data["cached_at"])
+            ttl = timedelta(seconds=self.ttls.get(self._kind(endpoint), 0))
+            if datetime.now(timezone.utc) - cached_at > ttl:
+                path.unlink(missing_ok=True)
+                return None
+            return data["body"]
+        except Exception as e:
+            logger.warning("cache v2: corrupt entry %s, treating as miss: %s", path.name, e)
+            return None
+
+    def set(self, provider: str, endpoint: str, params: Dict[str, Any], body: Any) -> None:
+        """Atomically write the response body to the cache (tmp + os.replace)."""
+        path = self._path(provider, endpoint, params)
+        payload = {
+            "cached_at": datetime.now(timezone.utc).isoformat(),
+            "provider": provider,
+            "endpoint": endpoint,
+            "params": params,
+            "body": body,
+        }
+        tmp = path.with_suffix(path.suffix + f".tmp.{os.getpid()}")
+        try:
+            tmp.write_text(json.dumps(payload))
+            os.replace(tmp, path)
+        except Exception as e:
+            logger.warning("cache v2: failed to write %s: %s", path.name, e)
+            tmp.unlink(missing_ok=True)
+
+    def clear(self) -> int:
+        count = 0
+        for f in self.cache_dir.glob("*.json"):
+            f.unlink(missing_ok=True)
+            count += 1
+        return count
+
+
 class FlightCache:
-    def __init__(self, cache_dir: Optional[Path] = None, ttl_hours: Optional[int] = None):
+    def __init__(self, cache_dir: Optional[Path] = None, ttl_hours: Optional[float] = None):
         config = get_config()
         self.cache_dir = cache_dir or config.cache_dir
         self.ttl = timedelta(hours=ttl_hours or config.cache_ttl_hours)

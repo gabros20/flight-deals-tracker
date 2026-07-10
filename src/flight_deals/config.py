@@ -21,7 +21,14 @@ class FlightDealsConfig(BaseModel):
     currency: str = Field(default="EUR")
     telegram_bot_token: Optional[str] = None
     telegram_chat_id: Optional[str] = None
-    cache_ttl_hours: float = Field(default=0.25, ge=0)  # 15 minutes
+    cache_ttl_hours: float = Field(default=0.25, ge=0)  # 15 minutes (legacy FlightCache)
+    # Cache v2 per-endpoint TTLs (Task 3 req 4). Search results go stale fast;
+    # route networks change ~yearly.
+    cache_ttl_search_minutes: float = Field(default=30.0, ge=0)
+    cache_ttl_calendar_hours: float = Field(default=6.0, ge=0)
+    cache_ttl_routes_days: float = Field(default=7.0, ge=0)
+    # Shared HTTP rate limiter (req/s). Default ~1/s per Global Constraint 9.
+    http_rate_per_second: float = Field(default=1.0, gt=0)
     max_workers: int = Field(default=8, ge=1, le=20)
     history_min_points_for_badge: int = Field(default=3, ge=1)
     history_window_days: int = Field(default=365, ge=7, description="Default window for historical comparisons and best-this-month")
