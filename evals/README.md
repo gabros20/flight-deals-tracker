@@ -49,11 +49,12 @@ date window from nothing.
 |---|---|---|---|
 | 01 | "Best deals Aug 22-24, seaside/italian/spanish, about a week" | `getaway` | The worked example SKILL.md leads with (SEARCH-DESIGN §5) |
 | 02 | "Is that CFU deal still good?" | `check` | Deal-identity follow-up, not a fresh search |
-| 03 | "Cheap European island flights from Budapest in August under €120" | `oneway` | From the old skill's natural-language examples (hermes-skill SKILL.md / creative-usage doc) — no return date, so `oneway` not `getaway` |
+| 03 | "Cheap **one-way** European island flights from Budapest in August under €120" | `oneway` | Explicit "one-way" is the discriminative signal — `oneway`, not the `getaway --nights 3-7` default the router uses when duration is unstated |
 | 04 | "Track BUD to CFU and alert me if it drops" | `watch add` | Adapted from the old creative-usage doc's "history-driven hunting" / `track` workflow — the removed percentage-threshold `track` command is now `watch add` + `brief` |
 | 05 | "Watch seaside deals for August, alert under €150" | `watch add` | Category watch, the second common monitoring shape |
 | 06 | "Find me something nice for a getaway" | *(ambiguous)* | No category, no dates — must ask or run `where list`, never invent |
 
-Cases 03 and 04 are the two "from the old creative-usage doc's workflows"
-required by the task brief; the doc itself is archived at
-`skills/flight-deals/references/advanced.md`.
+Case 04 is adapted from the old creative-usage doc's workflow (the removed
+`track --threshold` command); that doc is archived at
+`skills/flight-deals/references/advanced.md`. Case 03 pins the explicit
+one-way vs. default-getaway routing distinction.
