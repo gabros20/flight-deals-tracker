@@ -56,6 +56,32 @@ def test_add_validates_schedule_and_alert(_isolated_searches_dir):
         searches.add(name="bad", spec=_spec(), alert={"notify": "telegram"})  # no max_price
 
 
+def test_add_rejects_where_typo_matching_no_destinations(_isolated_searches_dir):
+    """Review item: a --where typo (e.g. "seasid & italy") that can never
+    match any destination used to save silently and only surface as a wasted
+    network call at the next scheduled `brief` run. `add` now rejects it
+    immediately, the same as getaway/oneway/run do before touching a
+    provider — with a did-you-mean hint."""
+    with pytest.raises(searches.SearchError) as ei:
+        searches.add(name="typo", spec=_spec(where="seasid & italy"))
+    assert "seaside" in ei.value.hint
+
+
+def test_add_allows_partial_unknown_tag_that_still_matches():
+    """"seasid | italy" still resolves real destinations via the OR — this is
+    NOT the guaranteed-empty case above, so it must save fine."""
+    rec = searches.add(name="partial", spec=_spec(where="seasid | italy"))
+    assert rec["spec"]["where"] == "seasid | italy"
+
+
+def test_add_allows_legit_empty_category():
+    """"ski" is a real tag that just has no matching destinations today — not
+    a typo, so a watch on it may still be saved (it might get destinations
+    later, or the registry may change)."""
+    rec = searches.add(name="ski-watch", spec=_spec(where="ski"))
+    assert rec["spec"]["where"] == "ski"
+
+
 def test_watch_detection_and_name_slug(_isolated_searches_dir):
     rec = searches.add(name="BUD to CFU!", spec=_spec(), alert={"max_price": 150, "notify": "telegram"})
     assert rec["name"] == "bud-to-cfu"

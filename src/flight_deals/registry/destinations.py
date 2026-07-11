@@ -163,6 +163,20 @@ class DestinationRegistry:
         idents = extract_identifiers(expr)
         return sorted(t for t in idents if t not in known)
 
+    def tag_hint(self, unknown: List[str]) -> str:
+        """A "did you mean" hint for each unknown tag — nearest known tag in
+        :meth:`known_tag_universe` by ``difflib`` (cutoff 0.6), or "is unknown"
+        when nothing is close. Shared by ``where show`` and the where-gate
+        that protects ``getaway``/``oneway``/``run``/``watch add`` from
+        burning a network call over a typo'd ``--where`` (SEARCH-DESIGN §3)."""
+        import difflib
+        known_universe = sorted(self.known_tag_universe())
+        suggestions = []
+        for tag in unknown:
+            close = difflib.get_close_matches(tag, known_universe, n=1, cutoff=0.6)
+            suggestions.append(f"{tag!r} - did you mean: {close[0]}?" if close else f"{tag!r} is unknown")
+        return "; ".join(suggestions)
+
     def where_list(self) -> Dict[str, Any]:
         """Tag inventory with counts, aliases, and derived (auto) tags."""
         counts: Dict[str, int] = {}

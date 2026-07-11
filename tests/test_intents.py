@@ -12,6 +12,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 
 import pytest
+import responses
 
 from flight_deals.engine.intents import IntentError, check_deal, run_search
 from flight_deals.engine.planner import Planner
@@ -358,6 +359,75 @@ def test_getaway_fuzzy_matches_unknown_origin():
                    budget=None, origins=["BUDA"], planner=_empty_planner(),
                    history_store=_FakeHistory(), today=FIXED_TODAY)
     assert "BUD" in ei.value.hint
+
+
+# --------------------------------------------------------------------------- #
+# where-gate: a typo'd/empty --where must never burn a network call          #
+# (review item — "seasid & italy" used to sail through to a live Ryanair     #
+# RT-ANYWHERE call before reporting no_service, exit 0).                     #
+# --------------------------------------------------------------------------- #
+@responses.activate
+def test_getaway_unknown_tag_and_empty_destinations_exits_2_no_network():
+    """'seasid' is a typo; ANDed with 'italy' the expression matches ZERO
+    destinations. Must exit 2 with a did-you-mean hint and make NO HTTP call
+    at all — @responses.activate with nothing registered means any attempted
+    request raises ConnectionError, so a passing test proves zero calls."""
+    env, code = run_search(
+        where="seasid & italy", depart="2026-08-22..2026-08-24", nights="5-8",
+        budget=None, origins=["BUD"], today=FIXED_TODAY, now=FIXED_NOW,
+    )
+    assert code == 2
+    assert env["results"] == []
+    assert "seaside" in env["hint"]
+    assert len(responses.calls) == 0
+
+
+@responses.activate
+def test_getaway_legit_empty_category_exits_0_no_match_no_network():
+    """'ski' is a real tag with zero BUD-reachable destinations today — a
+    legitimately empty category, not a typo. Exit 0, route_status no_match,
+    a hint pointing at 'where list', and (like the typo case) NO network
+    call — running a plan over zero destinations only wastes calls for a
+    guaranteed-empty result."""
+    env, code = run_search(
+        where="ski", depart="2026-08-22..2026-08-24", nights="5-8",
+        budget=None, origins=["BUD"], today=FIXED_TODAY, now=FIXED_NOW,
+    )
+    assert code == 0
+    assert env["results"] == []
+    assert env["route_status"] == "no_match"
+    assert "where list" in env["summary"] or "where list" in env["next"][0]
+    assert len(responses.calls) == 0
+
+
+def test_getaway_partial_unknown_tag_proceeds_and_surfaces_hint():
+    """'seasid | italy': 'seasid' is unknown but 'italy' alone still resolves
+    real destinations (OR, not AND) — the search proceeds (this is NOT the
+    same as the AND case above, which matches nothing), and the envelope
+    carries unknown_tags so the caller learns about the typo without losing
+    the results the valid half of the expression found. This is exit 0
+    (success, non-empty results), so CONTRACT §3 forbids a bare "hint" field
+    (error/hint appear together or not at all) — the did-you-mean note lives
+    in `summary` instead."""
+    body = json.loads((FIXTURES / "farfnd_roundtrip_anywhere_bud.json").read_text())["body"]
+    planner = Planner()
+    planner.ryanair.roundtrip_fares = lambda origin, dest=None, **kw: RyanairProvider()._parse_roundtrip(
+        body, kw.get("duration_from"), kw.get("duration_to"))
+    planner.wizz.timetable = lambda *a, **k: ([], [])
+    _, snap = _collector()
+    env, code = run_search(
+        where="seasid | italy", depart="2026-08-22..2026-08-24", nights="5-8",
+        budget=None, origins=["BUD"], planner=planner, history_store=_FakeHistory(),
+        snapshotter=snap, today=FIXED_TODAY, now=FIXED_NOW,
+    )
+    assert env["unknown_tags"] == ["seasid"]
+    assert "seaside" in env["summary"]
+    assert "hint" not in env  # exit 0: no bare hint (CONTRACT §3 invariant)
+    assert len(env["results"]) > 0
+    assert code == 0
+
+    from test_contract import validate_envelope
+    assert validate_envelope(env) == []
 
 
 # --------------------------------------------------------------------------- #

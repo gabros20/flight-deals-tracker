@@ -427,8 +427,6 @@ def where_show(
     this exits 2 (nothing could possibly have matched); if only some are
     unknown, it exits 0 with whatever results the known parts produced.
     """
-    import difflib
-
     from flight_deals.registry.where import WhereParseError, extract_identifiers
 
     try:
@@ -439,14 +437,7 @@ def where_show(
 
     all_idents = extract_identifiers(expr)
     unknown = registry.unknown_tags(expr)
-    hint = None
-    if unknown:
-        known_universe = sorted(registry.known_tag_universe())
-        suggestions = []
-        for tag in unknown:
-            close = difflib.get_close_matches(tag, known_universe, n=1, cutoff=0.6)
-            suggestions.append(f"{tag!r} - did you mean: {close[0]}?" if close else f"{tag!r} is unknown")
-        hint = "; ".join(suggestions)
+    hint = registry.tag_hint(unknown) if unknown else None
 
     if unknown and all_idents and set(unknown) == set(all_idents):
         typer.echo(json.dumps({

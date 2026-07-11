@@ -16,7 +16,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from flight_deals import output
 from flight_deals.engine import combine, confirm as confirm_mod
-from flight_deals.engine.planner import Planner, check_max_calls
+from flight_deals.engine.planner import Planner, check_max_calls, check_where_gate
 from flight_deals.engine.spec import parse_spec
 from flight_deals.registry.destinations import DestinationRegistry
 from flight_deals.state import snapshots
@@ -177,6 +177,16 @@ def execute_spec(
     interactive verbs need."""
     now = now or datetime.now(timezone.utc)
 
+    # Where-gate (review item): a --where expression that resolves to zero
+    # destinations must never reach a provider — a typo (unknown tag) exits 2
+    # with a did-you-mean hint, and a legitimately empty category exits 0
+    # with route_status no_match, both with NO network call. A partial match
+    # (some identifiers unknown, some destinations still resolve) proceeds,
+    # carrying unknown_tags/hint through to the final envelope below.
+    gate = check_where_gate(spec, registry or getattr(planner, "registry", None) or DestinationRegistry())
+    if gate.stop:
+        return gate.env, gate.exit_code
+
     plan = planner.compile(spec)
     check_max_calls(plan, max_calls)  # PlannerRefusal -> exit 2 in CLI
     outcome = planner.execute(plan, spec, fresh=fresh)
@@ -242,6 +252,16 @@ def execute_spec(
         error=error,
         hint=hint,
     )
+    if gate.unknown_tags:
+        env["unknown_tags"] = gate.unknown_tags
+        # CONTRACT §3: error/hint appear together or not at all — never bolt
+        # a bare hint onto an exit-0 envelope. When exit_code is already 1
+        # (paired with error="provider_error"), fold the did-you-mean note in
+        # too; otherwise the note lives in unknown_tags/summary only.
+        if env.get("error"):
+            env["hint"] = f"{env['hint']}; also, {gate.hint}" if env.get("hint") else gate.hint
+        else:
+            env["summary"] = f"{env['summary']} (unknown tag(s) in --where: {gate.hint})"
     return env, exit_code
 
 

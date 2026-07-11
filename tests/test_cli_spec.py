@@ -114,6 +114,22 @@ def test_run_over_max_calls_exits_2_with_narrow_hint():
     env = json.loads(result.output)
     assert env["error"]
     assert "--max-calls" in env["hint"]
+    # single exact corrected command (review item — no more 3-option prose).
+    assert "or narrow --where" in env["hint"]
+    assert "drop a shape" not in env["hint"]
+
+
+def test_run_unknown_where_tag_empty_destinations_exits_2_no_network(monkeypatch):
+    """The standalone `run --spec` path gets the same where-gate protection
+    as getaway/oneway (review item)."""
+    monkeypatch.setattr(requests.Session, "request", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("run made a network call")))
+    result = runner.invoke(app, ["run", "--spec",
+                                 '{"origins":["BUD"],"where":"seasid & italy",'
+                                 '"depart":"2026-08-22..2026-08-24","nights":"5-8"}'])
+    assert result.exit_code == 2
+    env = json.loads(result.output)
+    assert "seaside" in env["hint"]
 
 
 # --- where-parse errors through plan/run -> exit 2 + error/hint ----------- #

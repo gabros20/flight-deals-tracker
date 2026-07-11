@@ -4,6 +4,7 @@ budget/route_status, and the session-lifecycle regression."""
 import threading
 
 import pytest
+import responses
 
 from flight_deals import http
 from flight_deals.engine.planner import (
@@ -12,10 +13,12 @@ from flight_deals.engine.planner import (
     PlannerRefusal,
     _pair_timetable,
     check_max_calls,
+    check_where_gate,
     compile_plan,
 )
 from flight_deals.engine.spec import parse_spec
 from flight_deals.models import DayFare, FareLeg, FarePair
+from flight_deals.registry.destinations import DestinationRegistry
 
 
 def _spec(**over):
@@ -290,3 +293,60 @@ def test_execute_reuses_pool_and_does_not_leak_sessions():
     assert http.session_count() - sessions_before <= pl.config.max_workers
     # No unbounded thread growth either.
     assert threading.active_count() <= threads_before + pl.config.max_workers
+
+
+# --------------------------------------------------------------------------- #
+# check_where_gate (review item: typo'd/empty --where must never reach a     #
+# provider) + its wiring into Planner.run() (the `run` --spec CLI path)      #
+# --------------------------------------------------------------------------- #
+def test_check_where_gate_unknown_tag_empty_destinations_stops_exit_2():
+    spec = _spec(where="seasid & italy")
+    gate = check_where_gate(spec, DestinationRegistry())
+    assert gate.stop and gate.exit_code == 2
+    assert "seaside" in gate.env["hint"]
+    assert gate.env["results"] == []
+
+
+def test_check_where_gate_legit_empty_category_stops_exit_0_no_match():
+    spec = _spec(where="ski")
+    gate = check_where_gate(spec, DestinationRegistry())
+    assert gate.stop and gate.exit_code == 0
+    assert gate.env["route_status"] == "no_match"
+    assert gate.env["next"] == ["flight-deals where list"]
+
+
+def test_check_where_gate_partial_unknown_tag_continues_with_hint():
+    spec = _spec(where="seasid | italy")
+    gate = check_where_gate(spec, DestinationRegistry())
+    assert not gate.stop
+    assert gate.unknown_tags == ["seasid"]
+    assert "seaside" in gate.hint
+
+
+def test_check_where_gate_no_where_is_a_pure_passthrough():
+    spec = _spec(where=None)
+    gate = check_where_gate(spec, DestinationRegistry())
+    assert not gate.stop and gate.unknown_tags == []
+
+
+@responses.activate
+def test_planner_run_stops_before_network_on_unknown_tag_empty_destinations():
+    """The standalone `run --spec` path (Planner.run, not intents.run_search)
+    must get the SAME where-gate protection — no network call over a
+    --where that can never match."""
+    spec = _spec(where="seasid & italy")
+    pl = Planner()
+    env, code = pl.run(spec)
+    assert code == 2
+    assert "seaside" in env["hint"]
+    assert len(responses.calls) == 0
+
+
+@responses.activate
+def test_planner_run_stops_before_network_on_legit_empty_category():
+    spec = _spec(where="ski")
+    pl = Planner()
+    env, code = pl.run(spec)
+    assert code == 0
+    assert env["route_status"] == "no_match"
+    assert len(responses.calls) == 0

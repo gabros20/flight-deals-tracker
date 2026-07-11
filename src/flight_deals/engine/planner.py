@@ -147,6 +147,75 @@ def _matched_destinations(spec, registry: DestinationRegistry) -> List[str]:
     return sorted(matched - origins)
 
 
+class WhereGateResult:
+    """Outcome of :func:`check_where_gate` — a pre-network sanity check on
+    ``spec.where``. Either the caller must stop right now (``stop=True``, with
+    ``env``/``exit_code`` already built — no plan is ever compiled/executed)
+    or it should continue, optionally carrying ``unknown_tags``/``hint`` to
+    attach to the eventual result envelope (the partial-match case)."""
+
+    __slots__ = ("stop", "env", "exit_code", "unknown_tags", "hint")
+
+    def __init__(self, *, stop: bool = False, env: Optional[Dict[str, Any]] = None,
+                 exit_code: int = 0, unknown_tags: Optional[List[str]] = None,
+                 hint: Optional[str] = None):
+        self.stop = stop
+        self.env = env
+        self.exit_code = exit_code
+        self.unknown_tags = unknown_tags or []
+        self.hint = hint
+
+
+def check_where_gate(spec, registry: DestinationRegistry) -> WhereGateResult:
+    """Pre-network sanity check for ``spec.where`` (review item: a typo'd tag
+    like ``"seasid & italy"`` used to sail through ``getaway``/``oneway``/
+    ``run`` all the way to a live Ryanair RT-ANYWHERE call before reporting
+    ``no_service`` — burning a call over a where-expression that could never
+    possibly match). Called after ``compile``-equivalent resolution but before
+    any provider is touched.
+
+    Three outcomes, matching ``where show``'s spirit but keyed off the
+    ACTUAL destination count (not just "were all identifiers unknown"):
+
+    * unknown tag(s) AND zero matched destinations -> ``stop`` with an exit-2
+      envelope (did-you-mean hint) — a typo masquerading as an empty category.
+    * unknown tag(s) but destinations still resolve (partial, e.g.
+      ``"seasid | italy"``) -> continue; ``unknown_tags``/``hint`` are
+      returned for the caller to attach to the final envelope.
+    * zero matched destinations with NO unknown tags (a legitimately empty
+      category, e.g. ``"ski"`` with no BUD-reachable ski airports) -> ``stop``
+      with an exit-0 ``no_match`` envelope — running a plan over zero
+      destinations would only waste calls for a guaranteed-empty result.
+    """
+    if not getattr(spec, "where", None):
+        return WhereGateResult()
+
+    unknown = registry.unknown_tags(spec.where)
+    matched = _matched_destinations(spec, registry)
+    if matched:
+        if unknown:
+            return WhereGateResult(unknown_tags=unknown, hint=registry.tag_hint(unknown))
+        return WhereGateResult()
+
+    if unknown:
+        hint = registry.tag_hint(unknown)
+        env = output.error_envelope(
+            f"--where {spec.where!r} matched no destinations — unknown tag(s): {', '.join(unknown)}",
+            hint,
+        )
+        return WhereGateResult(stop=True, env=env, exit_code=2)
+
+    env = output.envelope(
+        results=[],
+        summary=f"no destinations match --where {spec.where!r} — see 'flight-deals where list' "
+                "for available tags",
+        sources={},
+        next=["flight-deals where list"],
+        route_status="no_match",
+    )
+    return WhereGateResult(stop=True, env=env, exit_code=0)
+
+
 def compile_plan(spec, registry: Optional[DestinationRegistry] = None, *, rate: float = NOMINAL_RATE) -> CallPlan:
     """Compile a ``SearchSpec`` into a ``CallPlan``. Pure: no network, no wall
     clock. Refuses (with a hint) any shape/one-way not enabled in Task 6.
@@ -812,6 +881,14 @@ class Planner:
 
     # -- one-shot: compile + guard + execute + build envelope --------------- #
     def run(self, spec, *, max_calls: int = DEFAULT_MAX_CALLS, fresh: bool = False) -> Tuple[Dict[str, Any], int]:
+        # Where-gate (review item): never compile/execute a plan over a
+        # where-expression that's guaranteed to match zero destinations — see
+        # check_where_gate for the exit-2 (typo) vs exit-0 (legit empty
+        # category) split.
+        gate = check_where_gate(spec, self.registry)
+        if gate.stop:
+            return gate.env, gate.exit_code
+
         plan = self.compile(spec)
         check_max_calls(plan, max_calls)
         outcome = self.execute(plan, spec, fresh=fresh)
@@ -835,4 +912,12 @@ class Planner:
             error=error,
             hint=hint,
         )
+        if gate.unknown_tags:
+            env["unknown_tags"] = gate.unknown_tags
+            # CONTRACT §3: error/hint appear together or not at all — never
+            # bolt a bare hint onto an exit-0 envelope.
+            if env.get("error"):
+                env["hint"] = f"{env['hint']}; also, {gate.hint}" if env.get("hint") else gate.hint
+            else:
+                env["summary"] = f"{env['summary']} (unknown tag(s) in --where: {gate.hint})"
         return env, outcome["exit_code"]

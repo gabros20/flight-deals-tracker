@@ -77,6 +77,30 @@ def test_getaway_bad_origin_exits_2_suggesting_iata():
     assert "BUD" in env["hint"]
 
 
+def test_getaway_unknown_where_tag_empty_destinations_exits_2_no_network(monkeypatch):
+    """Review item: `getaway --where "seasid & italy"` used to silently exit 0
+    with route_status no_service AND burn a live Ryanair RT-ANYWHERE call
+    before reporting it. It must now exit 2 with a did-you-mean hint and
+    touch the network NOT AT ALL."""
+    monkeypatch.setattr(requests.Session, "request", _blow_up)
+    result = runner.invoke(app, ["getaway", "--depart", "2026-08-22..2026-08-24",
+                                 "--where", "seasid & italy", "--nights", "5-8"])
+    assert result.exit_code == 2
+    env = json.loads(result.output)
+    assert "seaside" in env["hint"]
+
+
+def test_getaway_legit_empty_where_category_exits_0_no_match_no_network(monkeypatch):
+    """"ski" is a real tag matching zero BUD-reachable destinations today — a
+    legitimately empty category, not a typo. Exit 0, no_match, no network."""
+    monkeypatch.setattr(requests.Session, "request", _blow_up)
+    result = runner.invoke(app, ["getaway", "--depart", "2026-08-22..2026-08-24",
+                                 "--where", "ski", "--nights", "5-8"])
+    assert result.exit_code == 0
+    env = json.loads(result.output)
+    assert env["route_status"] == "no_match"
+
+
 def test_check_unknown_deal_exits_2():
     result = runner.invoke(app, ["check", "0000nope00"])
     assert result.exit_code == 2

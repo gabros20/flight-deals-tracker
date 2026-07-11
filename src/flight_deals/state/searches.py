@@ -108,9 +108,22 @@ def add(
     stored record."""
     name = normalize_name(name)
     try:
-        parse_spec(spec)  # validates; raises SpecError with a hint
+        parsed_spec = parse_spec(spec)  # validates; raises SpecError with a hint
     except SpecError as e:
         raise SearchError(f"saved search {name!r} has an invalid spec: {e.message}", e.hint)
+    if parsed_spec.where:
+        # Review item: a --where typo (e.g. "seasid & italy") that can never
+        # match any destination used to save silently and only surface as a
+        # wasted network call at the next scheduled run. Reject it now, the
+        # same way getaway/oneway/run do before touching a provider.
+        from flight_deals.engine.planner import check_where_gate
+        from flight_deals.registry.destinations import DestinationRegistry
+        gate = check_where_gate(parsed_spec, DestinationRegistry())
+        if gate.stop and gate.exit_code == 2:
+            raise SearchError(
+                f"saved search {name!r} has a --where expression matching no destinations",
+                (gate.env or {}).get("hint") or "",
+            )
     if schedule is not None:
         parse_schedule(schedule)  # validate (raises SearchError)
     if alert is not None:
