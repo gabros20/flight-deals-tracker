@@ -42,6 +42,33 @@ def test_chunk_never_splits_an_html_tag_or_entity():
         assert c.count("&") == c.count("&amp;")
 
 
+def test_chunk_splits_a_single_overlong_anchor_without_corrupting_it():
+    """A single ``<a href>`` anchor with no internal spaces (a real deep link
+    with a long query string) can itself exceed the limit. The fallback split
+    must never land mid-tag or mid-entity — every produced chunk must have
+    balanced ``<``/``>`` and never end inside an ``&...;`` entity."""
+    huge_query = "x" * (CHUNK_LIMIT * 2) + "&amp;tail=1"
+    line = f'<a href="https://x.example/a?{huge_query}">anchor</a>'
+    # The only space is inside the opening tag itself (`<a href=`), so it is
+    # never a valid split point — the whole anchor is one unbreakable token.
+    assert " " not in line[line.index(">"):]
+    chunks = chunk_message(line, limit=CHUNK_LIMIT)
+    assert len(chunks) > 1
+    assert "".join(chunks) == line
+    for c in chunks:
+        assert c.count("<") == c.count(">")
+        # no chunk ends mid-entity: every '&' still present is part of a whole
+        # '&...;' entity fully contained in this chunk.
+        pos = 0
+        while True:
+            amp = c.find("&", pos)
+            if amp == -1:
+                break
+            semi = c.find(";", amp)
+            assert semi != -1, f"chunk ends inside an entity: {c!r}"
+            pos = semi + 1
+
+
 def test_dry_run_prints_chunks_and_does_not_send(capsys):
     n = TelegramNotifier(token="t", chat_id="c")
     assert n.send("hello\nworld", dry_run=True) is True

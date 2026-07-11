@@ -35,21 +35,33 @@ def _split_long_line(line: str, limit: int) -> List[str]:
     """Split a single over-``limit`` line, breaking at the last space BEFORE the
     limit that is NOT inside an HTML tag (``<...>``) or entity (``&...;``) — a
     naive ``line[:limit]`` could cut through a ``<a href>`` deep link and 400 the
-    send under HTML parse mode. A hard split at the limit is the fallback ONLY
-    when a single token (no safe space) already exceeds it."""
+    send under HTML parse mode.
+
+    When a single token (no safe space) exceeds the limit — e.g. one long
+    ``<a href=...>`` anchor — fall back to ``safe_cut``: the last position
+    scanned that is outside any tag/entity, so the split still never lands
+    mid-tag/mid-entity. Only in the fully degenerate case (a tag/entity opens
+    at index 0 and doesn't close within ``limit`` chars — a single token that
+    IS one giant tag) do we extend the scan past ``limit`` to that token's own
+    close, keeping the chunk balanced even though it now exceeds ``limit``. A
+    raw hard split at ``limit`` is used only if the tag/entity never closes at
+    all. Every branch strictly shrinks ``line``, so the loop terminates."""
     pieces: List[str] = []
     while len(line) > limit:
         inside_tag = inside_ent = False
         ent_start = 0
         last_space = -1
+        safe_cut = 0  # last index i where line[:i] is tag/entity-balanced
         for i, ch in enumerate(line[:limit]):
             if inside_tag:
                 if ch == ">":
                     inside_tag = False
+                    safe_cut = i + 1
                 continue
             if inside_ent:
                 if ch == ";":
                     inside_ent = False
+                    safe_cut = i + 1
                     continue
                 if ch != " " and (i - ent_start) <= 12:
                     continue
@@ -59,14 +71,28 @@ def _split_long_line(line: str, limit: int) -> List[str]:
             elif ch == "&":
                 inside_ent = True
                 ent_start = i
-            elif ch == " ":
-                last_space = i
+            else:
+                if ch == " ":
+                    last_space = i
+                safe_cut = i + 1
         if last_space > 0:
             pieces.append(line[:last_space])
             line = line[last_space + 1:]  # drop the break space
-        else:  # single token longer than the limit: unavoidable hard split
-            pieces.append(line[:limit])
-            line = line[limit:]
+        elif safe_cut > 0:  # no space, but a non-tag/entity boundary exists
+            pieces.append(line[:safe_cut])
+            line = line[safe_cut:]
+        else:  # degenerate: a tag/entity opens at index 0 (safe_cut never
+            # advanced) and doesn't close within `limit` chars — extend the
+            # scan to THAT construct's own close (not just any '>' or ';',
+            # which could be a nested entity inside the still-open tag) so
+            # the chunk stays balanced, even though it now exceeds `limit`.
+            close_at = line.find(">" if inside_tag else ";", limit)
+            if close_at == -1:  # never closes at all: unavoidable hard split
+                pieces.append(line[:limit])
+                line = line[limit:]
+            else:
+                pieces.append(line[:close_at + 1])
+                line = line[close_at + 1:]
     if line:
         pieces.append(line)
     return pieces
