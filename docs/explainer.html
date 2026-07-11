@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>flight-deals — how it works</title>
+<style>
+  :root {
+    --bg: #f7f8fa; --card: #ffffff; --ink: #1a222e; --muted: #5b6675;
+    --line: #dde3ea; --accent: #0b6cff; --accent-soft: #e8f0ff;
+    --ok: #0f8a4d; --ok-soft: #e6f6ee; --warn: #b76800; --warn-soft: #fdf3e2;
+    --bad: #c2333f; --bad-soft: #fdeaec; --code-bg: #101623; --code-ink: #d7e2f2;
+    --s3: #7c3aed; --s3-soft: #f1e9fe; --s4: #0d8a8a; --s4-soft: #e3f5f5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e1420; --card: #171e2c; --ink: #e8edf5; --muted: #93a0b4;
+      --line: #2a3446; --accent: #5d9bff; --accent-soft: #1a2a47;
+      --ok: #43c98a; --ok-soft: #12301f; --warn: #eab35e; --warn-soft: #33270f;
+      --bad: #ef7683; --bad-soft: #3a1a1e; --code-bg: #0a0f1a; --code-ink: #c9d6ea;
+      --s3: #b494f6; --s3-soft: #251a3d; --s4: #5ad0d0; --s4-soft: #0e2e2e;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 16px/1.6 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 2.5rem 1rem 5rem;
+  }
+  main { max-width: 880px; margin: 0 auto; }
+  h1 { font-size: 1.9rem; line-height: 1.2; letter-spacing: -0.02em; }
+  h2 { font-size: 1.25rem; margin: 0 0 .35rem; letter-spacing: -0.01em; }
+  h3 { font-size: .95rem; margin: 0 0 .3rem; }
+  .sub { color: var(--muted); margin-top: .5rem; max-width: 60ch; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 1.5rem; margin-top: 1.4rem; }
+  .lead { color: var(--muted); margin-bottom: 1rem; max-width: 68ch; }
+  .pill { display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); border-radius: 99px; padding: .15rem .6rem; margin-bottom: .6rem; }
+  code, pre { font: 0.83em/1.55 ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  code { background: var(--accent-soft); color: var(--ink); padding: .08em .35em; border-radius: 5px; }
+  pre { background: var(--code-bg); color: var(--code-ink); border-radius: 10px; padding: .9rem 1.1rem; overflow-x: auto; margin: .7rem 0; }
+  pre code { background: none; color: inherit; padding: 0; }
+  .cmt { color: #7d8fa9; }
+  .grn { color: #7ee2ae; } .yel { color: #f2cd88; } .red { color: #f49aa4; } .blu { color: #9ec4ff; }
+
+  /* layer stack */
+  .stack { display: flex; flex-direction: column; gap: 0; margin-top: .8rem; }
+  .layer { border: 1.5px solid var(--line); border-radius: 10px; padding: .8rem 1rem; background: var(--bg); }
+  .layer h3 { display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
+  .layer .who { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .layer p { font-size: .88rem; color: var(--muted); margin-top: .15rem; }
+  .downarrow { text-align: center; color: var(--muted); font-size: 1rem; line-height: 1.6; }
+
+  /* flow steps */
+  .steps { counter-reset: step; display: flex; flex-direction: column; gap: .65rem; margin-top: .8rem; }
+  .step { display: flex; gap: .85rem; align-items: flex-start; }
+  .step::before {
+    counter-increment: step; content: counter(step);
+    flex: 0 0 1.7rem; height: 1.7rem; border-radius: 50%;
+    background: var(--accent); color: #fff; font-weight: 700; font-size: .85rem;
+    display: flex; align-items: center; justify-content: center; margin-top: .15rem;
+  }
+  .step div { flex: 1; }
+  .step p { font-size: .9rem; color: var(--muted); }
+
+  /* shapes */
+  .shapes { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: .8rem; margin-top: .8rem; }
+  .shape { border: 1.5px solid var(--line); border-radius: 10px; padding: .85rem .95rem; background: var(--bg); }
+  .shape .tag { font-size: .7rem; font-weight: 800; letter-spacing: .05em; border-radius: 6px; padding: .1rem .45rem; }
+  .shape p { font-size: .85rem; color: var(--muted); margin-top: .35rem; }
+  .route { display: flex; align-items: center; flex-wrap: wrap; gap: .3rem; margin-top: .55rem; font-size: .8rem; font-weight: 600; }
+  .node { border: 1.5px solid var(--line); background: var(--card); border-radius: 7px; padding: .1rem .45rem; }
+  .fly { color: var(--accent); } .grd { color: var(--warn); }
+  .s2 .tag { background: var(--accent-soft); color: var(--accent); }
+  .s3 .tag { background: var(--s3-soft); color: var(--s3); }
+  .s4 .tag { background: var(--s4-soft); color: var(--s4); }
+  .s5 .tag { background: var(--bad-soft); color: var(--bad); }
+
+  /* badges */
+  .badge { display: inline-block; font-size: .72rem; font-weight: 700; border-radius: 6px; padding: .08rem .45rem; }
+  .b-ok { background: var(--ok-soft); color: var(--ok); }
+  .b-warn { background: var(--warn-soft); color: var(--warn); }
+  .b-bad { background: var(--bad-soft); color: var(--bad); }
+
+  /* alert state machine */
+  .fsm { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; margin: .8rem 0 .4rem; font-size: .85rem; font-weight: 600; }
+  .st { border: 1.5px solid var(--line); border-radius: 99px; padding: .25rem .8rem; background: var(--bg); }
+  .st.hot { border-color: var(--ok); color: var(--ok); }
+  .fsm .arr { color: var(--muted); font-size: .8rem; font-weight: 400; }
+
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; margin-top: .7rem; }
+  th, td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: .74rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  td:first-child { white-space: nowrap; font-weight: 600; }
+  .foot { color: var(--muted); font-size: .8rem; margin-top: 2rem; text-align: center; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 700px) { .two { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>✈️ flight-deals — how it works</h1>
+  <p class="sub">A deal-finding engine for Ryanair &amp; Wizz Air trips from Budapest, built to be driven by an
+  AI assistant over Telegram. The strategy lives <em>inside the tool</em>; the agent just picks a verb.</p>
+
+  <!-- ARCHITECTURE -->
+  <section>
+    <span class="pill">The big picture</span>
+    <h2>One command surface, four layers</h2>
+    <p class="lead">You, a cron job, and Hermes all run the exact same commands. Every layer below the top is deterministic —
+    same input, same procedure — which is what makes price history, alerting, and agent behavior trustworthy.</p>
+    <div class="stack">
+      <div class="layer">
+        <h3>📱 You, via Telegram <span class="who">human intent</span></h3>
+        <p>“Find me a seaside getaway Aug 22–24, under €200” · “any flight news?” · “watch Corfu under €150”</p>
+      </div>
+      <div class="downarrow">↓</div>
+      <div class="layer">
+        <h3>🤖 Hermes / Claude + <code>SKILL.md</code> router <span class="who">translation only</span></h3>
+        <p>A ~77-line intent table: utterance → one exact command. Weak models don’t plan pipelines — they follow.
+        Strong agents may drop to the spec layer. A drift-pin test fails CI if the skill ever documents a flag the CLI lost.</p>
+      </div>
+      <div class="downarrow">↓</div>
+      <div class="layer">
+        <h3>⌨️ CLI intent verbs <span class="who">pipelines live here</span></h3>
+        <p><code>getaway</code> · <code>oneway</code> · <code>check &lt;deal_id&gt;</code> · <code>watch add/list/rm</code> · <code>brief --send</code> ·
+        <code>where list/show</code> — plus the power layer: <code>plan --spec</code> (cost preview, zero network) and <code>run --spec</code>.</p>
+      </div>
+      <div class="downarrow">↓</div>
+      <div class="layer">
+        <h3>🧠 Engine <span class="who">spec → planner → combine → confirm</span></h3>
+        <p>Compiles a declarative search spec into a typed call plan, executes it under a global ~1 req/s rate limiter,
+        pairs fares, dedupes (exact beats approximate), ranks, and confirms estimates before you see them.</p>
+      </div>
+      <div class="downarrow">↓</div>
+      <div class="layer">
+        <h3>🌐 Free data plane <span class="who">no paid APIs</span></h3>
+        <p><b>Ryanair farfnd</b> — true paired round-trip fares, month calendars, “anywhere” sweeps (<span class="badge b-ok">exact</span>) ·
+        <b>Wizz timetable</b> — daily minima both directions, HUF→EUR converted, API version auto-rediscovered on drift
+        (<span class="badge b-warn">approximate ±10%</span>).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SEARCH FLOW -->
+  <section>
+    <span class="pill">A search, end to end</span>
+    <h2>“Seaside, Italy or Spain, Aug 22–24, 5–8 nights, under €200”</h2>
+    <pre><code>$ flight-deals getaway --depart 2026-08-22..2026-08-24 \
+    --where "seaside | italy | spain" --nights 5-8 --budget 200</code></pre>
+    <div class="steps">
+      <div class="step"><div><h3>Resolve the category</h3>
+        <p><code>--where</code> is a tag algebra (<code>&amp; | ! ()</code>) over 76 curated airports. <code>"seaside &amp; (italy | spain)"</code> → 23 airports.
+        Typos get a did-you-mean and cost zero API calls.</p></div></div>
+      <div class="step"><div><h3>Compile a call plan — before any network</h3>
+        <p>One Ryanair <em>anywhere</em> call covers every destination’s cheapest pair in the window; Wizz needs one timetable call per candidate route.
+        <code>plan --spec</code> shows the exact calls + estimated seconds; a cap (default 40 calls) refuses runaway sweeps with a corrected command.</p></div></div>
+      <div class="step"><div><h3>Execute, pair, merge</h3>
+        <p>Ryanair pairs are exact. Wizz day-fares are paired into round-trips within your nights window — estimates.
+        On a price tie, <b>exact beats approximate</b>, always.</p></div></div>
+      <div class="step"><div><h3>Estimate → confirm</h3>
+        <p>Any estimate that would cross your budget or make the top list gets a fresh exact-date re-query first
+        (including a margin band, so a deal estimated 10% over budget whose true price is under still gets rescued).
+        A failed confirm never invents a price.</p></div></div>
+      <div class="step"><div><h3>Rank, explain, snapshot</h3>
+        <p>Deals get a stable <code>deal_id</code>, a why-string (“€113 vs typical €160, 29% below, 41 observations”),
+        and an append-only snapshot so <code>check &lt;deal_id&gt;</code> works days later.</p></div></div>
+      <div class="step"><div><h3>Answer in one honest envelope</h3>
+        <pre><code>{
+  <span class="blu">"results"</span>:  [ {deal_id, price_eur, price_confidence, legs, why, links…} ],
+  <span class="blu">"summary"</span>:  <span class="grn">"10 deals: cheapest CFU €113 rt Aug 22–27 (exact)…"</span>,
+  <span class="blu">"sources"</span>:  { <span class="grn">"ryanair": "ok"</span>, <span class="yel">"wizzair": "error"</span> },  <span class="cmt">// failures are visible, never hidden</span>
+  <span class="blu">"next"</span>:     [ <span class="grn">"flight-deals check 24affe56a9"</span> ]      <span class="cmt">// exactly ONE suggested move</span>
+}</code></pre>
+        <p>Exit codes: <b>0</b> ok (even empty — “no deals” is an answer) · <b>1</b> provider down · <b>2</b> your input, with the corrected command in <code>hint</code>.</p></div></div>
+    </div>
+  </section>
+
+  <!-- SHAPES -->
+  <section>
+    <span class="pill">Trip shapes</span>
+    <h2>Four ways to build a cheap trip</h2>
+    <p class="lead">Enumerate wide on cheap day-level data, verify the shortlist with exact queries. Ground hops are priced in
+    (marked <code>~</code> — they’re curated estimates) and every composite total is what ranking and budget act on.</p>
+    <div class="shapes">
+      <div class="shape s2"><span class="tag">S1 / S2 · direct</span>
+        <div class="route"><span class="node">BUD</span><span class="fly">✈</span><span class="node">CFU</span><span class="fly">✈</span><span class="node">BUD</span></div>
+        <p>The core: true paired round-trip fares, one-way sweeps. Default shape.</p></div>
+      <div class="shape s3"><span class="tag">S3 · extended origin</span>
+        <div class="route"><span class="node">BUD</span><span class="grd">🚌</span><span class="node">VIE</span><span class="fly">✈</span><span class="node">NAP</span><span class="fly">✈</span><span class="node">VIE</span><span class="grd">🚌</span><span class="node">BUD</span></div>
+        <p>Vienna &amp; Bratislava have huge low-cost bases 2–3h from Budapest. Same sweep from there, +2× bus cost (~€42 VIE). Shown only when it genuinely beats direct.</p></div>
+      <div class="shape s4"><span class="tag">S4 · open-jaw</span>
+        <div class="route"><span class="node">BUD</span><span class="fly">✈</span><span class="node">BRI</span><span class="grd">🚆</span><span class="node">NAP</span><span class="fly">✈</span><span class="node">BUD</span></div>
+        <p>Fly into one city, train across, fly home from another (both directions evaluated, cheaper wins). Two exact one-way fares + ground — two separate tickets, combined locally. Live find: €114.68.</p></div>
+      <div class="shape s5"><span class="tag">S5 · via-hub — not yet</span>
+        <div class="route"><span class="node">BUD</span><span class="fly">✈</span><span class="node">HUB</span><span class="fly">✈</span><span class="node">?</span></div>
+        <p>Same-day self-transfers need flight-time verification. The spec accepts it; the planner politely refuses until it’s built right.</p></div>
+    </div>
+    <pre><code>$ flight-deals getaway … --shapes direct,extended-origin,open-jaw   <span class="cmt"># opt-in</span></code></pre>
+  </section>
+
+  <!-- MONITORING -->
+  <section>
+    <span class="pill">The monitoring loop</span>
+    <h2>Watch → brief → exactly one alert</h2>
+    <div class="two">
+      <div>
+        <p class="lead" style="margin-bottom:.5rem">A watch is a saved search — a YAML file with a spec, a schedule, and a threshold:</p>
+<pre><code><span class="cmt"># data/searches/corfu-august.yaml</span>
+spec:     { where/route, depart, nights }
+schedule: <span class="grn">"daily 08:30"</span>
+alert:    { max_price: 150, notify: telegram }
+agent_prompt: <span class="cmt"># optional — agentic review</span></code></pre>
+        <p style="font-size:.9rem" class="lead">launchd runs <code>brief --send</code> 3×/day: due searches execute, results append to
+        price history, drops cross the alert machine, past-dated state gets pruned, and one chunked HTML digest lands on your phone.</p>
+      </div>
+      <div>
+        <h3>Alert state machine (per route + month)</h3>
+        <div class="fsm">
+          <span class="st">new</span><span class="arr">— confirmed price &lt; threshold →</span>
+          <span class="st hot">alerted</span><span class="arr">→</span>
+          <span class="st">suppressed</span><span class="arr">— ≥15% further drop, or expiry →</span>
+          <span class="st">re-armed</span>
+        </div>
+        <p style="font-size:.88rem" class="lead">
+          The 15% re-alert bar sits above Wizz’s ±10% noise, so estimates can’t make it flap —
+          and <b>only confirmed-exact prices may alert, ever</b>. Alerts persist as <em>pending</em> before the send and are
+          marked delivered only on Telegram’s confirmation: a transient outage re-sends next run instead of silently
+          losing your deal.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- HONESTY -->
+  <section>
+    <span class="pill">Trust model</span>
+    <h2>The tool is not allowed to lie</h2>
+    <table>
+      <tr><th>Signal</th><th>Meaning</th></tr>
+      <tr><td><span class="badge b-ok">exact</span></td><td>Ryanair’s own bookable fare, or a Wizz price re-verified on the exact date. Only these can trigger alerts or final budget decisions.</td></tr>
+      <tr><td><span class="badge b-warn">approximate</span></td><td>Wizz timetable cache (±10%) or a day-level pairing — always labeled, confirmed before it matters, never alert-worthy on its own.</td></tr>
+      <tr><td><span class="badge b-warn">~€42 ground</span></td><td>Bus/train estimates are curated, marked with <code>~</code>, and included in the ranked total — never hidden.</td></tr>
+      <tr><td><span class="badge b-bad">sources: error</span></td><td>A provider failing is reported in every response and in the digest (“results may be incomplete”). “No deals found” always means <em>we looked</em>.</td></tr>
+    </table>
+  </section>
+
+  <!-- FILES -->
+  <section>
+    <span class="pill">Where things live</span>
+    <h2>Plaintext, git-friendly state</h2>
+    <table>
+      <tr><th>Path</th><th>What</th></tr>
+      <tr><td>data/destinations.json</td><td>76 airports, 40 tags (the <code>--where</code> vocabulary), multi-airport cities, ground pairs</td></tr>
+      <tr><td>data/searches/*.yaml</td><td>Your watches / saved searches (hand-editable; a bad file is skipped, never fatal)</td></tr>
+      <tr><td>data/price_history.csv</td><td>Every observed price — feeds “is €113 good for this route?”</td></tr>
+      <tr><td>data/deals/*.jsonl</td><td>Append-only snapshots behind <code>check &lt;deal_id&gt;</code></td></tr>
+      <tr><td>data/alert_state.json</td><td>The exactly-once alert memory</td></tr>
+      <tr><td>docs/CONTRACT.md</td><td>The frozen JSON contract every command obeys (and tests pin)</td></tr>
+      <tr><td>deploy/launchd/…plist · docs/OPERATIONS.md</td><td>Cron setup, secrets via env, logs, manual runs</td></tr>
+    </table>
+    <p class="lead" style="margin-top:.8rem">371 tests, fixtures recorded from the live APIs, golden outputs, fake-clock alert tests —
+    and a two-tier skill (<code>SKILL.md</code> router for any model, <code>spec-guide.md</code> for strong agents) installed for both Hermes and Claude Code.</p>
+  </section>
+
+  <p class="foot">flight-deals · agent-first rebuild · 2026-07 — this file is self-contained; open it anywhere.</p>
+</main>
+</body>
+</html>
