@@ -75,7 +75,10 @@ Read `summary` (paste-ready), skim `results` for the ones worth naming, and if
   style window yourself; the CLI only takes dates.
 - Never invent category names — run `flight-deals where list`; `where show
   "<expr>"` sanity-checks before a big ask.
-- Never call the deprecated `search` alias when `getaway`/`oneway` fits.
+- **Broad `--where` + many airports:** `getaway` may exit 2 with `PlannerRefusal` and `hint` to re-run with `--max-calls 50` (or narrow the expression). Obey the hint once.
+- **Aliases in `where list`:** phrases like `european-islands` and `italian-gems` map to `island` and `italy` — use them in expressions; still run `where show` before a big cron sweep.
+- Never call the deprecated `search` alias when `getaway`/`oneway` fits (including cron round-trip watches — `getaway` pairs outbound/return).
+- When `sources.wizzair` is `error` but `ryanair` is `ok`, report results anyway and note Wizz gaps; flag `approximate` prices as estimates.
 - Dates in output are airport-local calendar dates, not UTC — don't adjust them.
 - For anything beyond one intent verb (authoring a spec, exploring shapes,
   reviewing a saved search), read `references/spec-guide.md` — don't improvise.
