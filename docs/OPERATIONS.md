@@ -27,6 +27,24 @@ flight-deals brief --dry-run     # prints the digest chunks, sends nothing
 TELEGRAM_BOT_TOKEN=… TELEGRAM_CHAT_ID=… flight-deals brief --send --all
 ```
 
+### Environment variables
+
+All optional except the Telegram secrets (only needed for `--send`). Config-file
+values are overridden by these; secrets are env-only (never written to disk).
+
+| Variable | Role | Default |
+|---|---|---|
+| `TELEGRAM_BOT_TOKEN` | Telegram bot token (send) | — |
+| `TELEGRAM_CHAT_ID` | Telegram chat id (send) | — |
+| `FLIGHT_DEALS_LOG` | Log level (`DEBUG`/`INFO`/`WARNING`/…) | `WARNING` |
+| `FLIGHT_DEALS_HOME` | Project root for state/data paths | auto-detected |
+| `FLIGHT_DEALS_DATA_DIR` | Data dir (relative to home) | `data` |
+| `FLIGHT_DEALS_DEFAULT_ORIGIN` | Default origin IATA | `BUD` |
+| `FLIGHT_DEALS_CURRENCY` | Display currency | `EUR` |
+| `FLIGHT_DEALS_HTTP_RATE` | Shared HTTP rate limit (req/s) | `1.0` |
+| `FLIGHT_DEALS_MAX_WORKERS` | Worker pool size | `8` |
+| `FLIGHT_DEALS_CACHE_TTL_HOURS` | Legacy FlightCache TTL (hours) | `0.25` |
+
 ## 2. Create some watches
 
 ```sh
