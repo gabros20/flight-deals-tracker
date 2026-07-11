@@ -121,6 +121,27 @@ def test_open_jaw_picks_cheaper_of_two_directions():
     assert d["legs"][-1]["origin"] == "NAP"  # home from NAP
 
 
+def test_open_jaw_with_high_ground_ranks_below_cheaper_direct():
+    """An open-jaw whose cheap flights are dragged up by a high ground hop must
+    rank BELOW a genuinely cheaper direct round-trip — the composite total
+    (fares + ground), not the bare fares, is what competes on price."""
+    # Direct CTA €120 (S2). Open-jaw NAP-in/BRI-out = 60 + 60 + €35 ground = €155.
+    rt = {"BUD": [_fp("BUD", "CTA", 120.0)], "VIE": [], "BTS": []}
+    cal = {
+        ("BUD", "NAP"): [("2026-08-22", 60.0)],
+        ("BRI", "BUD"): [("2026-08-27", 60.0)],
+        ("BUD", "BRI"): [("2026-08-22", 200.0)],   # other direction is far worse
+        ("NAP", "BUD"): [("2026-08-27", 200.0)],
+    }
+    results = _run(_spec(), _planner(rt, cal))
+    oj = next(d for d in results if d["shape"] == "S4")
+    assert oj["price_eur"] == 155.0  # 60 + 60 + 35 ground
+    # Cheapest overall is the €120 direct, NOT the ground-inflated open-jaw.
+    assert results[0]["shape"] == "S2" and results[0]["destination"] == "CTA"
+    assert results[0]["price_eur"] == 120.0
+    assert results.index(oj) > results.index(results[0])
+
+
 # --------------------------------------------------------------------------- #
 # S3 extended-origin: dedup cheapest-wins vs direct                            #
 # --------------------------------------------------------------------------- #
