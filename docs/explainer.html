@@ -25,6 +25,14 @@
   body {
     background: var(--bg); color: var(--ink);
     font: 16px/1.6 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  /* own scroll container — keeps the page scrollable even inside hosts that
+     pin html/body (e.g. the Claude artifact viewer) */
+  .scroll-root {
+    position: fixed; inset: 0;
+    overflow-y: auto; overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    background: var(--bg);
     padding: 2.5rem 1rem 5rem;
   }
   main { max-width: 880px; margin: 0 auto; }
@@ -97,6 +105,7 @@
 </style>
 </head>
 <body>
+<div class="scroll-root">
 <main>
   <h1>✈️ flight-deals — how it works</h1>
   <p class="sub">A deal-finding engine for Ryanair &amp; Wizz Air trips from Budapest, built to be driven by an
@@ -263,5 +272,6 @@ agent_prompt: <span class="cmt"># optional — agentic review</span></code></pre
 
   <p class="foot">flight-deals · agent-first rebuild · 2026-07 — this file is self-contained; open it anywhere.</p>
 </main>
+</div>
 </body>
 </html>

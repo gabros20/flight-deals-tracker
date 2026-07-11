@@ -11,3 +11,8 @@ __pycache__/
 evidence/
 src/flight_deals.egg-info/
 data/deals/
+.DS_Store
+data/alert_state.json
+data/locks/
+data/searches/.runs.json
+data/searches/.results/
