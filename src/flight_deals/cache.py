@@ -156,7 +156,9 @@ class FlightCache:
         try:
             data = json.loads(path.read_text())
             cached_time = datetime.fromisoformat(data["timestamp"])
-            if datetime.now() - cached_time > self.ttl:
+            if cached_time.tzinfo is None:  # tolerate legacy naive timestamps
+                cached_time = cached_time.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) - cached_time > self.ttl:
                 path.unlink(missing_ok=True)
                 return None
 
@@ -173,7 +175,7 @@ class FlightCache:
         path = self._get_path(key)
 
         payload = {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "provider": provider,
             "origin": origin,
             "destination": destination or "ANY",
@@ -203,7 +205,7 @@ class FlightCache:
         - older_than_hours: remove entries older than this many hours
         """
         count = 0
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         cutoff = now - timedelta(hours=older_than_hours) if older_than_hours else None
 
         for f in list(self.cache_dir.glob("*.json")):
@@ -217,6 +219,8 @@ class FlightCache:
                 try:
                     data = json.loads(f.read_text())
                     ts = datetime.fromisoformat(data.get("timestamp", ""))
+                    if ts.tzinfo is None:  # tolerate legacy naive timestamps
+                        ts = ts.replace(tzinfo=timezone.utc)
                     if ts < cutoff:
                         remove = True
                 except Exception as e:
