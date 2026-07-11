@@ -373,14 +373,25 @@ def _months_spanning(start_iso: str, end_iso: str) -> List[str]:
     return months
 
 
+def _round_up_to_5(n: int) -> int:
+    """Round ``n`` up to the next multiple of 5 (a friendlier --max-calls
+    suggestion than the raw estimate, e.g. 41 -> 45)."""
+    return -(-n // 5) * 5
+
+
 def check_max_calls(plan: CallPlan, max_calls: int) -> None:
-    """Refuse a plan whose call count exceeds ``max_calls`` (default 40), with a
-    hint on how to narrow. Called by ``run`` (not ``plan`` — inspection is free)."""
+    """Refuse a plan whose call count exceeds ``max_calls`` (default 40).
+
+    The hint is a single exact corrected command — the same invocation with
+    ``--max-calls`` raised to the estimate rounded up to the next 5 — plus one
+    trailing "or narrow --where" clause. (Review item: the old 3-option prose
+    hint tripped on the skill's own worked example; a single copy-pasteable
+    correction is worth more than a menu.)"""
     if plan.estimated_calls > max_calls:
+        suggested = _round_up_to_5(plan.estimated_calls)
         raise PlannerRefusal(
             f"plan needs {plan.estimated_calls} calls, over the --max-calls {max_calls} cap",
-            f"drop a shape (--shapes direct), narrow the search (tighter --where, "
-            f"fewer origins), or raise the cap: --max-calls {plan.estimated_calls}",
+            f"re-run with --max-calls {suggested}, or narrow --where",
         )
 
 

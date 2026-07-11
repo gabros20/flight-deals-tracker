@@ -85,12 +85,42 @@ def test_compile_respects_carriers_filter():
     assert only_ry.estimated_calls == 1  # just RT-ANYWHERE, no TT
 
 
-def test_check_max_calls_refuses_with_narrow_hint():
+def test_check_max_calls_refuses_with_single_exact_command_hint():
+    """Review item: the old hint offered 3 options ("drop a shape ..., narrow
+    the search ..., or raise the cap ...") and the skill's own worked example
+    (--where "seaside | italy | spain") tripped it. The hint must now be ONE
+    exact corrected command (--max-calls raised to the estimate rounded up to
+    the next 5) plus a single trailing "or narrow --where" clause — no menu."""
     plan = compile_plan(parse_spec({"where": "seaside", "depart": "2026-08-22..2026-08-24", "nights": "5-8"}))
     assert plan.estimated_calls > DEFAULT_MAX_CALLS
     with pytest.raises(PlannerRefusal) as ei:
         check_max_calls(plan, DEFAULT_MAX_CALLS)
-    assert "--max-calls" in ei.value.hint
+    hint = ei.value.hint
+    assert "--max-calls" in hint
+    rounded = ((plan.estimated_calls + 4) // 5) * 5
+    assert f"--max-calls {rounded}" in hint
+    assert "or narrow --where" in hint
+    # single-option shape: the old multi-option prose must be gone.
+    assert "drop a shape" not in hint
+    assert "raise the cap" not in hint
+
+
+def test_check_max_calls_rounds_estimate_up_to_next_5():
+    class _Plan:
+        estimated_calls = 41
+
+    with pytest.raises(PlannerRefusal) as ei:
+        check_max_calls(_Plan(), 40)
+    assert "--max-calls 45" in ei.value.hint  # 41 -> rounded up to 45
+
+
+def test_check_max_calls_estimate_already_multiple_of_5_stays_same():
+    class _Plan:
+        estimated_calls = 50
+
+    with pytest.raises(PlannerRefusal) as ei:
+        check_max_calls(_Plan(), 40)
+    assert "--max-calls 50" in ei.value.hint
 
 
 # --- TT window-clip + pairing ---------------------------------------------- #
