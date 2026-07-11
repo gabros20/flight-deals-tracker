@@ -420,6 +420,22 @@ class _Candidate:
     # two-city product keyed by the unordered airport pair.
     dedup: Optional[Tuple] = None
 
+    def __post_init__(self):
+        # Regression guard (review item: a live Wizz approximate deal showed
+        # destination=BGY while its legs referenced MXP — a multi-airport
+        # metro substitution, root-caused in _pair_timetable). For direct
+        # point-to-point shapes (S1/S2) the trip's `destination` must always
+        # be the airport the outbound leg actually flies to; S3 (extended-
+        # origin ground+fly) and S4 (open-jaw fly-in/fly-home) intentionally
+        # differ — their ground legs live inside `legs` by design.
+        if self.shape in ("S1", "S2") and self.legs:
+            leg_dest = self.legs[0].get("destination")
+            if leg_dest and leg_dest != self.destination:
+                raise ValueError(
+                    f"candidate destination {self.destination!r} does not match the "
+                    f"outbound leg's actual airport {leg_dest!r} (shape {self.shape})"
+                )
+
     def rank_key(self) -> Tuple:
         # cheapest wins; on a price tie an exact fare beats an approximate one;
         # then carriers string for a fully deterministic order.
@@ -559,7 +575,17 @@ def _pair_timetable(
     When ``depart.kind == "dates"`` (an explicit comma list), the outbound
     candidates are additionally filtered down to exactly those dates — the
     window is only ever the *request* span (``out_from``..``out_to``); a
-    date list must not silently widen to every date in between."""
+    date list must not silently widen to every date in between.
+
+    A round trip is only ever paired between rows that land at and depart
+    from the SAME physical airport (``o.destination == r.origin``): a
+    multi-airport metro area (e.g. Milan MXP/BGY, London STN/LTN/LGW) can have
+    the API substitute a sibling member for the requested ``dest`` (review
+    item — a live deal showed destination=BGY with legs referencing MXP), and
+    rows must never be Frankenstein-paired across two different airports. The
+    resulting candidate's ``destination`` is ALWAYS the row's actual airport,
+    never the externally-requested ``dest`` — so it can never diverge from
+    its own legs."""
     lo, hi = nights_range
     o_from = date.fromisoformat(depart.out_from)
     o_to = date.fromisoformat(depart.out_to)
@@ -574,6 +600,8 @@ def _pair_timetable(
     for o in outs:
         od = date.fromisoformat(o.date)
         for r in rets:
+            if o.destination != r.origin:
+                continue  # never pair two different physical airports
             n = (date.fromisoformat(r.date) - od).days
             if lo <= n <= hi:
                 total = round(o.price_eur + r.price_eur, 2)
@@ -582,9 +610,15 @@ def _pair_timetable(
     if best is None:
         return None
     total, o, r, n = best
+    if o.destination != dest:
+        logger.warning(
+            "planner: wizz TT %s->%s returned fares for %s instead (multi-airport "
+            "metro substitution?) — labelling the deal with the actual airport",
+            origin, dest, o.destination,
+        )
     return _Candidate(
         origin=origin,
-        destination=dest,
+        destination=o.destination,
         out_date=o.date,
         return_date=r.date,
         nights=n,
@@ -815,7 +849,23 @@ class Planner:
                         continue
                     _offer(_dayfare_to_candidate(df, "ryanair", "exact"))
             elif kind == "wizzair":
-                _offer(payload)
+                # payload's destination is the ACTUAL fare airport (see
+                # _pair_timetable/_cheapest_oneway_timetable) which can, in a
+                # multi-airport metro substitution, diverge from the requested
+                # call.params["destination"]. Guard it against the matched set
+                # the same way the Ryanair branches above do — a substituted
+                # airport outside the where-expression's matched set must
+                # never surface as a deal (review item: destination/legs
+                # mismatch, e.g. requested BGY, actual fare for MXP).
+                if payload is not None and payload.destination not in matched:
+                    logger.warning(
+                        "planner: wizz TT %s->%s actual fare airport %s is outside "
+                        "the matched destination set; dropping to avoid a "
+                        "mislabeled/out-of-scope deal",
+                        call.params.get("origin"), call.params.get("destination"), payload.destination,
+                    )
+                else:
+                    _offer(payload)
 
         # S4 open-jaw: local pairing over the CAL day-level minima gathered above.
         if "open-jaw" in set(spec.shapes) and spec.is_round_trip and cal_fares:

@@ -151,6 +151,36 @@ def test_pair_timetable_no_valid_pair_returns_none():
     assert _pair_timetable("BUD", "ZAD", outs, rets, spec.depart_spec, spec.nights_range) is None
 
 
+# --- destination/legs consistency (review item: a live Wizz approximate     #
+# deal showed destination=BGY while its legs referenced MXP) ---------------- #
+def test_pair_timetable_labels_destination_from_actual_fare_airport():
+    """A multi-airport metro area (Milan MXP/BGY) can have the API return
+    rows for a sibling of the requested `dest`. The candidate's destination
+    must ALWAYS be the actual fare airport the legs reference — never the
+    requested `dest` — so the two can never diverge."""
+    spec = _spec(nights="3-5")
+    outs = [_dayfare("BUD", "MXP", "2026-08-23", 50.0)]
+    rets = [_dayfare("MXP", "BUD", "2026-08-27", 40.0)]
+    cand = _pair_timetable("BUD", "BGY", outs, rets, spec.depart_spec, spec.nights_range)
+    assert cand is not None
+    assert cand.destination == "MXP"
+    assert cand.legs[0]["destination"] == "MXP"
+    assert cand.legs[1]["origin"] == "MXP"
+    assert cand.destination == cand.legs[0]["destination"]  # binding invariant
+
+
+def test_pair_timetable_never_frankenstein_pairs_across_different_airports():
+    """An outbound landing at one airport must never be paired with an
+    inbound departing from a different one — even if that cross-airport
+    combo would be cheaper. This is the Frankenstein-itinerary risk behind
+    the destination/legs mismatch: without this guard, an outbound to MXP
+    could get paired with a return from BGY."""
+    spec = _spec(nights="3-5")
+    outs = [_dayfare("BUD", "MXP", "2026-08-23", 50.0)]
+    rets = [_dayfare("BGY", "BUD", "2026-08-27", 10.0)]  # cheaper, but wrong airport
+    assert _pair_timetable("BUD", "BGY", outs, rets, spec.depart_spec, spec.nights_range) is None
+
+
 def test_pair_timetable_month_kind_is_unaffected_regression():
     """Regression: a ``month`` depart (no explicit dates list) must keep
     considering every in-window outbound date, exactly like ``window`` above."""
@@ -246,6 +276,20 @@ def test_merge_keeps_cheaper_wizz_when_actually_cheaper():
     out = _planner_with(ry, wizz).execute(compile_plan(spec), spec)
     cta = [d for d in out["results"] if d["destination"] == "CTA"][0]
     assert cta["price_eur"] == 40.0 and cta["price_confidence"] == "approximate"
+
+
+def test_execute_drops_wizz_candidate_whose_actual_airport_is_out_of_scope():
+    """A TT call planned for CTA (matched by --where sicily) whose rows come
+    back for a sibling airport outside the matched set (BGY — not sicilian at
+    all) must never surface as a deal: the substituted airport was never
+    where-matched, so labelling a "sicily" search result with it would be a
+    silent mislabel (review item)."""
+    spec = _spec(where="sicily")  # matched = {CTA, PMO}
+    ry = []
+    wizz = {"CTA": ([_dayfare("BUD", "BGY", "2026-08-23", 20.0)],
+                    [_dayfare("BGY", "BUD", "2026-08-28", 20.0)])}
+    out = _planner_with(ry, wizz).execute(compile_plan(spec), spec)
+    assert all(d["destination"] != "BGY" for d in out["results"])
 
 
 # --- budget + route_status ------------------------------------------------- #
