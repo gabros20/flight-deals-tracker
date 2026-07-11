@@ -35,14 +35,6 @@ class FlightDealsConfig(BaseModel):
     price_drop_threshold: float = Field(default=0.15, ge=0.0, le=0.5, description="Alert if price is this fraction below historical avg")
     realert_drop_pct: float = Field(default=15.0, ge=0.0, le=100.0, description="While a watch is suppressed, re-alert only on a further drop of at least this percent below the last alerted price (chosen above Wizz's ~10% noise floor)")
     data_dir: str = Field(default="data")
-    enable_cache: bool = True
-    alerts_log_path: str = Field(default="data/price_alerts.csv")
-
-    # Apify multi-source config (for connections + broader coverage)
-    apify_token: Optional[str] = None
-    apify_actor_id: str = Field(default="makework36/flight-price-scraper")
-    apify_enabled: bool = True
-    apify_cache_ttl_hours: int = Field(default=12, ge=0)
 
     @property
     def data_path(self) -> Path:
@@ -61,10 +53,6 @@ class FlightDealsConfig(BaseModel):
     @property
     def alerts_path(self) -> Path:
         return self.data_path / "price_alerts.csv"
-
-    @property
-    def has_apify(self) -> bool:
-        return bool(self.apify_token) and self.apify_enabled
 
 
 def get_config_path() -> Path:
@@ -111,12 +99,6 @@ def load_config() -> FlightDealsConfig:
         "FLIGHT_DEALS_HTTP_RATE": "http_rate_per_second",
         "FLIGHT_DEALS_MAX_WORKERS": "max_workers",
         "FLIGHT_DEALS_DATA_DIR": "data_dir",
-        "FLIGHT_DEALS_ENABLE_CACHE": "enable_cache",
-        # Apify
-        "APIFY_TOKEN": "apify_token",
-        "APIFY_ACTOR_ID": "apify_actor_id",
-        "FLIGHT_DEALS_APIFY_ENABLED": "apify_enabled",
-        "FLIGHT_DEALS_APIFY_CACHE_TTL_HOURS": "apify_cache_ttl_hours",
     }
 
     for env_var, field in env_mapping.items():
@@ -128,15 +110,22 @@ def load_config() -> FlightDealsConfig:
                 config_data[field] = float(val)
             except ValueError:
                 logger.warning("config: %s=%r is not a valid float, ignoring", env_var, val)
-        elif field in ("max_workers", "apify_cache_ttl_hours"):
+        elif field == "max_workers":
             try:
                 config_data[field] = int(val)
             except ValueError:
                 logger.warning("config: %s=%r is not a valid int, ignoring", env_var, val)
-        elif field in ("enable_cache", "apify_enabled"):
-            config_data[field] = val.lower() in ("true", "1", "yes")
         else:
             config_data[field] = val
+
+    # Tolerate (but surface) unknown keys so a legacy config.json carrying
+    # since-removed fields (enable_cache, apify_*, alerts_log_path, …) loads with
+    # a warning instead of bricking or silently swallowing typos.
+    known = set(FlightDealsConfig.model_fields)
+    unknown = [k for k in config_data if k not in known]
+    if unknown:
+        logger.warning("config: ignoring unknown/removed config keys: %s", ", ".join(sorted(unknown)))
+        config_data = {k: v for k, v in config_data.items() if k in known}
 
     return FlightDealsConfig(**config_data)
 
@@ -146,11 +135,11 @@ def save_user_config(config: FlightDealsConfig) -> None:
     Save config to the user config file.
 
     Secrets are never persisted, only ever sourced from env
-    (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, APIFY_TOKEN) — see
-    docs/UPGRADE-PLAN.md Global Constraints. Written atomically (tmp + rename).
+    (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID) — see docs/UPGRADE-PLAN.md Global
+    Constraints. Written atomically (tmp + rename).
     """
     path = get_config_path()
-    data = config.model_dump(exclude={"apify_token", "telegram_bot_token", "telegram_chat_id"})
+    data = config.model_dump(exclude={"telegram_bot_token", "telegram_chat_id"})
     tmp_path = path.with_suffix(path.suffix + ".tmp")
     tmp_path.write_text(json.dumps(data, indent=2))
     os.replace(tmp_path, path)

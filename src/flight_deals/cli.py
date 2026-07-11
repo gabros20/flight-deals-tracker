@@ -486,9 +486,9 @@ def config_cmd(
     show: bool = typer.Option(True, "--show"),
     set_origin: str = typer.Option(None, "--set-default-origin"),
 ):
-    """View or update configuration. Telegram/Apify secrets are env-only
-    (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, APIFY_TOKEN) and are never written
-    to the config file."""
+    """View or update configuration. Telegram secrets are env-only
+    (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID) and are never written to the config
+    file."""
     if set_origin:
         config.default_origin = set_origin
         save_user_config(config)
@@ -501,7 +501,7 @@ def config_cmd(
         console.print(f"  Telegram configured: {bool(config.telegram_bot_token and config.telegram_chat_id)}")
         console.print(f"  Cache TTL: {config.cache_ttl_hours}h")
         console.print(f"  Max workers: {config.max_workers}")
-        console.print("  Telegram/Apify secrets are env-only: set TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, APIFY_TOKEN in your environment.")
+        console.print("  Telegram secrets are env-only: set TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID in your environment.")
 
 
 @app.command()

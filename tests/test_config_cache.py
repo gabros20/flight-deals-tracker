@@ -96,14 +96,39 @@ def test_save_user_config_never_persists_secrets(monkeypatch, tmp_path):
     cfg = FlightDealsConfig(
         telegram_bot_token="secret-token",
         telegram_chat_id="secret-chat-id",
-        apify_token="secret-apify-token",
     )
     save_user_config(cfg)
 
     saved_text = fake_path.read_text()
     assert "secret-token" not in saved_text
     assert "secret-chat-id" not in saved_text
-    assert "secret-apify-token" not in saved_text
+
+
+def test_legacy_config_with_removed_keys_still_loads_with_warning(monkeypatch, tmp_path, caplog):
+    """A config.json written before enable_cache/apify_*/alerts_log_path were
+    removed must still load (unknown keys ignored) with a warning, never brick."""
+    import json as _json
+    import logging
+
+    fake_path = tmp_path / "config.json"
+    fake_path.write_text(_json.dumps({
+        "default_origin": "VIE",
+        "enable_cache": True,
+        "apify_token": "old-secret",
+        "apify_enabled": False,
+        "alerts_log_path": "data/price_alerts.csv",
+    }))
+    monkeypatch.setattr(config_module, "get_config_path", lambda: fake_path)
+    # Point the project-config lookup somewhere empty so only our file is read.
+    monkeypatch.setattr(config_module, "get_project_root", lambda: tmp_path / "noproj")
+
+    with caplog.at_level(logging.WARNING, logger="flight_deals.config"):
+        cfg = load_config()
+
+    assert cfg.default_origin == "VIE"           # known key survives
+    assert not hasattr(cfg, "enable_cache")      # removed key is gone
+    assert "unknown/removed config keys" in caplog.text
+    assert "apify_token" in caplog.text
 
 
 def test_registry_reachability():
