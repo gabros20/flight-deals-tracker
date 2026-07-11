@@ -1,0 +1,103 @@
+{
+  "exit_code": 0,
+  "envelope": {
+    "results": [
+      {
+        "deal_id": "24affe56a9",
+        "shape": "S2",
+        "origin": "BUD",
+        "destination": "ZAD",
+        "out_date": "2026-08-23",
+        "return_date": "2026-08-29",
+        "nights": 6,
+        "price_eur": 46.66,
+        "price_confidence": "exact",
+        "carriers": [
+          "ryanair"
+        ],
+        "legs": [
+          {
+            "type": "flight",
+            "origin": "BUD",
+            "destination": "ZAD",
+            "carrier": "ryanair",
+            "departure_date": "2026-08-23",
+            "departure_time": "20:05",
+            "flight_number": "FR6521",
+            "price_eur": 19.99,
+            "duration_minutes": 75
+          },
+          {
+            "type": "flight",
+            "origin": "ZAD",
+            "destination": "BUD",
+            "carrier": "ryanair",
+            "departure_date": "2026-08-29",
+            "departure_time": "07:25",
+            "flight_number": "FR6522",
+            "price_eur": 26.67,
+            "duration_minutes": 70
+          }
+        ],
+        "ground": null,
+        "why": "\u20ac47 round-trip, exact Ryanair fare (insufficient history: 0 observations)",
+        "links": {
+          "ryanair": "https://www.ryanair.com/gb/en/trip/flights/select?originIata=BUD&destinationIata=ZAD&dateOut=2026-08-23&adults=1&dateIn=2026-08-29"
+        },
+        "group": "baseline"
+      },
+      {
+        "deal_id": "dc6223c502",
+        "shape": "S2",
+        "origin": "BUD",
+        "destination": "DBV",
+        "out_date": "2026-08-23",
+        "return_date": "2026-08-30",
+        "nights": 7,
+        "price_eur": 56.22,
+        "price_confidence": "exact",
+        "carriers": [
+          "ryanair"
+        ],
+        "legs": [
+          {
+            "type": "flight",
+            "origin": "BUD",
+            "destination": "DBV",
+            "carrier": "ryanair",
+            "departure_date": "2026-08-23",
+            "departure_time": "18:45",
+            "flight_number": "FR2488",
+            "price_eur": 21.99,
+            "duration_minutes": 75
+          },
+          {
+            "type": "flight",
+            "origin": "DBV",
+            "destination": "BUD",
+            "carrier": "ryanair",
+            "departure_date": "2026-08-30",
+            "departure_time": "20:25",
+            "flight_number": "FR2489",
+            "price_eur": 34.23,
+            "duration_minutes": 70
+          }
+        ],
+        "ground": null,
+        "why": "\u20ac56 round-trip, exact Ryanair fare (insufficient history: 0 observations)",
+        "links": {
+          "ryanair": "https://www.ryanair.com/gb/en/trip/flights/select?originIata=BUD&destinationIata=DBV&dateOut=2026-08-23&adults=1&dateIn=2026-08-30"
+        },
+        "group": "baseline"
+      }
+    ],
+    "summary": "Found 2 deals from BUD, cheapest ZAD \u20ac47 rt 2026-08-23-2026-08-29 (exact)",
+    "sources": {
+      "ryanair": "ok",
+      "wizzair": "ok"
+    },
+    "next": [
+      "flight-deals check 24affe56a9"
+    ]
+  }
+}

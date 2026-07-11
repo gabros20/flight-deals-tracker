@@ -1,0 +1,113 @@
+{
+  "calls": [
+    {
+      "provider": "ryanair",
+      "endpoint": "roundTripFares",
+      "mode": "anywhere",
+      "shape": "S3",
+      "params": {
+        "origin": "BTS",
+        "base_origin": "BUD",
+        "out_from": "2026-08-22",
+        "out_to": "2026-08-24",
+        "duration_from": 5,
+        "duration_to": 8
+      }
+    },
+    {
+      "provider": "ryanair",
+      "endpoint": "roundTripFares",
+      "mode": "anywhere",
+      "shape": "S2",
+      "params": {
+        "origin": "BUD",
+        "out_from": "2026-08-22",
+        "out_to": "2026-08-24",
+        "duration_from": 5,
+        "duration_to": 8
+      }
+    },
+    {
+      "provider": "ryanair",
+      "endpoint": "roundTripFares",
+      "mode": "anywhere",
+      "shape": "S3",
+      "params": {
+        "origin": "VIE",
+        "base_origin": "BUD",
+        "out_from": "2026-08-22",
+        "out_to": "2026-08-24",
+        "duration_from": 5,
+        "duration_to": 8
+      }
+    },
+    {
+      "provider": "ryanair",
+      "endpoint": "cheapestPerDay",
+      "mode": "calendar",
+      "shape": "S4",
+      "params": {
+        "origin": "BUD",
+        "destination": "SPU",
+        "month": "2026-08"
+      }
+    },
+    {
+      "provider": "ryanair",
+      "endpoint": "cheapestPerDay",
+      "mode": "calendar",
+      "shape": "S4",
+      "params": {
+        "origin": "BUD",
+        "destination": "ZAD",
+        "month": "2026-08"
+      }
+    },
+    {
+      "provider": "ryanair",
+      "endpoint": "cheapestPerDay",
+      "mode": "calendar",
+      "shape": "S4",
+      "params": {
+        "origin": "SPU",
+        "destination": "BUD",
+        "month": "2026-08"
+      }
+    },
+    {
+      "provider": "ryanair",
+      "endpoint": "cheapestPerDay",
+      "mode": "calendar",
+      "shape": "S4",
+      "params": {
+        "origin": "SPU",
+        "destination": "BUD",
+        "month": "2026-09"
+      }
+    },
+    {
+      "provider": "ryanair",
+      "endpoint": "cheapestPerDay",
+      "mode": "calendar",
+      "shape": "S4",
+      "params": {
+        "origin": "ZAD",
+        "destination": "BUD",
+        "month": "2026-08"
+      }
+    },
+    {
+      "provider": "ryanair",
+      "endpoint": "cheapestPerDay",
+      "mode": "calendar",
+      "shape": "S4",
+      "params": {
+        "origin": "ZAD",
+        "destination": "BUD",
+        "month": "2026-09"
+      }
+    }
+  ],
+  "estimated_calls": 9,
+  "estimated_seconds": 9.0
+}

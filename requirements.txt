@@ -1,12 +1,7 @@
-# Core
-typer>=0.9.0
+# Core (mirrors pyproject.toml [project.dependencies] — pyproject is authoritative)
+typer>=0.9
+rich>=13
 pydantic>=2.0
-python-dateutil>=2.8
-
-# Flight providers
-ryanair-py>=0.3.0
-farepy[google_flights,ryanair]>=0.1.0
-
-# Optional but recommended
 requests>=2.31
-rich>=13.0
+python-dateutil>=2.8
+PyYAML>=6.0

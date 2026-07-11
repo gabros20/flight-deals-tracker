@@ -1,0 +1,5 @@
+# Dev/test only — see docs/UPGRADE-PLAN.md Global Constraints.
+-r requirements.txt
+pytest>=7.0
+freezegun>=1.4
+responses>=0.25

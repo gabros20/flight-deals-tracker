@@ -1,11 +1,28 @@
+"""Price history: a CSV of every priced observation from the cron ``run``/
+``track`` path, plus a JSON alert log.
+
+Two-store split (Task 7): this CSV is the **authoritative source for
+price-context and typical-price stats** (medians, "best this month",
+drop-threshold alerts) — it is only ever fed by the scheduled ``run``/
+``track`` sweep. The append-only JSONL snapshots in ``state/snapshots.py``
+are the authoritative source for deal identity and check-time deltas instead,
+fed by every displayed deal (``getaway``/``oneway``/``check``). ``getaway``
+*reads* this CSV (via ``PriceHistoryStore.compare``) for its "why" context
+but never writes to it — only the cron path appends rows here.
+"""
+
 import csv
-from datetime import datetime, date, timedelta
+import io
+import logging
+import os
+from datetime import datetime, date, timedelta, timezone
 from pathlib import Path
 from typing import List, Optional, Dict, Any
-from collections import defaultdict
 
 from flight_deals.models import PriceSnapshot, FlightDeal, HistoricalComparison
 from flight_deals.config import get_config, FlightDealsConfig
+
+logger = logging.getLogger(__name__)
 
 
 class PriceHistoryStore:
@@ -60,47 +77,71 @@ class PriceHistoryStore:
             return None
         try:
             return datetime.fromisoformat(dstr[:10]).date() if "T" in dstr or "-" in dstr else date.fromisoformat(dstr)
-        except Exception:
+        except (ValueError, TypeError):
             try:
                 return date.fromisoformat(dstr.split("T")[0])
-            except Exception:
+            except (ValueError, TypeError):
                 return None
 
+    @staticmethod
+    def _parse_ts(value: str) -> Optional[datetime]:
+        """Parse the ``timestamp_utc`` column into an aware UTC datetime."""
+        if not value:
+            return None
+        try:
+            dt = datetime.fromisoformat(value)
+        except (ValueError, TypeError):
+            return None
+        return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+
     def _filter_by_window(self, rows: List[Dict], window_days: Optional[int] = None) -> List[Dict]:
-        """Robust date-window filtering for file-based data."""
+        """Window-filter by OBSERVATION time (``timestamp_utc``), not the flight's
+        departure date (history v2, Task 7 req 4): "prices seen in the last N
+        days" is the meaningful window for typical-price and best-this-month
+        comparisons. Rows with an unparseable/empty timestamp are kept (an old
+        row is better than a dropped one)."""
         if window_days is None:
             window_days = self.window_days
         if window_days <= 0:
             return rows
-        cutoff = date.today() - timedelta(days=window_days)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=window_days)
         filtered = []
         for row in rows:
-            dep = self._parse_date(row.get("departure_date", ""))
-            if dep is None or dep >= cutoff:
+            ts = self._parse_ts(row.get("timestamp_utc", ""))
+            if ts is None or ts >= cutoff:
                 filtered.append(row)
         return filtered
 
     def append(self, snapshot: PriceSnapshot):
-        """Append a basic snapshot (file-based)."""
-        with open(self.csv_path, "a", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow([
-                snapshot.timestamp_utc.isoformat(),
-                snapshot.origin,
-                snapshot.destination,
-                snapshot.departure_date,
-                snapshot.return_date or "",
-                snapshot.price,
-                snapshot.currency,
-                snapshot.source,
-                str(snapshot.connection_path) if snapshot.connection_path else "",
-                snapshot.total_price or snapshot.price,
-            ])
+        """Append a basic snapshot via a single ``O_APPEND`` write (mirrors
+        ``state.store.append_jsonl``): the whole CSV row is serialized first,
+        then written in one ``os.write`` so concurrent appenders never interleave
+        a partial row. The header is (re)created first if the file is missing."""
+        self._ensure_header()  # keep header correct even if the file vanished
+        buf = io.StringIO()
+        csv.writer(buf).writerow([
+            snapshot.timestamp_utc.isoformat(),
+            snapshot.origin,
+            snapshot.destination,
+            snapshot.departure_date,
+            snapshot.return_date or "",
+            snapshot.price,
+            snapshot.currency,
+            snapshot.source,
+            str(snapshot.connection_path) if snapshot.connection_path else "",
+            snapshot.total_price or snapshot.price,
+        ])
+        line = buf.getvalue().encode("utf-8")
+        fd = os.open(self.csv_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
+        try:
+            os.write(fd, line)
+        finally:
+            os.close(fd)
         self._cached_rows = None  # invalidate cache
 
     def append_from_deal(self, deal: FlightDeal, timestamp: Optional[datetime] = None):
         """Store a full deal as snapshot (supports composites)."""
-        ts = timestamp or datetime.utcnow()
+        ts = timestamp or datetime.now(timezone.utc)
         conn_path = getattr(deal, "connection_path", []) or []
         total = getattr(deal, "price", 0)
         snap = PriceSnapshot(
@@ -129,9 +170,9 @@ class PriceHistoryStore:
         rows = self._filter_by_window(rows, window_days)
         prices = []
         dates = []
-        recent_prices = []  # for best this month logic
+        recent_prices = []  # observations seen in the last 30 days (best-this-month)
 
-        cutoff_month = date.today() - timedelta(days=30)
+        cutoff_month = datetime.now(timezone.utc) - timedelta(days=30)
 
         for row in rows:
             if row.get("origin") != origin or row.get("destination") != destination:
@@ -139,11 +180,15 @@ class PriceHistoryStore:
             try:
                 p = float(row["price"])
                 dep = self._parse_date(row.get("departure_date", ""))
+                ts = self._parse_ts(row.get("timestamp_utc", ""))
                 prices.append(p)
                 if dep:
                     dates.append(str(dep))
-                    if dep >= cutoff_month:
-                        recent_prices.append(p)
+                # best_this_month is over OBSERVATIONS in the last 30 days
+                # (history v2, Task 7): the minimum price we've *seen* recently,
+                # not flights departing soon.
+                if ts is not None and ts >= cutoff_month:
+                    recent_prices.append(p)
             except (ValueError, KeyError):
                 continue
 
@@ -162,10 +207,12 @@ class PriceHistoryStore:
         p25 = prices[max(0, int(0.25 * count))]
         p75 = prices[min(count-1, int(0.75 * count))]
 
-        # Robust best this month / year using actual dates
-        best_this_month = False
-        if recent_prices:
-            best_this_month = min_p <= min(recent_prices)
+        # History v2: best_this_month is the MINIMUM over observations seen in
+        # the last 30 days (a value). The boolean flag means "the all-time-low
+        # was actually set within that window" (i.e. the record is fresh), which
+        # is what a 'best this month' badge should assert.
+        best_price_this_month = round(min(recent_prices), 2) if recent_prices else None
+        best_this_month = bool(recent_prices) and (min_p == min(recent_prices))
 
         best_this_year = min_p == min(prices)  # conservative; could refine with year filter
 
@@ -180,9 +227,48 @@ class PriceHistoryStore:
             "percentile_25": round(p25, 2),
             "percentile_75": round(p75, 2),
             "best_this_month": best_this_month,
+            "best_price_this_month": best_price_this_month,
             "best_this_year": best_this_year,
             "last_collected": last_collected,
             "window_days_used": window_days or self.window_days,
+        }
+
+    def compare(
+        self,
+        origin: str,
+        destination: str,
+        price: float,
+        window_days: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Compare ``price`` for a route against its observed history (history
+        v2, Task 7). Returns the fields the deal-enrichment layer needs:
+
+        * ``count`` — observations in the window;
+        * ``median`` — the "typical" price (``pct_vs_typical`` compares to it);
+        * ``min`` — cheapest ever seen in the window;
+        * ``pct_vs_typical`` — fraction below the median (``None`` if no basis);
+        * ``sufficient`` — ``count >= 5`` (the standout gate; below it we say
+          "insufficient history" rather than inventing a percentile);
+        * ``best_this_month`` — ``price`` ties/beats the last-30d observed min.
+        """
+        stats = self.get_route_stats(origin, destination, window_days=window_days)
+        count = stats.get("count", 0)
+        median = stats.get("median_price")
+        minp = stats.get("min_price")
+        pct = None
+        if median:
+            pct = (median - price) / median
+        best_30d = stats.get("best_price_this_month")
+        # This deal is "best this month" when its price ties/beats the cheapest
+        # fare OBSERVED in the last 30 days (history v2, req 4).
+        best_this_month = best_30d is not None and price <= best_30d
+        return {
+            "count": count,
+            "median": median,
+            "min": minp,
+            "pct_vs_typical": pct,
+            "sufficient": count >= 5,
+            "best_this_month": best_this_month,
         }
 
     def get_previous_price(self, origin: str, destination: str, departure_date: str) -> Optional[float]:
@@ -225,7 +311,8 @@ class PriceHistoryStore:
                 snapshots.append(snap)
                 if len(snapshots) >= limit:
                     break
-            except Exception:
+            except (ValueError, KeyError) as e:
+                logger.warning("history: skipping malformed row: %s", e)
                 continue
         return snapshots
 
@@ -318,7 +405,7 @@ class PriceHistoryStore:
 
     def _log_alert(self, alert: Dict[str, Any]):
         """Append alert to file-based alerts log (git friendly CSV)."""
-        ts = datetime.utcnow().isoformat()
+        ts = datetime.now(timezone.utc).isoformat()
         with open(self.alerts_path, "a", newline="") as f:
             writer = csv.writer(f)
             writer.writerow([

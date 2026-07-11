@@ -7,7 +7,7 @@
       "mode": "driving",
       "duration_minutes": 173,
       "distance_km": 262.2,
-      "estimated_cost_eur": 31.5,
+      "cost_eur": 31.5,
       "notes": "Via OSRM (OpenStreetMap)",
       "options": []
     },
@@ -18,7 +18,7 @@
       "mode": "airplane,walk",
       "duration_minutes": 417,
       "distance_km": 214.2,
-      "estimated_cost_eur": 15.0,
+      "cost_eur": 15.0,
       "notes": "Transitous: airplane, walk",
       "options": []
     },
@@ -29,7 +29,7 @@
       "mode": "airplane,walk",
       "duration_minutes": 1542,
       "distance_km": 214.2,
-      "estimated_cost_eur": 15.0,
+      "cost_eur": 15.0,
       "notes": "Transitous: airplane, walk",
       "options": []
     }

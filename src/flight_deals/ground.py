@@ -9,13 +9,16 @@ Enhancements:
 """
 
 import json
+import logging
 import math
-from pathlib import Path
 from typing import List, Optional, Dict, Any, Tuple
 
 import requests
 from flight_deals.models import GroundLeg
 from flight_deals.config import get_config
+from flight_deals.paths import resolve_path
+
+logger = logging.getLogger(__name__)
 
 
 def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -39,7 +42,7 @@ class GroundTransport:
         self.osrm_base = "http://router.project-osrm.org"
         self.transitous_base = "https://api.transitous.org/api/v2"
         self._simple_cache: Dict[str, Any] = {}
-        self.precompute_path = Path(precompute_path)
+        self.precompute_path = resolve_path(precompute_path)
         self._precomputed: Dict[str, List[Dict]] = self._load_precomputed()
 
     def _load_precomputed(self) -> Dict[str, List[Dict]]:
@@ -47,8 +50,8 @@ class GroundTransport:
             try:
                 data = json.loads(self.precompute_path.read_text())
                 return data
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("ground: failed to parse precompute file %s: %s", self.precompute_path, e)
         return {}
 
     def _get_airport_coords(self, iata: str) -> Optional[Tuple[float, float]]:
@@ -108,7 +111,7 @@ class GroundTransport:
                     mode="driving",
                     duration_minutes=est_min,
                     distance_km=round(dist, 1),
-                    estimated_cost_eur=round(dist * 0.15, 1),
+                    cost_eur=round(dist * 0.15, 1),
                     notes="Estimated via haversine (OSRM fallback)"
                 )
                 self._simple_cache[key] = leg
@@ -124,13 +127,14 @@ class GroundTransport:
                 mode="driving",
                 duration_minutes=duration_min,
                 distance_km=distance_km,
-                estimated_cost_eur=round(distance_km * 0.12, 1),
+                cost_eur=round(distance_km * 0.12, 1),
                 notes="Via OSRM (OpenStreetMap)"
             )
             self._simple_cache[key] = leg
             return leg
 
-        except Exception:
+        except Exception as e:
+            logger.warning("ground: OSRM driving lookup failed for %s->%s, using haversine estimate: %s", from_iata, to_iata, e)
             dist = haversine_distance(*coords_from, *coords_to)
             est_min = max(20, int((dist / 70) * 60))
             leg = GroundLeg(
@@ -199,7 +203,7 @@ class GroundTransport:
                         mode=mode,
                         duration_minutes=duration_min,
                         distance_km=round(dist, 1),
-                        estimated_cost_eur=15.0,
+                        cost_eur=15.0,
                         notes=notes
                     ))
 
@@ -217,7 +221,8 @@ class GroundTransport:
 
             self._simple_cache[key] = legs
 
-        except Exception:
+        except Exception as e:
+            logger.warning("ground: transit lookup failed for %s->%s, using haversine estimate: %s", from_iata, to_iata, e)
             dist = haversine_distance(*coords_from, *coords_to)
             legs.append(GroundLeg(
                 from_iata=from_iata,
@@ -313,5 +318,5 @@ def precompute_ground_transfers(output_path: str = "data/ground_transfers.json",
         legs = gt.get_ground_options(o, d, prefer="any")
         if legs:
             data[f"{o}-{d}"] = [leg.model_dump() for leg in legs]
-    Path(output_path).write_text(json.dumps(data, indent=2))
+    resolve_path(output_path).write_text(json.dumps(data, indent=2))
     return data

@@ -1,0 +1,277 @@
+{
+  "_captured_live": true,
+  "_url": "https://www.ryanair.com/api/farfnd/v4/oneWayFares/CFU/BUD/cheapestPerDay",
+  "_params": {
+    "outboundMonthOfDate": "2026-08-01",
+    "currency": "EUR"
+  },
+  "_status_code": 200,
+  "body": {
+    "outbound": {
+      "fares": [
+        {
+          "day": "2026-08-01",
+          "arrivalDate": "2026-08-01T15:10:00",
+          "departureDate": "2026-08-01T14:25:00",
+          "price": {
+            "value": 161.99,
+            "valueMainUnit": "161",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "soldOut": false,
+          "unavailable": false
+        },
+        {
+          "day": "2026-08-02",
+          "arrivalDate": null,
+          "departureDate": null,
+          "price": null,
+          "soldOut": false,
+          "unavailable": true
+        },
+        {
+          "day": "2026-08-03",
+          "arrivalDate": "2026-08-03T20:50:00",
+          "departureDate": "2026-08-03T20:05:00",
+          "price": {
+            "value": 119.99,
+            "valueMainUnit": "119",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "soldOut": false,
+          "unavailable": false
+        },
+        {
+          "day": "2026-08-04",
+          "arrivalDate": null,
+          "departureDate": null,
+          "price": null,
+          "soldOut": false,
+          "unavailable": true
+        },
+        {
+          "day": "2026-08-05",
+          "arrivalDate": "2026-08-05T11:30:00",
+          "departureDate": "2026-08-05T10:45:00",
+          "price": {
+            "value": 92.99,
+            "valueMainUnit": "92",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "soldOut": false,
+          "unavailable": false
+        },
+        {
+          "day": "2026-08-06",
+          "arrivalDate": "2026-08-06T06:30:00",
+          "departureDate": "2026-08-06T05:45:00",
+          "price": {
+            "value": 103.47,
+            "valueMainUnit": "103",
+            "valueFractionalUnit": "47",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "soldOut": false,
+          "unavailable": false
+        },
+        {
+          "day": "2026-08-07",
+          "arrivalDate": null,
+          "departureDate": null,
+          "price": null,
+          "soldOut": false,
+          "unavailable": true
+        },
+        {
+          "day": "2026-08-08",
+          "arrivalDate": "2026-08-08T15:10:00",
+          "departureDate": "2026-08-08T14:25:00",
+          "price": {
+            "value": 188.99,
+            "valueMainUnit": "188",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "soldOut": false,
+          "unavailable": false
+        },
+        {
+          "day": "2026-08-09",
+          "arrivalDate": null,
+          "departureDate": null,
+          "price": null,
+          "soldOut": false,
+          "unavailable": true
+        },
+        {
+          "day": "2026-08-10",
+          "arrivalDate": "2026-08-10T20:50:00",
+          "departureDate": "2026-08-10T20:05:00",
+          "price": {
+            "value": 136.38,
+            "valueMainUnit": "136",
+            "valueFractionalUnit": "38",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "soldOut": false,
+          "unavailable": false
+        },
+        {
+          "day": "2026-08-11",
+          "arrivalDate": null,
+          "departureDate": null,
+          "price": null,
+          "soldOut": false,
+          "unavailable": true
+        },
+        {
+          "day": "2026-08-12",
+          "arrivalDate": "2026-08-12T11:30:00",
+          "departureDate": "2026-08-12T10:45:00",
+          "price": {
+            "value": 121.66,
+            "valueMainUnit": "121",
+            "valueFractionalUnit": "66",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "soldOut": false,
+          "unavailable": false
+        },
+        {
+          "day": "2026-08-13",
+          "arrivalDate": "2026-08-13T06:30:00",
+          "departureDate": "2026-08-13T05:45:00",
+          "price": {
+            "value": 95.99,
+            "valueMainUnit": "95",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "soldOut": false,
+          "unavailable": false
+        },
+        {
+          "day": "2026-08-14",
+          "arrivalDate": null,
+          "departureDate": null,
+          "price": null,
+          "soldOut": false,
+          "unavailable": true
+        },
+        {
+          "day": "2026-08-15",
+          "arrivalDate": "2026-08-15T15:10:00",
+          "departureDate": "2026-08-15T14:25:00",
+          "price": {
+            "value": 242.99,
+            "valueMainUnit": "242",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "soldOut": false,
+          "unavailable": false
+        },
+        {
+          "day": "2026-08-16",
+          "arrivalDate": null,
+          "departureDate": null,
+          "price": null,
+          "soldOut": false,
+          "unavailable": true
+        },
+        {
+          "day": "2026-08-17",
+          "arrivalDate": "2026-08-17T20:50:00",
+          "departureDate": "2026-08-17T20:05:00",
+          "price": {
+            "value": 105.29,
+            "valueMainUnit": "105",
+            "valueFractionalUnit": "29",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "soldOut": false,
+          "unavailable": false
+        },
+        {
+          "day": "2026-08-18",
+          "arrivalDate": null,
+          "departureDate": null,
+          "price": null,
+          "soldOut": false,
+          "unavailable": true
+        },
+        {
+          "day": "2026-08-19",
+          "arrivalDate": "2026-08-19T11:30:00",
+          "departureDate": "2026-08-19T10:45:00",
+          "price": {
+            "value": 91.99,
+            "valueMainUnit": "91",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "soldOut": false,
+          "unavailable": false
+        },
+        {
+          "day": "2026-08-20",
+          "arrivalDate": "2026-08-20T06:30:00",
+          "departureDate": "2026-08-20T05:45:00",
+          "price": {
+            "value": 58.99,
+            "valueMainUnit": "58",
+            "valueFractionalUnit": "99",
+            "currencyCode": "EUR",
+            "currencySymbol": "€"
+          },
+          "soldOut": false,
+          "unavailable": false
+        }
+      ],
+      "maxFare": {
+        "day": "2026-08-15",
+        "arrivalDate": "2026-08-15T15:10:00",
+        "departureDate": "2026-08-15T14:25:00",
+        "price": {
+          "value": 242.99,
+          "valueMainUnit": "242",
+          "valueFractionalUnit": "99",
+          "currencyCode": "EUR",
+          "currencySymbol": "€"
+        },
+        "soldOut": false,
+        "unavailable": false
+      },
+      "minFare": {
+        "day": "2026-08-20",
+        "arrivalDate": "2026-08-20T06:30:00",
+        "departureDate": "2026-08-20T05:45:00",
+        "price": {
+          "value": 58.99,
+          "valueMainUnit": "58",
+          "valueFractionalUnit": "99",
+          "currencyCode": "EUR",
+          "currencySymbol": "€"
+        },
+        "soldOut": false,
+        "unavailable": false
+      },
+      "_truncated": true
+    }
+  },
+  "_raw_text_on_parse_failure": null
+}

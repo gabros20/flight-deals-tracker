@@ -1,0 +1,9 @@
+id: 02-check-deal
+utterance: "Is that CFU deal you found earlier (a48e258b18) still good?"
+expected_command: "flight-deals check a48e258b18"
+notes: >-
+  A follow-up on a previously reported deal_id must reuse `check`, never a
+  fresh `getaway`/`oneway` search — the deal_id is the identity anchor
+  (price-excluded hash) and `check` is the only command that re-prices it
+  and reports the delta vs. the last/first observation.
+source: "made up for coverage (deal-identity follow-up)"

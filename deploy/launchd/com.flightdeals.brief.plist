@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd template for `flight-deals brief --send` (UPGRADE-PLAN §6).
+
+  This is a TEMPLATE. Replace every __PLACEHOLDER__ before installing:
+    __FLIGHT_DEALS_HOME__  absolute path to the project root (the dir with
+                           pyproject.toml), e.g. /Users/you/work/flight-deals-tracker
+    __FLIGHT_DEALS_BIN__   absolute path to the `flight-deals` entry point,
+                           e.g. /Users/you/work/flight-deals-tracker/.venv/bin/flight-deals
+
+  Secrets are NEVER stored here (Global Constraint 8). Inject them one of two ways:
+    (a) 1Password:  wrap ProgramArguments in `op run -- flight-deals brief --send`
+        with TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID set from an `.env` op template; or
+    (b) EnvironmentVariables: add a <key>TELEGRAM_BOT_TOKEN</key> block below —
+        acceptable on a single-user Mac, but the file then holds a secret, so
+        `chmod 600` it and keep it out of git.
+
+  Install / uninstall / logs: see docs/OPERATIONS.md.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.flightdeals.brief</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__FLIGHT_DEALS_BIN__</string>
+        <string>brief</string>
+        <string>--send</string>
+    </array>
+
+    <!-- Do NOT run on load/boot — only on the schedule below (avoids a send
+         storm every time you `launchctl load`). -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <!-- 08:30, 13:30, 19:30 local time (Personal-OS: this is a Mac; launchd
+         only). brief itself decides which saved searches are actually due, so
+         these are just wake-ups, not per-search schedules. -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Hour</key><integer>8</integer>
+            <key>Minute</key><integer>30</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>13</integer>
+            <key>Minute</key><integer>30</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>19</integer>
+            <key>Minute</key><integer>30</integer>
+        </dict>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>FLIGHT_DEALS_HOME</key>
+        <string>__FLIGHT_DEALS_HOME__</string>
+        <!-- Inject secrets here (option b) or via `op run` (option a):
+        <key>TELEGRAM_BOT_TOKEN</key><string>__SET_ME__</string>
+        <key>TELEGRAM_CHAT_ID</key><string>__SET_ME__</string>
+        -->
+    </dict>
+
+    <key>WorkingDirectory</key>
+    <string>__FLIGHT_DEALS_HOME__</string>
+
+    <!-- Logs (rotate/inspect per docs/OPERATIONS.md). -->
+    <key>StandardOutPath</key>
+    <string>__FLIGHT_DEALS_HOME__/data/logs/brief.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>__FLIGHT_DEALS_HOME__/data/logs/brief.err.log</string>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>

@@ -1,6 +1,68 @@
 from typing import Literal, Union, List, Optional, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
+
+Confidence = Literal["exact", "approximate"]
+
+
+class DayFare(BaseModel):
+    """
+    One direction, one day, cheapest fare — the unit of day-level data
+    (CAL / TT). Fields per Task 3 brief + CONTRACT.md naming.
+    """
+    origin: str
+    destination: str
+    date: str  # airport-local calendar date "YYYY-MM-DD"
+    price_eur: float
+    currency_original: str
+    price_confidence: Confidence
+    carrier: str  # "ryanair" | "wizzair"
+    source_endpoint: str  # e.g. "farfnd/oneWayFares/cheapestPerDay"
+    # Enrichment present on some endpoints (nullable — day-level often has none)
+    departure_time: Optional[str] = None  # "HH:MM"
+    flight_number: Optional[str] = None
+
+
+class FareLeg(BaseModel):
+    """A single priced flight leg inside a FarePair."""
+    origin: str
+    destination: str
+    date: str  # "YYYY-MM-DD"
+    price_eur: float
+    carrier: str
+    departure_time: Optional[str] = None  # "HH:MM"
+    arrival_time: Optional[str] = None
+    flight_number: Optional[str] = None
+    duration_minutes: Optional[int] = None
+
+
+class FarePair(BaseModel):
+    """
+    A paired round-trip (RT-ANYWHERE / RT-EXACT): outbound + inbound legs and a
+    total. Flight numbers/times are present because farfnd roundTripFares
+    returns them.
+    """
+    origin: str
+    destination: str
+    out_date: str
+    return_date: str
+    nights: int
+    total_price_eur: float
+    currency_original: str
+    price_confidence: Confidence
+    carrier: str
+    source_endpoint: str
+    outbound: FareLeg
+    inbound: FareLeg
+
+
+# NOTE (Task 6): the dead ``ProviderStatus`` pydantic model was removed. Per-
+# provider health has exactly ONE representation across the codebase — the
+# dict produced by ``orchestrator.aggregate_status`` (``{provider: {ok, status,
+# calls, errors, last_error}}``), which the planner reuses and ``output.py``
+# projects down to the frozen ``sources`` map (``{provider: status_string}``).
+# There is no second status type to keep in sync.
+
 
 class Airport(BaseModel):
     iata: str = Field(..., min_length=3, max_length=3)
@@ -22,14 +84,25 @@ class FlightLeg(BaseModel):
     departure_date: Optional[str] = None
 
 class GroundLeg(BaseModel):
-    """Represents a ground transport leg between two airports."""
+    """Represents a ground transport leg between two airports.
+
+    Field naming (CONTRACT §7 open item, RESOLVED 2026-07-11): the cost field is
+    ``cost_eur`` — the name CONTRACT §2 froze for ground legs and the ground
+    summary. It accepts the legacy ``estimated_cost_eur`` key on input (older
+    ``data/ground_transfers.json`` rows, embedded history dicts) via a validation
+    alias, so nothing that wrote the old key breaks; the attribute and the
+    serialised key are both ``cost_eur``.
+    """
     type: Literal["ground"] = "ground"
     from_iata: str
     to_iata: str
-    mode: str  # "driving", "public_transit"
+    mode: str  # "driving", "public_transit", "train", "bus"
     duration_minutes: int
-    distance_km: float
-    estimated_cost_eur: Optional[float] = None
+    distance_km: Optional[float] = None
+    cost_eur: Optional[float] = Field(
+        default=None,
+        validation_alias=AliasChoices("cost_eur", "estimated_cost_eur"),
+    )
     notes: str = ""
     options: List[str] = Field(default_factory=list)
 

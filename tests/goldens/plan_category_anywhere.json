@@ -1,0 +1,55 @@
+{
+  "calls": [
+    {
+      "provider": "ryanair",
+      "endpoint": "roundTripFares",
+      "mode": "anywhere",
+      "shape": "S2",
+      "params": {
+        "origin": "BUD",
+        "out_from": "2026-08-22",
+        "out_to": "2026-08-24",
+        "duration_from": 5,
+        "duration_to": 8
+      }
+    },
+    {
+      "provider": "wizzair",
+      "endpoint": "timetable",
+      "mode": "timetable",
+      "shape": "S2",
+      "params": {
+        "origin": "BUD",
+        "destination": "DBV",
+        "date_from": "2026-08-22",
+        "date_to": "2026-09-01"
+      }
+    },
+    {
+      "provider": "wizzair",
+      "endpoint": "timetable",
+      "mode": "timetable",
+      "shape": "S2",
+      "params": {
+        "origin": "BUD",
+        "destination": "SPU",
+        "date_from": "2026-08-22",
+        "date_to": "2026-09-01"
+      }
+    },
+    {
+      "provider": "wizzair",
+      "endpoint": "timetable",
+      "mode": "timetable",
+      "shape": "S2",
+      "params": {
+        "origin": "BUD",
+        "destination": "ZAD",
+        "date_from": "2026-08-22",
+        "date_to": "2026-09-01"
+      }
+    }
+  ],
+  "estimated_calls": 4,
+  "estimated_seconds": 4.0
+}

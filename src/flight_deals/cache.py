@@ -3,17 +3,137 @@ Simple file-based caching for flight search results.
 Uses JSON with TTL. Supports stats and advanced invalidation.
 """
 
+import hashlib
 import json
-import time
-from datetime import datetime, timedelta
+import logging
+import os
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 from flight_deals.models import FlightDeal
 from flight_deals.config import get_config
 
+logger = logging.getLogger(__name__)
+
+
+# Endpoint -> cache "kind" (which per-endpoint TTL applies). Endpoints are the
+# short logical names the provider passes to ResponseCache, not raw URLs.
+_KIND_FOR_ENDPOINT = {
+    "roundTripFares": "search",
+    "cheapestPerDay": "calendar",
+    "routes": "routes",
+    "timetable": "search",  # Wizz day-level minima — treat like a search result
+}
+
+
+class ResponseCache:
+    """
+    Cache v2 (Task 3 req 4): caches raw provider response *bodies* keyed by
+    ``provider + endpoint + all query params`` (return window and duration
+    included), with **per-endpoint TTLs** and **atomic writes**.
+
+    Storing the raw body (not parsed models) keeps the cache provider-agnostic
+    and means a schema fix never invalidates on-disk shape — the provider
+    parses cached and live bodies through the exact same code path.
+    """
+
+    #: default TTLs in seconds, overridden from config in __init__
+    DEFAULT_TTLS = {
+        "search": 30 * 60,
+        "calendar": 6 * 3600,
+        "routes": 7 * 86400,
+    }
+
+    def __init__(self, cache_dir: Optional[Path] = None, ttls: Optional[Dict[str, float]] = None):
+        cfg = get_config()
+        self.cache_dir = cache_dir or (cfg.cache_dir / "v2")
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        if ttls is not None:
+            self.ttls = dict(ttls)
+        else:
+            self.ttls = {
+                "search": cfg.cache_ttl_search_minutes * 60,
+                "calendar": cfg.cache_ttl_calendar_hours * 3600,
+                "routes": cfg.cache_ttl_routes_days * 86400,
+            }
+
+    @staticmethod
+    def _kind(endpoint: str) -> str:
+        return _KIND_FOR_ENDPOINT.get(endpoint, "search")
+
+    def _key(self, provider: str, endpoint: str, params: Dict[str, Any]) -> str:
+        # Canonical, order-independent hash of the params (sorted keys).
+        blob = json.dumps(params, sort_keys=True, separators=(",", ":"), default=str)
+        digest = hashlib.sha256(f"{provider}|{endpoint}|{blob}".encode("utf-8")).hexdigest()[:16]
+        return f"{provider}_{endpoint}_{digest}.json"
+
+    def _path(self, provider: str, endpoint: str, params: Dict[str, Any]) -> Path:
+        return self.cache_dir / self._key(provider, endpoint, params)
+
+    def get(self, provider: str, endpoint: str, params: Dict[str, Any]) -> Optional[Any]:
+        """Return the cached response body, or None on miss / expiry / corruption."""
+        path = self._path(provider, endpoint, params)
+        if not path.exists():
+            return None
+        try:
+            data = json.loads(path.read_text())
+            cached_at = datetime.fromisoformat(data["cached_at"])
+            ttl = timedelta(seconds=self.ttls.get(self._kind(endpoint), 0))
+            if datetime.now(timezone.utc) - cached_at > ttl:
+                path.unlink(missing_ok=True)
+                return None
+            return data["body"]
+        except Exception as e:
+            logger.warning("cache v2: corrupt entry %s, treating as miss: %s", path.name, e)
+            return None
+
+    def set(self, provider: str, endpoint: str, params: Dict[str, Any], body: Any) -> None:
+        """Atomically write the response body to the cache (tmp + os.replace)."""
+        path = self._path(provider, endpoint, params)
+        payload = {
+            "cached_at": datetime.now(timezone.utc).isoformat(),
+            "provider": provider,
+            "endpoint": endpoint,
+            "params": params,
+            "body": body,
+        }
+        tmp = path.with_suffix(path.suffix + f".tmp.{os.getpid()}")
+        try:
+            tmp.write_text(json.dumps(payload))
+            os.replace(tmp, path)
+        except Exception as e:
+            logger.warning("cache v2: failed to write %s: %s", path.name, e)
+            tmp.unlink(missing_ok=True)
+
+    def clear(self) -> int:
+        count = 0
+        for f in self.cache_dir.glob("*.json"):
+            f.unlink(missing_ok=True)
+            count += 1
+        return count
+
+    def prune_expired(self) -> int:
+        """Delete cache entries past their per-endpoint TTL (brief's prune pass,
+        UPGRADE-PLAN §4). Returns the number removed. A corrupt/unreadable entry
+        is also removed (it can never be a useful hit)."""
+        removed = 0
+        now = datetime.now(timezone.utc)
+        for f in self.cache_dir.glob("*.json"):
+            try:
+                data = json.loads(f.read_text())
+                cached_at = datetime.fromisoformat(data["cached_at"])
+                ttl = timedelta(seconds=self.ttls.get(self._kind(data.get("endpoint", "")), 0))
+                if now - cached_at > ttl:
+                    f.unlink(missing_ok=True)
+                    removed += 1
+            except Exception:
+                f.unlink(missing_ok=True)
+                removed += 1
+        return removed
+
 
 class FlightCache:
-    def __init__(self, cache_dir: Optional[Path] = None, ttl_hours: Optional[int] = None):
+    def __init__(self, cache_dir: Optional[Path] = None, ttl_hours: Optional[float] = None):
         config = get_config()
         self.cache_dir = cache_dir or config.cache_dir
         self.ttl = timedelta(hours=ttl_hours or config.cache_ttl_hours)
@@ -36,7 +156,9 @@ class FlightCache:
         try:
             data = json.loads(path.read_text())
             cached_time = datetime.fromisoformat(data["timestamp"])
-            if datetime.now() - cached_time > self.ttl:
+            if cached_time.tzinfo is None:  # tolerate legacy naive timestamps
+                cached_time = cached_time.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) - cached_time > self.ttl:
                 path.unlink(missing_ok=True)
                 return None
 
@@ -44,7 +166,8 @@ class FlightCache:
             for item in data["deals"]:
                 deals.append(FlightDeal(**item))
             return deals
-        except Exception:
+        except Exception as e:
+            logger.warning("cache: corrupt entry %s, treating as miss: %s", path.name, e)
             return None
 
     def set(self, provider: str, origin: str, date_from: str, date_to: str, deals: List[FlightDeal], destination: Optional[str] = None):
@@ -52,7 +175,7 @@ class FlightCache:
         path = self._get_path(key)
 
         payload = {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "provider": provider,
             "origin": origin,
             "destination": destination or "ANY",
@@ -63,8 +186,8 @@ class FlightCache:
 
         try:
             path.write_text(json.dumps(payload, indent=2))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("cache: failed to write %s: %s", path.name, e)
 
     def clear(self):
         """Remove all cached entries"""
@@ -82,7 +205,7 @@ class FlightCache:
         - older_than_hours: remove entries older than this many hours
         """
         count = 0
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         cutoff = now - timedelta(hours=older_than_hours) if older_than_hours else None
 
         for f in list(self.cache_dir.glob("*.json")):
@@ -96,9 +219,12 @@ class FlightCache:
                 try:
                     data = json.loads(f.read_text())
                     ts = datetime.fromisoformat(data.get("timestamp", ""))
+                    if ts.tzinfo is None:  # tolerate legacy naive timestamps
+                        ts = ts.replace(tzinfo=timezone.utc)
                     if ts < cutoff:
                         remove = True
-                except Exception:
+                except Exception as e:
+                    logger.warning("cache: corrupt entry %s during invalidate, removing: %s", f.name, e)
                     remove = True  # corrupt file
 
             if remove or (not cutoff and (provider or origin)):
@@ -123,7 +249,8 @@ class FlightCache:
                 timestamps.append(ts)
                 providers.add(data.get("provider", "unknown"))
                 origins.add(data.get("origin", "unknown"))
-            except Exception:
+            except Exception as e:
+                logger.warning("cache: skipping corrupt entry %s in stats: %s", f.name, e)
                 continue
 
         oldest = min(timestamps).isoformat() if timestamps else None
@@ -156,6 +283,7 @@ class FlightCache:
                     "cached_at": data.get("timestamp"),
                     "num_deals": len(data.get("deals", [])),
                 })
-            except Exception:
+            except Exception as e:
+                logger.warning("cache: corrupt entry %s: %s", f.name, e)
                 entries.append({"file": f.name, "error": "corrupt"})
         return entries

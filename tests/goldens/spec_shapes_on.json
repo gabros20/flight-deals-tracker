@@ -1,0 +1,8 @@
+{
+  "origins": ["BUD"],
+  "where": "croatia & seaside",
+  "depart": "2026-08-22..2026-08-24",
+  "nights": "5-8",
+  "shapes": ["direct", "extended-origin", "open-jaw"],
+  "carriers": ["ryanair"]
+}

@@ -1,68 +1,32 @@
-"""Edge case and robustness tests for Flight Deals Tracker"""
+"""Edge case and robustness tests — offline only (Global Constraint 10)."""
 
-import pytest
-from flight_deals.orchestrator import DealOrchestrator
+import responses
+
 from flight_deals.history import PriceHistoryStore
+from flight_deals.providers import ryanair as ry
 from flight_deals.providers.ryanair import RyanairProvider
 from flight_deals.providers.wizz import WizzProvider
 
 
-def test_search_invalid_airport():
-    """Should handle invalid airport codes gracefully"""
-    o = DealOrchestrator()
-    deals = o.ryanair.get_cheapest_flights("XXX", "2026-07-10", "2026-07-20")
-    assert deals == [] or isinstance(deals, list)
-
-
-def test_search_no_deals_found():
-    """Very far future dates should return empty or very few results"""
-    o = DealOrchestrator()
-    deals = o.search_by_category(
-        category="european-islands",
-        origin="BUD",
-        date_from="2030-01-01",
-        date_to="2030-01-10",
-    )
-    # Should not crash
-    assert isinstance(deals, list)
+@responses.activate
+def test_nonexistent_route_returns_empty_not_error():
+    """A 200-but-empty response is a valid 'no service' answer, not a failure."""
+    url = ry.FARFND_ONEWAY_CPD.format(origin="BUD", dest="ZZZ")
+    responses.add(responses.GET, url,
+                  json={"outbound": {"fares": []}}, status=200)
+    deals = RyanairProvider(use_cache=False).get_cheapest_flights("BUD", "2026-08-01", "2026-08-05", "ZZZ")
+    assert deals == []
 
 
 def test_history_no_previous_price():
-    """get_previous_price should return None when no history exists"""
     h = PriceHistoryStore()
-    price = h.get_previous_price("XXX", "YYY", "2099-01-01")
-    assert price is None
+    assert h.get_previous_price("XXX", "YYY", "2099-01-01") is None
 
 
 def test_wizz_provider_initialization():
-    """Wizz provider should initialize with dynamic version"""
-    w = WizzProvider()
-    assert w.version is not None
-    assert isinstance(w.version, str)
-
-
-def test_roundtrip_empty_results():
-    """Roundtrip should return empty list when no deals"""
-    o = DealOrchestrator()
-    pairs = o.find_roundtrip_deals(
-        origin="BUD",
-        destination="XXX",
-        outbound_from="2026-07-01",
-        outbound_to="2026-07-05",
-        return_from="2026-07-10",
-        return_to="2026-07-15",
-    )
-    assert pairs == []
-
-
-def test_orchestrator_handles_mixed_providers():
-    """Orchestrator should combine results from both providers without crashing"""
-    o = DealOrchestrator()
-    deals = o.search_by_category(
-        category="seaside",
-        origin="BUD",
-        date_from="2026-08-01",
-        date_to="2026-08-10",
-        max_price=300,
-    )
-    assert isinstance(deals, list)
+    """Wizz constructs with NO network I/O; the version resolves offline from
+    the persisted file / fallback constant (only re-discovered on a drift 404)."""
+    import re
+    w = WizzProvider(use_cache=False)
+    v = w._current_version()
+    assert isinstance(v, str) and re.match(r"^\d+\.\d+\.\d+$", v)

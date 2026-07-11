@@ -1,0 +1,17 @@
+id: 06-ambiguous-no-category
+utterance: "Find me something nice for a getaway"
+expected_behavior: >-
+  No category, no dates, no budget — there is nothing here to build a
+  `--where` expression or a `--depart` window from. The correct response is
+  EITHER (a) ask the user a clarifying question (dates? a vibe — seaside,
+  city-break, mountains? a budget?) OR (b) run `flight-deals where list` to
+  see what's actually offered and present a couple of concrete options back
+  to the user before running a search. The INCORRECT behaviors this case
+  guards against: inventing a plausible-sounding tag (e.g. "nice" ->
+  "hidden-gem" without checking it exists), inventing a date window out of
+  thin air, or defaulting silently to some category without saying so.
+notes: >-
+  This is the deliberately ambiguous seed case (task brief req 5). There is
+  no single `expected_command` — a pass is "asked, or ran `where list`", a
+  fail is "invented a tag/date and ran a search anyway".
+source: "made up for coverage (the required ambiguous case)"

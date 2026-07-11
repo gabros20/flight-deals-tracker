@@ -1,0 +1,472 @@
+{
+  "_captured_live": true,
+  "_url": "https://be.wizzair.com/29.6.0/Api/search/timetable",
+  "_payload": {
+    "flightList": [
+      {
+        "departureStation": "BUD",
+        "arrivalStation": "CTA",
+        "from": "2026-08-22",
+        "to": "2026-09-05"
+      },
+      {
+        "departureStation": "CTA",
+        "arrivalStation": "BUD",
+        "from": "2026-08-22",
+        "to": "2026-09-05"
+      }
+    ],
+    "priceType": "regular",
+    "adultCount": 1,
+    "childCount": 0,
+    "infantCount": 0
+  },
+  "_status_code": 200,
+  "body": {
+    "outboundFlights": [
+      {
+        "departureStation": "BUD",
+        "arrivalStation": "CTA",
+        "departureDate": "2026-08-23T00:00:00",
+        "price": {
+          "amount": 26090.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "originalPrice": {
+          "amount": 26090.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "priceType": "price",
+        "departureDates": [
+          "2026-08-23T06:00:00"
+        ],
+        "hasMacFlight": false
+      },
+      {
+        "departureStation": "BUD",
+        "arrivalStation": "CTA",
+        "departureDate": "2026-08-24T00:00:00",
+        "price": {
+          "amount": 22390.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "originalPrice": {
+          "amount": 22390.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "priceType": "price",
+        "departureDates": [
+          "2026-08-24T18:20:00"
+        ],
+        "hasMacFlight": false
+      },
+      {
+        "departureStation": "BUD",
+        "arrivalStation": "CTA",
+        "departureDate": "2026-08-26T00:00:00",
+        "price": {
+          "amount": 13390.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "originalPrice": {
+          "amount": 13390.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "priceType": "price",
+        "departureDates": [
+          "2026-08-26T18:20:00"
+        ],
+        "hasMacFlight": false
+      },
+      {
+        "departureStation": "BUD",
+        "arrivalStation": "CTA",
+        "departureDate": "2026-08-27T00:00:00",
+        "price": {
+          "amount": 18590.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "originalPrice": {
+          "amount": 18590.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "priceType": "price",
+        "departureDates": [
+          "2026-08-27T07:00:00"
+        ],
+        "hasMacFlight": false
+      },
+      {
+        "departureStation": "BUD",
+        "arrivalStation": "CTA",
+        "departureDate": "2026-08-28T00:00:00",
+        "price": {
+          "amount": 20890.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "originalPrice": {
+          "amount": 20890.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "priceType": "price",
+        "departureDates": [
+          "2026-08-28T18:20:00"
+        ],
+        "hasMacFlight": false
+      },
+      {
+        "departureStation": "BUD",
+        "arrivalStation": "CTA",
+        "departureDate": "2026-08-30T00:00:00",
+        "price": {
+          "amount": 18590.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "originalPrice": {
+          "amount": 18590.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "priceType": "price",
+        "departureDates": [
+          "2026-08-30T06:00:00"
+        ],
+        "hasMacFlight": false
+      },
+      {
+        "departureStation": "BUD",
+        "arrivalStation": "CTA",
+        "departureDate": "2026-08-31T00:00:00",
+        "price": {
+          "amount": 59590.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "originalPrice": {
+          "amount": 59590.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "priceType": "price",
+        "departureDates": [
+          "2026-08-31T18:20:00"
+        ],
+        "hasMacFlight": false
+      },
+      {
+        "departureStation": "BUD",
+        "arrivalStation": "CTA",
+        "departureDate": "2026-09-02T00:00:00",
+        "price": {
+          "amount": 17090.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "originalPrice": {
+          "amount": 17090.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "priceType": "price",
+        "departureDates": [
+          "2026-09-02T18:20:00"
+        ],
+        "hasMacFlight": false
+      },
+      {
+        "departureStation": "BUD",
+        "arrivalStation": "CTA",
+        "departureDate": "2026-09-03T00:00:00",
+        "price": {
+          "amount": 18590.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "originalPrice": {
+          "amount": 18590.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "priceType": "price",
+        "departureDates": [
+          "2026-09-03T07:00:00"
+        ],
+        "hasMacFlight": false
+      },
+      {
+        "departureStation": "BUD",
+        "arrivalStation": "CTA",
+        "departureDate": "2026-09-04T00:00:00",
+        "price": {
+          "amount": 29790.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "originalPrice": {
+          "amount": 29790.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "priceType": "price",
+        "departureDates": [
+          "2026-09-04T18:20:00"
+        ],
+        "hasMacFlight": false
+      }
+    ],
+    "returnFlights": [
+      {
+        "departureStation": "CTA",
+        "arrivalStation": "BUD",
+        "departureDate": "2026-08-23T00:00:00",
+        "price": {
+          "amount": 37290.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "originalPrice": {
+          "amount": 37290.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "priceType": "price",
+        "departureDates": [
+          "2026-08-23T08:25:00"
+        ],
+        "hasMacFlight": false
+      },
+      {
+        "departureStation": "CTA",
+        "arrivalStation": "BUD",
+        "departureDate": "2026-08-24T00:00:00",
+        "price": {
+          "amount": 18590.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "originalPrice": {
+          "amount": 18590.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "priceType": "price",
+        "departureDates": [
+          "2026-08-24T21:10:00"
+        ],
+        "hasMacFlight": false
+      },
+      {
+        "departureStation": "CTA",
+        "arrivalStation": "BUD",
+        "departureDate": "2026-08-26T00:00:00",
+        "price": {
+          "amount": 18590.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "originalPrice": {
+          "amount": 18590.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "priceType": "price",
+        "departureDates": [
+          "2026-08-26T21:15:00"
+        ],
+        "hasMacFlight": false
+      },
+      {
+        "departureStation": "CTA",
+        "arrivalStation": "BUD",
+        "departureDate": "2026-08-27T00:00:00",
+        "price": {
+          "amount": 42890.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "originalPrice": {
+          "amount": 42890.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "priceType": "price",
+        "departureDates": [
+          "2026-08-27T09:40:00"
+        ],
+        "hasMacFlight": false
+      },
+      {
+        "departureStation": "CTA",
+        "arrivalStation": "BUD",
+        "departureDate": "2026-08-28T00:00:00",
+        "price": {
+          "amount": 20890.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "originalPrice": {
+          "amount": 20890.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "priceType": "price",
+        "departureDates": [
+          "2026-08-28T21:10:00"
+        ],
+        "hasMacFlight": false
+      },
+      {
+        "departureStation": "CTA",
+        "arrivalStation": "BUD",
+        "departureDate": "2026-08-30T00:00:00",
+        "price": {
+          "amount": 26090.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "originalPrice": {
+          "amount": 26090.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "priceType": "price",
+        "departureDates": [
+          "2026-08-30T08:25:00"
+        ],
+        "hasMacFlight": false
+      },
+      {
+        "departureStation": "CTA",
+        "arrivalStation": "BUD",
+        "departureDate": "2026-08-31T00:00:00",
+        "price": {
+          "amount": 37290.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "originalPrice": {
+          "amount": 37290.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "priceType": "price",
+        "departureDates": [
+          "2026-08-31T21:10:00"
+        ],
+        "hasMacFlight": false
+      },
+      {
+        "departureStation": "CTA",
+        "arrivalStation": "BUD",
+        "departureDate": "2026-09-02T00:00:00",
+        "price": {
+          "amount": 17090.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "originalPrice": {
+          "amount": 17090.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "priceType": "price",
+        "departureDates": [
+          "2026-09-02T21:15:00"
+        ],
+        "hasMacFlight": false
+      },
+      {
+        "departureStation": "CTA",
+        "arrivalStation": "BUD",
+        "departureDate": "2026-09-03T00:00:00",
+        "price": {
+          "amount": 14890.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "originalPrice": {
+          "amount": 14890.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "priceType": "price",
+        "departureDates": [
+          "2026-09-03T09:40:00"
+        ],
+        "hasMacFlight": false
+      },
+      {
+        "departureStation": "CTA",
+        "arrivalStation": "BUD",
+        "departureDate": "2026-09-04T00:00:00",
+        "price": {
+          "amount": 24590.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "originalPrice": {
+          "amount": 24590.0,
+          "currencyCode": "HUF",
+          "exchangedAmount": null,
+          "exchangedCurrencyCode": null
+        },
+        "priceType": "price",
+        "departureDates": [
+          "2026-09-04T21:10:00"
+        ],
+        "hasMacFlight": false
+      }
+    ]
+  },
+  "_raw_text_on_parse_failure": null
+}

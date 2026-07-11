@@ -1,68 +1,234 @@
+"""Airport registry v2 + the ``--where`` tag algebra.
+
+Loads ``data/destinations.json`` (schema_version 2): audited airports with
+country/region/terrain/vibe tags, ``multi_city`` groups, ``origin_ground``
+(BUD extended-origin ground legs) and ``open_jaw_pairs`` seeds. Exposes tag
+matching over the where-expression language and best-effort, lazily-fetched
+per-carrier service flags (graceful ``unknown`` when offline).
+"""
 import json
-from pathlib import Path
-from typing import List, Optional, Set, Dict
+import logging
+from typing import Any, Dict, List, Optional, Set
+
 from flight_deals.models import Airport
+from flight_deals.paths import resolve_path
+from flight_deals.registry.where import WhereParseError, extract_identifiers, where_parse
+
+logger = logging.getLogger(__name__)
 
 
-# Known direct connections from popular Ryanair & Wizz bases (easily extendable)
-# Format: origin -> set of common direct destinations
-# Sources: Common routes from airline route maps (updated with 2026 data)
+# --------------------------------------------------------------------------- #
+# Taxonomy vocabularies (SEARCH-DESIGN §3) — used for dataset validation.      #
+# --------------------------------------------------------------------------- #
+COUNTRY_TAGS: Set[str] = {
+    "italy", "spain", "greece", "portugal", "croatia", "france", "germany",
+    "poland", "austria", "slovakia", "czech", "hungary", "uk", "ireland",
+    "netherlands", "belgium", "bulgaria", "albania", "malta", "turkey",
+    "morocco", "scandinavia", "balkans", "benelux",
+}
+# Island/region groups where the group is the real unit. Extra to a country tag.
+REGION_TAGS: Set[str] = {"sicily", "sardinia", "crete", "cyclades", "canaries", "baleares"}
+TERRAIN_TAGS: Set[str] = {"seaside", "island", "mountains", "lakes", "thermal"}
+VIBE_TAGS: Set[str] = {
+    "city-break", "party", "quiet", "hidden-gem", "shopping", "family",
+    "culture", "hiking", "winter-sun", "ski",
+}
+SEASONAL_TAGS: Set[str] = {"seasonal-summer", "seasonal-winter"}
+# Auto-derived at query time, never hand-curated in the data file.
+DERIVED_TAGS: Set[str] = {"ryanair-served", "wizz-served", "hub"}
+
+# Static hub curation (pending route-network-derived connectivity, §8). These
+# get a synthetic ``hub`` tag injected at match time.
+HUB_IATAS: Set[str] = {
+    "VIE", "BTS", "BGY", "MXP", "FCO", "CIA", "BCN", "MAD", "STN", "LTN",
+    "LGW", "BER", "AMS", "DUB", "IST", "SAW", "WAW", "PRG",
+}
+
+# Aliases expand to sub-expressions before evaluation. Synonyms + a few
+# backward-compat names for the old v1 coarse tags.
+ALIASES: Dict[str, str] = {
+    # nationality synonyms -> country tag
+    "italian": "italy",
+    "spanish": "spain",
+    "greek": "greece",
+    "portuguese": "portugal",
+    "croatian": "croatia",
+    "french": "france",
+    "german": "germany",
+    "polish": "poland",
+    # island-group synonyms
+    "greek-islands": "island & greece",
+    "canary-islands": "canaries",
+    "balearic": "baleares",
+    "balearic-islands": "baleares",
+    # backward-compat with v1 coarse tags (old CLI/tests)
+    "european-islands": "island",
+    "italian-gems": "italy",
+}
+
+
+# Known direct connections from popular Ryanair & Wizz bases (soft filter used
+# by get_reachable when route data is not available). Extendable.
 KNOWN_DIRECT_ROUTES: Dict[str, Set[str]] = {
-    # BUD (Budapest) - primary for user - very rich coverage
     "BUD": {
-        "PMI", "IBZ", "MAH", "CFU", "HER", "CHQ", "ZTH", "JTR", "RHO", "PVK", "KLX", "EFL", "JMK", "SKG",
-        "CTA", "PMO", "CAG", "OLB", "AHO",
-        "ALC", "AGP", "FAO", "VLC", "GRO", "CDT",
-        "LPA", "TFS", "FUE", "FNC",
-        "BRI", "SUF", "BDS", "NAP", "VCE", "PSA",
-        "DBV", "ZAD", "SPU",
-        "MLA",
-        "LIS", "OPO",
-        "BGY", "BCN", "MAD", "STN", "EDI", "PRG",
-        "DUB", "VIE", "MUC", "FRA",
-        "BOJ", "VAR", "TIA"
+        "PMI", "IBZ", "MAH", "CFU", "HER", "CHQ", "ZTH", "JTR", "RHO", "PVK",
+        "KLX", "EFL", "JMK", "KGS", "SKG", "ATH", "CTA", "PMO", "CAG", "OLB",
+        "AHO", "ALC", "AGP", "FAO", "VLC", "GRO", "CDT", "LPA", "TFS", "ACE",
+        "FUE", "FNC", "BRI", "SUF", "BDS", "NAP", "VCE", "PSA", "BLQ", "DBV",
+        "ZAD", "SPU", "MLA", "LIS", "OPO", "BGY", "BCN", "MAD", "STN", "EDI",
+        "PRG", "KRK", "DUB", "VIE", "BER", "BOJ", "VAR", "TIA",
     },
-    # Other bases for completeness
-    "STN": {"PMI", "IBZ", "CFU", "HER", "CTA", "PMO", "ALC", "AGP", "FAO", "LPA", "TFS", "BGY", "BCN", "MAD"},
-    "BGY": {"PMI", "IBZ", "CFU", "HER", "ZTH", "CTA", "PMO", "CAG", "OLB", "ALC", "AGP", "FAO", "BRI", "SUF", "BDS"},
-    "DUB": {"PMI", "IBZ", "CFU", "HER", "ALC", "AGP", "FAO", "LPA", "TFS", "BGY", "BCN"},
-    "VIE": {"PMI", "IBZ", "CFU", "HER", "ZTH", "CTA", "PMO", "ALC", "AGP", "FAO", "BRI", "SUF"},
-    "EDI": {"PMI", "IBZ", "CFU", "HER", "ALC", "AGP", "FAO", "LPA", "TFS", "BGY", "BCN", "MAD", "BUD"},
-    "BCN": {"PMI", "IBZ", "CFU", "HER", "ZTH", "CTA", "PMO", "CAG", "OLB", "ALC", "AGP", "FAO", "BRI", "SUF", "BDS", "BUD", "VIE"},
-    "MAD": {"PMI", "IBZ", "CFU", "HER", "CTA", "PMO", "CAG", "OLB", "ALC", "AGP", "FAO", "LPA", "TFS", "FUE", "BRI", "BUD"},
-}
-
-# Popular hubs for 1-stop connections from BUD (good for extending reach with Ryanair/Wizz or other carriers)
-
-# Multi-airport cities excellent for self-transfers / flight changes
-# These allow flying into one airport and ground transferring to another in the same city
-# Very useful for LCC connections (Ryanair/Wizz/Pegasus bases in different airports)
-MULTI_AIRPORT_CITIES: Dict[str, List[str]] = {
-    "Istanbul": ["IST", "SAW"],
-    "London": ["STN", "LGW", "LTN"],
-    "Milan": ["BGY", "MXP"],
-    "Rome": ["CIA", "FCO"],
-    "Paris": ["BVA", "CDG"],
-    "Brussels": ["CRL", "BRU"],
-    "Warsaw": ["WAW", "WMI"],
-}
-
-CONNECTION_HUBS: Dict[str, List[str]] = {
-    "BUD": ["VIE", "MUC", "FRA", "AMS", "CDG", "IST", "PRG"]  # Common good connection points
 }
 
 
 class DestinationRegistry:
-    def __init__(self, data_path: str = "data/destinations.json"):
-        self.data_path = Path(data_path)
+    def __init__(self, data_path: Optional[str] = None):
+        self.data_path = resolve_path(data_path or "data/destinations.json")
         self.airports: List[Airport] = []
+        self.schema_version: int = 2
+        self.multi_city: Dict[str, List[str]] = {}
+        self.origin_ground: Dict[str, Dict[str, Any]] = {}
+        self.open_jaw_pairs: List[Dict[str, Any]] = []
+        self._carrier_cache: Dict[str, Dict[str, Optional[bool]]] = {}
         self._load()
 
+    # ------------------------------------------------------------------ #
+    # Loading                                                            #
+    # ------------------------------------------------------------------ #
     def _load(self):
-        if self.data_path.exists():
-            data = json.loads(self.data_path.read_text())
+        if not self.data_path.exists():
+            logger.warning("registry: destinations file not found at %s; registry empty", self.data_path)
+            return
+        data = json.loads(self.data_path.read_text())
+        if isinstance(data, dict) and "airports" in data:  # v2 schema
+            self.schema_version = int(data.get("schema_version", 2))
+            self.airports = [Airport(**item) for item in data["airports"]]
+            self.multi_city = data.get("multi_city", {})
+            self.origin_ground = data.get("origin_ground", {})
+            self.open_jaw_pairs = data.get("open_jaw_pairs", [])
+        else:  # legacy v1 (bare list) — tolerate for safety
+            self.schema_version = 1
             self.airports = [Airport(**item) for item in data]
 
+    def _iatas(self) -> Set[str]:
+        return {a.iata for a in self.airports}
+
+    # ------------------------------------------------------------------ #
+    # Where-algebra matching                                             #
+    # ------------------------------------------------------------------ #
+    def _tagset(self, airport: Airport,
+                carrier_flags: Optional[Dict[str, Dict[str, Optional[bool]]]] = None) -> Set[str]:
+        tags = set(airport.tags)
+        if airport.iata in HUB_IATAS:
+            tags.add("hub")
+        if carrier_flags:
+            cf = carrier_flags.get(airport.iata, {})
+            if cf.get("ryanair"):
+                tags.add("ryanair-served")
+            if cf.get("wizz"):
+                tags.add("wizz-served")
+        return tags
+
+    def matching(self, expr: str,
+                 carrier_flags: Optional[Dict[str, Dict[str, Optional[bool]]]] = None) -> List[Airport]:
+        """Return airports whose tags satisfy the where-expression ``expr``.
+
+        Pure over static tags by default (no network). Pass ``carrier_flags``
+        (from :meth:`carrier_flags`) to make ``ryanair-served``/``wizz-served``
+        resolvable. Raises :class:`WhereParseError` on malformed input.
+        """
+        node = where_parse(expr, ALIASES)
+        return [a for a in self.airports if node.eval(self._tagset(a, carrier_flags))]
+
+    def known_tag_universe(self) -> Set[str]:
+        """All identifiers a where-expression may legally reference: every
+        taxonomy tag set, derived (auto) tags, and alias names. Used to
+        detect unknown/misspelled tags instead of silently matching nothing.
+        """
+        return (
+            COUNTRY_TAGS | REGION_TAGS | TERRAIN_TAGS | VIBE_TAGS | SEASONAL_TAGS
+            | DERIVED_TAGS | set(ALIASES.keys())
+        )
+
+    def unknown_tags(self, expr: str) -> List[str]:
+        """Identifiers referenced in ``expr`` (lower-cased) that are not part
+        of :meth:`known_tag_universe` — i.e. likely typos/misspellings such
+        as ``"seasid"`` or off-taxonomy tags such as ``"italy-ish"``.
+
+        Case is not a source of "unknown": identifiers are lower-cased at
+        tokenize time (see ``registry.where``), so ``Italy`` == ``italy`` and
+        is never reported here.
+        """
+        known = self.known_tag_universe()
+        idents = extract_identifiers(expr)
+        return sorted(t for t in idents if t not in known)
+
+    def tag_hint(self, unknown: List[str]) -> str:
+        """A "did you mean" hint for each unknown tag — nearest known tag in
+        :meth:`known_tag_universe` by ``difflib`` (cutoff 0.6), or "is unknown"
+        when nothing is close. Shared by ``where show`` and the where-gate
+        that protects ``getaway``/``oneway``/``run``/``watch add`` from
+        burning a network call over a typo'd ``--where`` (SEARCH-DESIGN §3)."""
+        import difflib
+        known_universe = sorted(self.known_tag_universe())
+        suggestions = []
+        for tag in unknown:
+            close = difflib.get_close_matches(tag, known_universe, n=1, cutoff=0.6)
+            suggestions.append(f"{tag!r} - did you mean: {close[0]}?" if close else f"{tag!r} is unknown")
+        return "; ".join(suggestions)
+
+    def where_list(self) -> Dict[str, Any]:
+        """Tag inventory with counts, aliases, and derived (auto) tags."""
+        counts: Dict[str, int] = {}
+        for a in self.airports:
+            for t in a.tags:
+                counts[t] = counts.get(t, 0) + 1
+        return {
+            "tags": dict(sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))),
+            "aliases": dict(sorted(ALIASES.items())),
+            "derived": sorted(DERIVED_TAGS),
+        }
+
+    # ------------------------------------------------------------------ #
+    # Carrier service flags (lazy, best-effort, graceful when offline)   #
+    # ------------------------------------------------------------------ #
+    def carrier_flags(self, origin: str = "BUD", ryanair=None,
+                      use_cache: bool = True) -> Dict[str, Dict[str, Optional[bool]]]:
+        """Best-effort per-carrier served flags for every airport, from the
+        given origin. ``True``/``False`` for Ryanair when the route network is
+        reachable, else ``None`` (unknown). Wizz has no public route endpoint,
+        so it is always ``None`` (unknown) — surfaced honestly, never faked.
+        """
+        origin = (origin or "BUD").upper()
+        if use_cache and origin in self._carrier_cache:
+            return self._carrier_cache[origin]
+
+        ryanair_served: Optional[Set[str]] = None
+        if ryanair is None:
+            try:
+                from flight_deals.providers.ryanair import RyanairProvider
+                ryanair = RyanairProvider()
+            except Exception as e:  # provider import/construction failure
+                logger.warning("registry: ryanair provider unavailable: %s", e)
+        if ryanair is not None:
+            try:
+                ryanair_served = set(ryanair.routes(origin))
+            except Exception as e:  # offline / blocked / schema drift
+                logger.warning("registry: ryanair routes(%s) unavailable: %s", origin, e)
+                ryanair_served = None
+
+        flags: Dict[str, Dict[str, Optional[bool]]] = {}
+        for a in self.airports:
+            flags[a.iata] = {
+                "ryanair": (a.iata in ryanair_served) if ryanair_served is not None else None,
+                "wizz": None,
+            }
+        self._carrier_cache[origin] = flags
+        return flags
+
+    # ------------------------------------------------------------------ #
+    # Reachability (used by the orchestrator's one-way search)           #
+    # ------------------------------------------------------------------ #
     def get_by_tag(self, tag: str) -> List[Airport]:
         return [a for a in self.airports if tag in a.tags]
 
@@ -70,11 +236,40 @@ class DestinationRegistry:
         return [a for a in self.airports if a.iata != origin_iata]
 
     def get_reachable(self, origin: str, category: Optional[str] = None) -> List[Airport]:
+        """Destinations likely reachable direct from ``origin``.
+
+        ``category`` may be any where-expression (``seaside & (italy|spain)``)
+        or a bare tag/alias (old v1 names like ``european-islands`` still work
+        via aliases). Falls back to all matches if the origin's known-route set
+        is unavailable.
         """
-        Return destinations that are likely reachable DIRECT from the given origin.
-        Uses known direct routes + falls back to all if unknown.
-        """
-        candidates = self.get_by_tag(category) if category else self.airports
+        if category:
+            try:
+                candidates = self.matching(category)
+            except WhereParseError:
+                # Tolerate a malformed/bare token as a plain tag (never crash
+                # a sweep) — but apply the *same* lowercase + alias handling
+                # that matching()/where_parse would have used, so this
+                # fallback doesn't silently behave differently (review item:
+                # get_reachable dual-path inconsistency).
+                key = category.strip().lower()
+                resolved = ALIASES.get(key, key)
+                if any(op in resolved for op in "&|!()"):
+                    try:
+                        candidates = self.matching(resolved)
+                    except WhereParseError:
+                        candidates = self.get_by_tag(key)
+                else:
+                    candidates = self.get_by_tag(resolved)
+            if not candidates:
+                unknown = self.unknown_tags(category)
+                if unknown:
+                    logger.warning(
+                        "registry: get_reachable(origin=%s, category=%r) matched no "
+                        "airports; unknown tags: %s", origin, category, unknown,
+                    )
+        else:
+            candidates = list(self.airports)
         candidates = [a for a in candidates if a.iata != origin]
 
         known = KNOWN_DIRECT_ROUTES.get(origin.upper(), set())
@@ -82,47 +277,7 @@ class DestinationRegistry:
             reachable = [a for a in candidates if a.iata in known]
             if reachable:
                 return reachable
-
         return candidates
-
-    def get_reachable_with_connections(
-        self, 
-        origin: str, 
-        category: Optional[str] = None, 
-        max_stops: int = 1
-    ) -> List[Airport]:
-        """
-        Return destinations reachable DIRECT or with 1 stop (via popular hubs).
-        For connections, we include interesting destinations even if no direct LCC flight.
-        """
-        direct = self.get_reachable(origin, category)
-        if max_stops < 1:
-            return direct
-
-        all_candidates = self.get_by_tag(category) if category else self.airports
-        all_candidates = [a for a in all_candidates if a.iata != origin]
-
-        hubs = CONNECTION_HUBS.get(origin.upper(), [])
-        connected = set(a.iata for a in direct)
-
-        # Add destinations that are interesting and reachable via common hubs
-        # (user can then search BUD->hub + hub->dest or use other airlines)
-        for a in all_candidates:
-            if a.iata not in connected:
-                # Prioritize places that are popular 1-stop targets or have good tags
-                if any(tag in a.tags for tag in ["european-islands", "seaside", "italian-gems"]):
-                    connected.add(a.iata)
-
-        # Return full airport objects
-        result = [a for a in all_candidates if a.iata in connected]
-        # Dedup while preserving some order (direct first)
-        seen = set()
-        final = []
-        for a in direct + result:
-            if a.iata not in seen:
-                seen.add(a.iata)
-                final.append(a)
-        return final
 
     def get_all_tags(self) -> Set[str]:
         tags: Set[str] = set()
@@ -130,100 +285,82 @@ class DestinationRegistry:
             tags.update(a.tags)
         return tags
 
+    # ------------------------------------------------------------------ #
+    # Named-destination resolution (--to: IATA code OR city name)         #
+    # ------------------------------------------------------------------ #
+    def resolve_destination(self, value: str) -> Optional[List[str]]:
+        """Resolve a ``--to`` value to a list of destination IATAs present in
+        the registry, or ``None`` on a miss.
 
+        Order (task 9 C1): case-insensitive **city name** first (a multi-airport
+        city — ``multi_city`` group — expands to all its member airports present
+        in the registry; e.g. ``milan`` -> ``["BGY", "MXP"]``), then a 3-letter
+        **IATA** code. Never raises — the caller turns ``None`` into an exit-2
+        did-you-mean hint via :meth:`destination_suggestion`.
+        """
+        if not value or not str(value).strip():
+            return None
+        raw = str(value).strip()
+        lower = raw.lower()
+        known = self._iatas()
+
+        # 1a. Multi-airport city group (canonical city name is the group key).
+        for city, iatas in self.multi_city.items():
+            if city.lower() == lower:
+                members = sorted(i for i in iatas if i in known)
+                if members:
+                    return members
+        # 1b. Single-airport city: exact match, else the city's leading token
+        # (airport cities read "Milan Malpensa"/"London Stansted").
+        city_hits = sorted({a.iata for a in self.airports if a.city.lower() == lower})
+        if not city_hits:
+            city_hits = sorted({a.iata for a in self.airports
+                                if a.city.lower().split()[0:1] == [lower]})
+        if city_hits:
+            return city_hits
+
+        # 2. IATA code.
+        up = raw.upper()
+        if len(up) == 3 and up in known:
+            return [up]
+        return None
+
+    def destination_suggestion(self, value: str) -> Optional[str]:
+        """Nearest known city name or IATA for a ``--to`` miss (did-you-mean)."""
+        import difflib
+        raw = str(value).strip()
+        cities = sorted({a.city for a in self.airports} | set(self.multi_city.keys()))
+        close = difflib.get_close_matches(raw, cities, n=1, cutoff=0.6)
+        if not close:
+            close = difflib.get_close_matches(raw.upper(), sorted(self._iatas()), n=1, cutoff=0.6)
+        return close[0] if close else None
+
+    # ------------------------------------------------------------------ #
+    # Multi-city / ground / open-jaw accessors                           #
+    # ------------------------------------------------------------------ #
     def get_multi_airport_cities(self) -> List[str]:
-        """Return list of cities that have multiple useful airports for self-transfers."""
-        return list(MULTI_AIRPORT_CITIES.keys())
+        return list(self.multi_city.keys())
 
     def get_airports_for_multi_city(self, city: str) -> List[str]:
-        """Return all IATA codes for a multi-airport city."""
-        return MULTI_AIRPORT_CITIES.get(city, [])
+        return list(self.multi_city.get(city, []))
 
     def get_all_multi_airport_airports(self) -> List[str]:
-        """Flat list of all airports that are part of a multi-airport city."""
-        all_iatas = []
-        for airports in MULTI_AIRPORT_CITIES.values():
-            all_iatas.extend(airports)
-        return all_iatas
+        out: List[str] = []
+        for iatas in self.multi_city.values():
+            out.extend(iatas)
+        return out
 
     def get_ground_transfer_pairs(self) -> List[tuple]:
-        """Return pairs of airports within the same multi-airport city for ground transfer calculation."""
         pairs = []
-        for city, iatas in MULTI_AIRPORT_CITIES.items():
+        for iatas in self.multi_city.values():
             for i in range(len(iatas)):
-                for j in range(i+1, len(iatas)):
+                for j in range(i + 1, len(iatas)):
                     pairs.append((iatas[i], iatas[j]))
-                    pairs.append((iatas[j], iatas[i]))  # both directions
+                    pairs.append((iatas[j], iatas[i]))
         return pairs
 
-    def get_reachable_with_connections(
-        self, 
-        origin: str, 
-        category: Optional[str] = None, 
-        max_stops: int = 1
-    ) -> List[Airport]:
-        """
-        Return destinations reachable DIRECT or with 1 stop (via popular hubs).
-        Now also considers multi-airport cities for self-transfer opportunities.
-        """
-        direct = self.get_reachable(origin, category)
-        if max_stops < 1:
-            return direct
+    def get_origin_ground(self, iata: str) -> Optional[Dict[str, Any]]:
+        return self.origin_ground.get(iata.upper())
 
-        all_candidates = self.get_by_tag(category) if category else self.airports
-        all_candidates = [a for a in all_candidates if a.iata != origin]
-
-        hubs = CONNECTION_HUBS.get(origin.upper(), [])
-        connected = set(a.iata for a in direct)
-
-        # Add destinations that are interesting and reachable via common hubs
-        for a in all_candidates:
-            if a.iata not in connected:
-                if any(tag in a.tags for tag in ["european-islands", "seaside", "italian-gems"]):
-                    connected.add(a.iata)
-
-        # NEW: Also include destinations reachable via multi-airport self-transfer cities
-        # e.g. fly to one airport in Milan, ground to another, then continue
-        multi_airports = set(self.get_all_multi_airport_airports())
-        for hub_airport in hubs + list(multi_airports):
-            # If the hub is a multi-airport city member, consider its siblings as connection points
-            for city, iatas in MULTI_AIRPORT_CITIES.items():
-                if hub_airport in iatas:
-                    for other in iatas:
-                        if other != hub_airport:
-                            # Any destination that has direct from the sibling airport
-                            # For simplicity, we add interesting destinations as potential
-                            for a in all_candidates:
-                                if a.iata not in connected and any(tag in a.tags for tag in ["european-islands", "seaside"]):
-                                    connected.add(a.iata)
-
-        # Return full airport objects
-        result = [a for a in all_candidates if a.iata in connected]
-        # Dedup while preserving some order (direct first)
-        seen = set()
-        final = []
-        for a in direct + result:
-            if a.iata not in seen:
-                seen.add(a.iata)
-                final.append(a)
-        return final
-
-    def get_connection_hubs(self, origin: str) -> List[str]:
-        """Return regular hubs + all multi-airport airports as potential connection points."""
-        regular = CONNECTION_HUBS.get(origin.upper(), [])
-        multi = self.get_all_multi_airport_airports()
-        # Dedup
-        all_hubs = list(dict.fromkeys(regular + multi))
-        return all_hubs
-
-    def get_ground_options(self, from_iata: str, to_iata: str) -> List[Dict]:
-        """Return ground transport options between two airports (integrated with GroundTransport)."""
-        from flight_deals.ground import GroundTransport
-        gt = GroundTransport()
-        legs = gt.get_ground_options(from_iata, to_iata)
-        return [leg.model_dump() for leg in legs]
-
-    def estimate_connection_efficiency(self, origin: str, hub: str, dest: str, flight1_min: int = 90, flight2_min: int = 120) -> Dict:
-        from flight_deals.ground import GroundTransport
-        gt = GroundTransport()
-        return gt.estimate_total_connection_time(origin, hub, dest, flight1_min, flight2_min)
+    def get_open_jaw_pairs(self) -> List[Dict[str, Any]]:
+        return list(self.open_jaw_pairs)

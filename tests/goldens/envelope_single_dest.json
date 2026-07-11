@@ -1,0 +1,58 @@
+{
+  "exit_code": 0,
+  "envelope": {
+    "results": [
+      {
+        "deal_id": "52155ca8e6",
+        "shape": "S2",
+        "origin": "BUD",
+        "destination": "SKG",
+        "out_date": "2026-08-23",
+        "return_date": "2026-08-28",
+        "nights": 5,
+        "price_eur": 89.66,
+        "price_confidence": "exact",
+        "carriers": [
+          "ryanair"
+        ],
+        "legs": [
+          {
+            "type": "flight",
+            "origin": "BUD",
+            "destination": "SKG",
+            "carrier": "ryanair",
+            "departure_date": "2026-08-23",
+            "departure_time": "05:45",
+            "flight_number": "FR4277",
+            "price_eur": 41.99,
+            "duration_minutes": 155
+          },
+          {
+            "type": "flight",
+            "origin": "SKG",
+            "destination": "BUD",
+            "carrier": "ryanair",
+            "departure_date": "2026-08-28",
+            "departure_time": "22:10",
+            "flight_number": "FR4278",
+            "price_eur": 47.67,
+            "duration_minutes": 40
+          }
+        ],
+        "ground": null,
+        "why": "\u20ac90 round-trip, exact Ryanair fare",
+        "links": {
+          "ryanair": "https://www.ryanair.com/gb/en/trip/flights/select?originIata=BUD&destinationIata=SKG&dateOut=2026-08-23&adults=1&dateIn=2026-08-28"
+        }
+      }
+    ],
+    "summary": "Found 1 deal from BUD, cheapest SKG \u20ac90 rt 2026-08-23-2026-08-28 (exact)",
+    "sources": {
+      "ryanair": "ok",
+      "wizzair": "ok"
+    },
+    "next": [
+      "flight-deals check 52155ca8e6"
+    ]
+  }
+}

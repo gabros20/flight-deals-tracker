@@ -1,6 +1,6 @@
 [project]
 name = "flight-deals"
-version = "0.1.0"
+version = "0.7.0"
 description = "Track Ryanair and Wizz Air flight deals by category"
 requires-python = ">=3.11"
 dependencies = [
@@ -8,8 +8,15 @@ dependencies = [
     "rich>=13",
     "pydantic>=2.0",
     "requests>=2.31",
-    "backoff>=2.2",
     "python-dateutil>=2.8",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7",
+    "freezegun>=1.2",
+    "responses>=0.24",
 ]
 
 [project.scripts]
