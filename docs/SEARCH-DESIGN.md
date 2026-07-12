@@ -146,12 +146,29 @@ airport-local datetime.
 - **Two-stage funnel.** (1) DISCOVER: one OW-ANYWHERE sweep from the origin
   (filtered to hubs) + one per hub (filtered to where-matched destinations);
   compose same-day, MCT-plausible outbound pairs straight from that data.
-  (2) VERIFY the cheapest 6 by composite price: fresh exact-date `oneWayFares`
-  for ALL FOUR legs (O→H, H→D on the out date; D→H, H→O on the return date =
-  out + min-nights). A candidate becomes a deal ONLY after all four legs book
-  and both verified connections pass MCT. **Unverified candidates are NEVER
-  displayed or alerted** (hard rule) — an unbookable leg or a sub-MCT verified
-  gap drops the candidate silently from the results (logged, not shown).
+  (2) VERIFY the cheapest 6 by composite price. The outbound (O→H, H→D on the
+  out date) is fixed from discovery — that data already carries times and exact
+  fares, and its connection was MCT-checked in stage 1, so it is reused as-is.
+  The RETURN side is swept (Task 17, below). A candidate becomes a deal ONLY
+  after both return legs book on the chosen date and both connections (the
+  discovery-verified outbound + the freshly-verified return) pass MCT.
+  **Unverified candidates are NEVER displayed or alerted** (hard rule) — an
+  unbookable leg or a sub-MCT verified gap drops the candidate silently from the
+  results (logged, not shown).
+- **Return-window sweep (as-built 2026-07-13; Task 17)** — the yield fix. Per
+  shortlisted candidate, instead of verifying one fixed return date
+  (out+min-nights) on independently-cheapest legs: (a) 2 CAL (`cheapestPerDay`)
+  calls per return month — D→H and H→O — over the nights window (capped at 2
+  months; deduped by (o,d,month) per run, 6h calendar cache tier); (b) locally
+  pick the cheapest return date inside the nights window where BOTH legs fly;
+  (c) time-verify that date with 2 fresh exact-date `oneWayFares` calls, MCT
+  [180,480] on hub-local datetimes; on an MCT/bookability failure, ONE retry on
+  the next-best-priced date (2 more exact), then drop. Budget per candidate:
+  2 CAL/month + 2 exact + 2 retry — reserved honestly in `estimated_calls` and
+  the `--max-calls` account. The CAL day-level prices are *selection* minima
+  only; the exact-verified fares REPLACE them in the total (still exact + buffer,
+  no estimate leakage). The date-selection math is a pure, unit-tested function
+  in `engine/via_hub.py` (`select_return_dates`); orchestration is in the planner.
 - **Pricing**: `price_eur` = 4 leg fares + `self_transfer_buffer_eur` (default
   €25, DISPLAYED: "incl. ~€25 self-transfer buffer"). Ranked/budgeted on that
   total; `price_confidence: exact` once verified. Additive `connection`
@@ -165,14 +182,18 @@ airport-local datetime.
   `estimated_calls` so `--max-calls` budgets honestly; the funnel's execution
   lives in `planner._run_via_hub` (discovery + verification via the shared
   executor/token bucket), the pure MCT/composition half in `engine/via_hub.py`.
-- **Scope note (bounded verification):** v1 verifies each shortlisted candidate
-  at a single return date = out + `min(nights)`, keeping it to exactly 4
-  exact-date calls per candidate. A return-window sweep (trying every night in
-  the range) is a documented follow-up.
+- **Scope note (bounded verification):** ~~v1 verifies each shortlisted
+  candidate at a single return date = out + `min(nights)`.~~ **Superseded by the
+  Task 17 return-window sweep (above):** the return date is now chosen by a CAL
+  price sweep across the whole nights window (both legs must fly), then
+  time-verified, with one retry on the next-best date. The outbound stays fixed
+  from discovery.
 - **Azores/PDL** (S5 follow-up, NOT in v1): needs registry additions +
   LIS/OPO-hub validation. Recorded here; not implemented.
 
-Live finding (2026-07-12 smoke): verified-S5 yield is genuinely LOW with farfnd-only data — farfnd exposes only the cheapest fare per route per day, so verification can only test whether the independently-cheapest legs happen to connect; in the first live run 5/5 MCT-plausible outbound candidates verified but all 5 failed on the return connection. This is honest scarcity, not a defect: the funnel showed nothing rather than something unverified. The return-window sweep above is the yield fix.
+Live finding (2026-07-12 smoke, Task 16 baseline): verified-S5 yield was LOW with a single fixed return date — farfnd exposes only the cheapest fare per route per day, so verifying one date (out+min-nights) on independently-cheapest legs could only test whether those legs happen to connect; in the first live run 5/5 MCT-plausible outbound candidates verified but all 5 failed on the return connection (0-of-5). This was honest scarcity, not a defect — the funnel showed nothing rather than something unverified.
+
+Amendment (2026-07-13, Task 17 shipped): the return-window sweep replaces the single fixed return date. Verification now searches the whole nights window for the cheapest return date on which BOTH legs fly before time-checking it (plus one retry), giving MCT a real chance to hold on a bookable date instead of gambling on out+min-nights alone. Live re-run yield delta is recorded in `.orchestrate/task-17-report.md`.
 
 ## 3. Category algebra (the `--where` language)
 
