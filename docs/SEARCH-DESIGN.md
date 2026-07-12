@@ -172,6 +172,8 @@ airport-local datetime.
 - **Azores/PDL** (S5 follow-up, NOT in v1): needs registry additions +
   LIS/OPO-hub validation. Recorded here; not implemented.
 
+Live finding (2026-07-12 smoke): verified-S5 yield is genuinely LOW with farfnd-only data — farfnd exposes only the cheapest fare per route per day, so verification can only test whether the independently-cheapest legs happen to connect; in the first live run 5/5 MCT-plausible outbound candidates verified but all 5 failed on the return connection. This is honest scarcity, not a defect: the funnel showed nothing rather than something unverified. The return-window sweep above is the yield fix.
+
 ## 3. Category algebra (the `--where` language)
 
 Categories are not a flat enum — the user thinks in combinations ("seaside, or
