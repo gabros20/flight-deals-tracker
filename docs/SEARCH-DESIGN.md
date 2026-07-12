@@ -333,7 +333,11 @@ not crossing time). The fix, in authority order:
    surfaces the scheduled minutes as `estimate_basis:"scheduled"` IFF within
    [0.5×, 3.0×] of the modeled value (outside → `transit_suspect`, modeled kept),
    with the same 330/420 land/ferry caps (a scheduled value over cap is an honest
-   "too far", dropped at refresh). Scheduled values get **no** wait pad
+   "too far", dropped at refresh). The 0.5× floor is a deliberate tradeoff: a
+   legitimately fast train that comes in below half the modeled duration is
+   rejected as suspect and the slower modeled value is kept instead — the safe
+   direction (it never fabricates a too-good-to-be-true number) at the cost of
+   occasionally under-crediting a real deal. Scheduled values get **no** wait pad
    (travellers plan around timetables) and lose the `~` on duration; fares stay
    modeled/curated (Transitous has no fares), keeping `~` on cost. **Coverage is
    sparse**: most registry airports have no on-site rail/bus stop in Transitous's
