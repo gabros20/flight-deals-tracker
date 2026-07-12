@@ -188,7 +188,9 @@ def test_registry_merges_committed_matrix():
     reg = DestinationRegistry()  # default committed matrix
     pairs = reg.get_open_jaw_pairs()
     bases = {p["estimate_basis"] for p in pairs}
-    assert bases == {"curated", "computed"}
+    # "scheduled" appears once the committed matrix carries Transitous-refined
+    # pairs (Task 13); "curated"/"computed" are always present.
+    assert {"curated", "computed"} <= bases <= {"curated", "computed", "scheduled"}
     curated = [p for p in pairs if p["estimate_basis"] == "curated"]
     assert len(curated) == 11  # 6 land + 5 ferry corridors (Task 12), untouched
 

@@ -121,6 +121,22 @@ ISLAND_REGION_TAGS = frozenset(
     {"sicily", "malta", "crete", "cyclades", "sardinia", "canaries", "baleares"}
 )
 
+# --- transit-refinement parameters (Task 13; scheduled-transit acceptance) --- #
+# Where the free Transitous/MOTIS API has scheduled-transit coverage,
+# ``scripts/refresh_ground.py --transit`` records a real itinerary duration on a
+# computed pair as additive ``transit_minutes``/``transit_transfers``/
+# ``transit_modes``/``transit_queried_at`` fields (fares stay modeled — Transitous
+# has no fares). The EFFECTIVE ground_minutes surfaced to the planner is the
+# scheduled value IFF it is sane relative to the OSRM-modeled value: within
+# [0.5x, 3.0x] of the modeled minutes (outside -> a ``transit_suspect`` log, keep
+# modeled). Scheduled values get NO wait pad (travellers plan around timetables)
+# and the SAME land/ferry caps (330/420) — a scheduled duration over the cap is
+# an honest "too far", dropped at refresh time. estimate_basis becomes
+# ``"scheduled"`` for accepted pairs.
+TRANSIT_SUSPECT_LOW = 0.5
+TRANSIT_SUSPECT_HIGH = 3.0
+TRANSIT_BASIS = "scheduled"
+
 MODEL_PARAMS: Dict[str, Any] = {
     "haversine_prefilter_km": HAVERSINE_PREFILTER_KM,
     "ground_minutes_formula": "round(drive_minutes * 1.35 + 30)",
@@ -253,6 +269,53 @@ def apply_route_pass(
         f"computed via OSRM (drive ~{round(drive_minutes)}min incl. "
         f"~{round(ferry_minutes)}min ferry / ~{round(sea_km)}km sea crossing)"
     )
+    return out
+
+
+def ground_cap_for(pair: Dict[str, Any]) -> int:
+    """The applicable ground-minutes cap for a pair: the looser ferry cap (420)
+    when the hop crosses water, else the land cap (330). Shared by the refresh
+    script's scheduled-value cap-drop and the read-path acceptance rule."""
+    return MAX_FERRY_GROUND_MINUTES if pair.get("has_ferry") else MAX_GROUND_MINUTES
+
+
+def apply_transit_refinement(pair: Dict[str, Any]) -> Dict[str, Any]:
+    """READ-path scheduled-transit acceptance (Task 13). Given a computed matrix
+    ``pair`` that may carry additive ``transit_minutes`` (written by
+    ``scripts/refresh_ground.py --transit``), decide the EFFECTIVE
+    ``ground_minutes`` surfaced to the planner:
+
+    * ``transit_minutes`` present AND within ``[0.5x, 3.0x]`` of the modeled
+      ``ground_minutes`` AND not over the land/ferry cap -> surface
+      ``transit_minutes`` as ``ground_minutes`` (no wait pad — travellers plan
+      around timetables), stash the modeled value in ``modeled_minutes``, and
+      flag ``_transit_accepted`` (merge then sets ``estimate_basis="scheduled"``).
+    * ``transit_minutes`` present but out of bounds -> log ``transit_suspect``
+      once and keep the modeled value (``estimate_basis`` stays ``"computed"``).
+    * ``no_coverage`` / absent -> keep the modeled value untouched.
+
+    Returns a NEW dict; never mutates the input. Fares are never touched —
+    ``est_cost_eur`` stays the modeled ``~`` estimate on both branches."""
+    out = dict(pair)
+    tm = pair.get("transit_minutes")
+    modeled = pair.get("ground_minutes")
+    if not isinstance(tm, (int, float)) or isinstance(tm, bool):
+        return out
+    if not isinstance(modeled, (int, float)) or modeled <= 0:
+        return out
+    lo, hi = TRANSIT_SUSPECT_LOW * modeled, TRANSIT_SUSPECT_HIGH * modeled
+    cap = ground_cap_for(pair)
+    if lo <= tm <= hi and tm <= cap:
+        out["modeled_minutes"] = int(modeled)
+        out["ground_minutes"] = int(round(tm))
+        out["_transit_accepted"] = True
+    else:
+        logger.warning(
+            "ground_matrix: transit_suspect %s-%s — scheduled %smin outside "
+            "[%.0f, %.0f] (0.5x-3.0x) of modeled %smin or over %dmin cap; "
+            "keeping modeled estimate",
+            pair.get("a"), pair.get("b"), tm, lo, hi, modeled, cap,
+        )
     return out
 
 
@@ -484,7 +547,11 @@ def merge_open_jaw_pairs(
     """Merge curated (authoritative) + computed open-jaw pairs. Curated pairs
     keep their exact values and win — a computed pair for the same unordered
     ``{a, b}`` airport combo is dropped, never overriding curation. Every pair
-    is tagged with ``estimate_basis`` (``curated`` | ``computed``)."""
+    is tagged with ``estimate_basis`` (``curated`` | ``computed`` |
+    ``scheduled``). A computed pair carrying an accepted Transitous scheduled
+    duration (Task 13) surfaces the scheduled minutes and is tagged
+    ``"scheduled"`` (see :func:`apply_transit_refinement`); curated pairs are
+    never touched by transit refinement (curated wins as ever)."""
     out: List[Dict[str, Any]] = []
     seen: set = set()
     for p in curated:
@@ -496,8 +563,9 @@ def merge_open_jaw_pairs(
         key = frozenset({str(p["a"]).upper(), str(p["b"]).upper()})
         if key in seen:
             continue
-        q = dict(p)
-        q["estimate_basis"] = "computed"
+        q = apply_transit_refinement(p)
+        accepted = q.pop("_transit_accepted", False)
+        q["estimate_basis"] = TRANSIT_BASIS if accepted else "computed"
         out.append(q)
         seen.add(key)
     return out

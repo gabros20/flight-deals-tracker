@@ -1,0 +1,14 @@
+{
+  "_captured_live": true,
+  "_pair": "AHO-CAG",
+  "_kind": "no_coverage",
+  "_slot": "2026-07-28T10:00:00Z",
+  "_url": "https://api.transitous.org/api/v1/plan",
+  "_params": "fromPlace=40.6321,8.2908&toPlace=39.2517,9.0544&time=2026-07-28T10:00:00Z&numItineraries=3&transitModes=RAIL,HIGHSPEED_RAIL,LONG_DISTANCE,NIGHT_RAIL,REGIONAL_FAST_RAIL,REGIONAL_RAIL,BUS,COACH,TRAM,SUBWAY,METRO,FERRY",
+  "_geometry_stripped": true,
+  "_note": "legGeometry+steps stripped; itineraries kept",
+  "body": {
+    "direct": [],
+    "itineraries": []
+  }
+}

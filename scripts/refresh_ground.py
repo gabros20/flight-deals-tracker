@@ -37,14 +37,25 @@ Pipeline:
      DROPPED rather than kept mispriced as land. An island-region cross-check
      also warns when a land-DETECTED (has_ferry==False) pair looks like it
      should cross water.
-  6. Atomic write (tmp + os.replace) with schema_version, computed_at, and the
+  6. Third pass (Task 13, ``--transit`` only): where the free Transitous/MOTIS
+     API has scheduled-transit coverage, refine a kept pair's modeled duration
+     with a REAL itinerary length (best of two representative departures). Stores
+     additive ``transit_minutes``/``transit_transfers``/``transit_modes``/
+     ``transit_queried_at``; a scheduled value over the land/ferry cap drops the
+     pair (honest "too far"); no coverage keeps the modeled value. AIRPLANE legs
+     are excluded (the recipe queries GROUND modes only). Manual-script-only, out
+     of the request path exactly like the OSRM passes.
+  7. Atomic write (tmp + os.replace) with schema_version, computed_at, and the
      model params echoed. On a /table failure: clean non-zero exit, the existing
-     matrix is left UNTOUCHED (never half-written, never faked).
+     matrix is left UNTOUCHED (never half-written, never faked). A Transitous
+     whole-service failure never invalidates the matrix (table+route stay valid);
+     it warns and exits nonzero for the transit pass only.
 
 Usage:
 
     .venv/bin/python scripts/refresh_ground.py
     .venv/bin/python scripts/refresh_ground.py --dry-run
+    .venv/bin/python scripts/refresh_ground.py --transit    # + scheduled refinement
     .venv/bin/python scripts/refresh_ground.py \
         --capture-fixture tests/fixtures/osrm_table_registry.json
 
@@ -61,7 +72,7 @@ import logging
 import os
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
@@ -92,9 +103,41 @@ USER_AGENT = (
 # fixture stays lean (mirrors capture_fixtures.py's truncation discipline).
 FIXTURE_MAX_NODES = 20
 
+# --- Transit pass (Task 13): Transitous/MOTIS scheduled-transit refinement ---- #
+# Third, manual-only pass (after /table + /route). Where the free Transitous API
+# (MOTIS) has scheduled-transit coverage for an airport->airport hop, we refine
+# the OSRM-modeled duration with a REAL itinerary length. Live-probed 2026-07-12
+# (recipe + coverage recorded in .orchestrate/task-13-report.md): the working
+# call is GET /api/v1/plan?fromPlace=lat,lon&toPlace=lat,lon&time=...&
+# numItineraries=N&transitModes=<ground modes>. Manual-script-only, never in the
+# request path (Global Constraints — Transitous joins OSRM in that category).
+TRANSITOUS_PLAN_URL = "https://api.transitous.org/api/v1/plan"
+# Ground modes ONLY — AIRPLANE is deliberately EXCLUDED. The live probe showed
+# that airport-coordinate queries otherwise return absurd air itineraries (e.g.
+# a BUD->CAG->VIE two-flight "connection") that are NOT the open-jaw GROUND hop
+# we model; excluding air is the load-bearing recipe insight (task-13 report).
+TRANSIT_GROUND_MODES = [
+    "RAIL", "HIGHSPEED_RAIL", "LONG_DISTANCE", "NIGHT_RAIL",
+    "REGIONAL_FAST_RAIL", "REGIONAL_RAIL", "BUS", "COACH", "TRAM",
+    "SUBWAY", "METRO", "FERRY",
+]
+# Polite pacing for the transit pass — ~1 req/s house rule; ~38 pairs x 2 slots
+# => ~90 requests => ~2 min. Global Constraint 9.
+TRANSIT_PASS_PACE_SECONDS = 1.1
+# Two representative departures: next Tuesday at least this many days out, at
+# 10:00 and 15:00 UTC. UTC is a documented CHOICE — central-Europe locals are
+# UTC+1/+2 and this is representative sampling, not per-airport timezone
+# precision (explicitly out of scope). Best itinerary = min duration across both.
+TRANSIT_MIN_LEAD_DAYS = 14
+TRANSIT_SLOTS_UTC = ("10:00:00", "15:00:00")
+
 
 class OsrmError(RuntimeError):
     """OSRM was unreachable, refused, or returned an unusable body."""
+
+
+class TransitousError(RuntimeError):
+    """Transitous/MOTIS was unreachable, refused, or returned an unusable body."""
 
 
 def build_coords(airports: List[Any]) -> str:
@@ -282,9 +325,240 @@ def run_route_pass(
     return out_rows, stats
 
 
+# --------------------------------------------------------------------------- #
+# Transit pass (Task 13) — Transitous/MOTIS scheduled-transit refinement        #
+# --------------------------------------------------------------------------- #
+def next_tuesday_slots(now: Optional[datetime] = None) -> List[str]:
+    """The two representative departure ISO instants: the next Tuesday at least
+    ``TRANSIT_MIN_LEAD_DAYS`` out, at 10:00 and 15:00 UTC. Deterministic given
+    ``now`` (tests freeze it)."""
+    now = now or datetime.now(timezone.utc)
+    d = now.date() + timedelta(days=TRANSIT_MIN_LEAD_DAYS)
+    while d.weekday() != 1:  # Monday=0, Tuesday=1
+        d += timedelta(days=1)
+    return [f"{d.isoformat()}T{s}Z" for s in TRANSIT_SLOTS_UTC]
+
+
+def fetch_plan(from_coord: str, to_coord: str, when: str, timeout: int = 40) -> Dict[str, Any]:
+    """One Transitous ``/plan`` request for an airport->airport ground itinerary
+    at ``when``. Raises ``TransitousError`` on any transport/status/JSON problem
+    so the caller can treat THIS pair as no_coverage (never fabricate)."""
+    params = {
+        "fromPlace": from_coord, "toPlace": to_coord, "time": when,
+        "numItineraries": 3, "transitModes": ",".join(TRANSIT_GROUND_MODES),
+    }
+    headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
+    try:
+        resp = requests.get(TRANSITOUS_PLAN_URL, params=params, headers=headers, timeout=timeout)
+    except requests.RequestException as e:
+        raise TransitousError(f"Transitous request failed: {e}") from e
+    if resp.status_code >= 400:
+        raise TransitousError(f"Transitous HTTP {resp.status_code}: {resp.text[:200]}")
+    try:
+        return resp.json()
+    except ValueError as e:
+        raise TransitousError(f"Transitous non-JSON body: {resp.text[:200]}") from e
+
+
+def _itin_duration_seconds(itin: Dict[str, Any]) -> Optional[int]:
+    """The itinerary length in seconds = ``endTime - startTime`` (the brief's
+    best-itinerary metric). Uses the ``duration`` field when present (MOTIS sets
+    it to exactly that), else computes it from the ISO timestamps."""
+    dur = itin.get("duration")
+    if isinstance(dur, (int, float)) and not isinstance(dur, bool):
+        return int(dur)
+    st, en = itin.get("startTime"), itin.get("endTime")
+    if isinstance(st, str) and isinstance(en, str):
+        try:
+            t0 = datetime.fromisoformat(st.replace("Z", "+00:00"))
+            t1 = datetime.fromisoformat(en.replace("Z", "+00:00"))
+            return int((t1 - t0).total_seconds())
+        except ValueError:
+            return None
+    return None
+
+
+def best_ground_itinerary(
+    responses: List[Dict[str, Any]],
+) -> Optional[Tuple[int, Optional[int], List[str]]]:
+    """Across all ``responses`` (both departure slots), pick the ground itinerary
+    with the minimum ``endTime - startTime``. An itinerary is GROUND only if it
+    contains NO ``AIRPLANE`` leg (air is excluded — see recipe) and at least one
+    real transit leg (a non-WALK mode; a pure-walk 'direct' is not a scheduled
+    service). Returns ``(duration_seconds, transfers, transit_modes)`` or ``None``
+    when no ground itinerary exists (=> no_coverage)."""
+    best: Optional[Tuple[int, Optional[int], List[str]]] = None
+    for resp in responses:
+        for itin in resp.get("itineraries") or []:
+            legs = itin.get("legs") or []
+            modes = [l.get("mode") for l in legs]
+            if any(m == "AIRPLANE" for m in modes):
+                continue
+            transit_modes = sorted({m for m in modes if m and m != "WALK"})
+            if not transit_modes:
+                continue
+            dur = _itin_duration_seconds(itin)
+            if dur is None:
+                continue
+            if best is None or dur < best[0]:
+                best = (dur, itin.get("transfers"), transit_modes)
+    return best
+
+
+def write_transit_fixture(
+    out_path: str, pair: str, kind: str, when: str, resp: Dict[str, Any],
+    from_coord: str, to_coord: str,
+) -> None:
+    """Record one live Transitous ``/plan`` response as a fixture (Task 13 req
+    1/6): keep each itinerary's ``duration``/``startTime``/``endTime``/
+    ``transfers`` and its legs' ``mode``/``duration``/``from.name``/``to.name``,
+    but STRIP the verbose ``legGeometry``/``steps`` (capture truncation
+    discipline). Mirrors the probe-captured fixture shape."""
+    slim_itins: List[Dict[str, Any]] = []
+    for itin in resp.get("itineraries") or []:
+        slim_itins.append({
+            "duration": itin.get("duration"),
+            "startTime": itin.get("startTime"),
+            "endTime": itin.get("endTime"),
+            "transfers": itin.get("transfers"),
+            "legs": [
+                {"mode": l.get("mode"), "duration": l.get("duration"),
+                 "from": {"name": (l.get("from") or {}).get("name")},
+                 "to": {"name": (l.get("to") or {}).get("name")}}
+                for l in itin.get("legs") or []
+            ],
+        })
+    fixture = {
+        "_captured_live": True,
+        "_pair": pair,
+        "_kind": kind,
+        "_slot": when,
+        "_url": TRANSITOUS_PLAN_URL,
+        "_params": (f"fromPlace={from_coord}&toPlace={to_coord}&time={when}"
+                    f"&numItineraries=3&transitModes={','.join(TRANSIT_GROUND_MODES)}"),
+        "_geometry_stripped": True,
+        "_note": "legGeometry+steps stripped; itineraries kept",
+        "body": {"direct": resp.get("direct", []), "itineraries": slim_itins},
+    }
+    path = resolve_path(out_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(fixture, indent=2) + "\n")
+    logger.info("wrote Transitous /plan fixture (%s %s) -> %s", kind, pair, path)
+
+
+def run_transit_pass(
+    rows: List[Dict[str, Any]], airports: List[Any],
+    slots: Optional[List[str]] = None, pace: float = TRANSIT_PASS_PACE_SECONDS,
+    now: Optional[datetime] = None,
+    capture_rail: Optional[str] = None, capture_none: Optional[str] = None,
+) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    """Third OSRM-analogue pass (Task 13): for each KEPT computed ``row`` query
+    Transitous a->b at two departure slots and refine with the best (shortest)
+    real scheduled ground itinerary. Stores ADDITIVE per-pair fields
+    ``transit_minutes``/``transit_transfers``/``transit_modes``/
+    ``transit_queried_at`` (modeled ``ground_minutes``/``est_cost_eur`` stay put —
+    the read-path acceptance rule decides the effective value). Rules:
+
+    * no ground itinerary / per-pair request failure -> ``transit: "no_coverage"``,
+      modeled values untouched (never fabricate).
+    * scheduled minutes over the land/ferry cap (330/420) -> pair DROPPED at
+      refresh time with a logged reason (a real timetable saying "too far" is an
+      honest exclusion), the pair resurfaces if a later refresh finds it in-cap.
+    * whole-service failure (NO slot for ANY pair returned an HTTP body) is
+      signalled via ``stats['http_ok'] == 0`` so the caller can warn + exit
+      nonzero WITHOUT annotating the matrix (table+route results stay valid).
+
+    Returns ``(out_rows, stats)``. Fixtures: the first refined (rail) pair and
+    the first no_coverage pair are recorded when capture paths are given."""
+    by_iata = {a.iata.upper(): a for a in airports}
+    slots = slots or next_tuesday_slots(now)
+    queried_at = datetime.now(timezone.utc).isoformat()
+    out_rows: List[Dict[str, Any]] = []
+    stats: Dict[str, Any] = {
+        "refined": 0, "suspect": 0, "no_coverage": 0, "errors": 0,
+        "dropped_cap": 0, "http_ok": 0, "slots": list(slots),
+    }
+    rail_captured = none_captured = False
+    logger.info("transit pass: %d kept pairs x %d slots (%s), Transitous /plan, ~%.0f req/s...",
+                len(rows), len(slots), ", ".join(slots), 1.0 / pace if pace else 0)
+    first = True
+    for row in rows:
+        a, b = str(row["a"]).upper(), str(row["b"]).upper()
+        apa, apb = by_iata.get(a), by_iata.get(b)
+        out = dict(row)
+        if apa is None or apb is None:  # defensive: no coords -> cannot query
+            out["transit"] = "no_coverage"
+            stats["no_coverage"] += 1
+            out_rows.append(out)
+            continue
+        from_coord = f"{apa.lat},{apa.lon}"
+        to_coord = f"{apb.lat},{apb.lon}"
+        responses: List[Dict[str, Any]] = []
+        any_ok = False
+        for when in slots:
+            if not first:
+                time.sleep(pace)
+            first = False
+            try:
+                resp = fetch_plan(from_coord, to_coord, when)
+            except TransitousError as e:
+                logger.warning("transit pass: %s-%s slot %s failed (%s)", a, b, when, e)
+                continue
+            any_ok = True
+            responses.append(resp)
+        if not any_ok:  # per-pair whole failure (all slots errored)
+            out["transit"] = "no_coverage"
+            stats["errors"] += 1
+            out_rows.append(out)
+            continue
+        stats["http_ok"] += 1
+        best = best_ground_itinerary(responses)
+        if best is None:  # HTTP ok but no ground itinerary
+            out["transit"] = "no_coverage"
+            stats["no_coverage"] += 1
+            if capture_none and not none_captured:
+                write_transit_fixture(capture_none, f"{a}-{b}", "no_coverage",
+                                      slots[0], responses[0], from_coord, to_coord)
+                none_captured = True
+            out_rows.append(out)
+            continue
+        dur_sec, transfers, transit_modes = best
+        tmin = int(round(dur_sec / 60.0))
+        cap = gm.ground_cap_for(out)
+        if tmin > cap:  # honest exclusion: the real timetable says too far
+            stats["dropped_cap"] += 1
+            logger.info("transit pass: %s-%s DROPPED (scheduled %dmin > %dmin cap)",
+                        a, b, tmin, cap)
+            continue
+        out["transit_minutes"] = tmin
+        out["transit_transfers"] = transfers
+        out["transit_modes"] = transit_modes
+        out["transit_queried_at"] = queried_at
+        modeled = int(out.get("ground_minutes") or 0)
+        lo, hi = gm.TRANSIT_SUSPECT_LOW * modeled, gm.TRANSIT_SUSPECT_HIGH * modeled
+        if modeled and lo <= tmin <= hi:
+            stats["refined"] += 1
+            logger.info("transit pass: %s-%s REFINED scheduled %dmin (modeled %dmin) "
+                        "tf=%s modes=%s", a, b, tmin, modeled,
+                        transfers, "+".join(transit_modes))
+            if capture_rail and not rail_captured:
+                write_transit_fixture(capture_rail, f"{a}-{b}", "rail",
+                                      slots[0], responses[0], from_coord, to_coord)
+                rail_captured = True
+        else:
+            stats["suspect"] += 1
+            logger.warning("transit pass: %s-%s transit_suspect scheduled %dmin outside "
+                           "[%.0f,%.0f] of modeled %dmin — modeled kept at read time",
+                           a, b, tmin, lo, hi, modeled)
+        out_rows.append(out)
+    out_rows.sort(key=lambda r: (r["a"], r["b"]))
+    return out_rows, stats
+
+
 def build_matrix_payload(
     airports: List[Any], prefiltered: List[Tuple[int, int, float]],
     pairs: List[Dict[str, Any]], route_stats: Optional[Dict[str, int]] = None,
+    transit_stats: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     stats: Dict[str, Any] = {
         "airports": len(airports),
@@ -299,6 +573,15 @@ def build_matrix_payload(
             "dropped_ferry_cap": route_stats["dropped_ferry_cap"],
             "dropped_island_null": route_stats.get("dropped_island_null", 0),
             "dropped_unverifiable": route_stats.get("dropped_unverifiable", 0),
+        })
+    if transit_stats is not None:
+        stats.update({
+            "transit_refined": transit_stats.get("refined", 0),
+            "transit_suspect": transit_stats.get("suspect", 0),
+            "transit_no_coverage": transit_stats.get("no_coverage", 0),
+            "transit_errors": transit_stats.get("errors", 0),
+            "transit_dropped_cap": transit_stats.get("dropped_cap", 0),
+            "transit_slots": transit_stats.get("slots", []),
         })
     return {
         "schema_version": gm.SCHEMA_VERSION,
@@ -391,6 +674,15 @@ def _print_stats(payload: Dict[str, Any]) -> None:
             st["dropped_ferry_cap"], gm.MAX_FERRY_GROUND_MINUTES,
             st.get("dropped_island_null", 0), st.get("dropped_unverifiable", 0),
         )
+    if "transit_refined" in st:
+        logger.info(
+            "  transit pass: %d refined (scheduled), %d suspect (out of "
+            "[0.5x,3.0x], modeled kept), %d no_coverage, %d errors, %d dropped by "
+            "the scheduled-value cap; slots %s",
+            st["transit_refined"], st["transit_suspect"], st["transit_no_coverage"],
+            st.get("transit_errors", 0), st.get("transit_dropped_cap", 0),
+            st.get("transit_slots", []),
+        )
     pairs = payload["pairs"]
     if pairs:
         shortest = min(pairs, key=lambda p: p["ground_minutes"])
@@ -416,6 +708,14 @@ def main(argv: Optional[List[str]] = None) -> int:
                     help="Record the first FERRY /route response to this fixture path.")
     ap.add_argument("--capture-land-route", metavar="PATH", default=None,
                     help="Record the first LAND /route response to this fixture path.")
+    ap.add_argument("--transit", action="store_true",
+                    help="Third pass: refine kept pairs with real Transitous/MOTIS "
+                         "scheduled itineraries where coverage exists (manual only, "
+                         "~2min; after the table+route passes).")
+    ap.add_argument("--capture-transit-rail", metavar="PATH", default=None,
+                    help="Record the first REFINED (rail) Transitous /plan response here.")
+    ap.add_argument("--capture-transit-none", metavar="PATH", default=None,
+                    help="Record the first NO-COVERAGE Transitous /plan response here.")
     ap.add_argument("--registry", default=None, help="Override destinations.json path.")
     args = ap.parse_args(argv)
 
@@ -459,17 +759,41 @@ def main(argv: Optional[List[str]] = None) -> int:
         rows, airports,
         capture_ferry=args.capture_ferry_route, capture_land=args.capture_land_route,
     )
-    payload = build_matrix_payload(airports, prefiltered, route_rows, route_stats)
+
+    # Third pass (Task 13): Transitous/MOTIS scheduled-transit refinement. Runs
+    # AFTER table+route and is manual-only (--transit). A whole-service failure
+    # (no slot for any pair returned a body) never invalidates the matrix — we
+    # discard the (empty) transit annotations, write the table+route matrix, and
+    # exit nonzero so a human re-runs the transit pass.
+    transit_stats = None
+    transit_service_failed = False
+    if args.transit:
+        annotated_rows, transit_stats = run_transit_pass(
+            route_rows, airports,
+            capture_rail=args.capture_transit_rail,
+            capture_none=args.capture_transit_none,
+        )
+        if transit_stats["http_ok"] == 0 and route_rows:
+            transit_service_failed = True
+            logger.warning(
+                "transit pass: WHOLE-SERVICE FAILURE — no Transitous response for "
+                "any pair; matrix written with table+route results only (unrefined)")
+            transit_stats = None  # do not record misleading transit stats
+        else:
+            route_rows = annotated_rows
+
+    payload = build_matrix_payload(airports, prefiltered, route_rows, route_stats,
+                                   transit_stats=transit_stats)
     _print_stats(payload)
 
     if args.dry_run:
         logger.info("--dry-run: not writing %s", gm.GROUND_MATRIX_FILE)
-        return 0
+        return 1 if transit_service_failed else 0
 
     write_atomic(payload)
     logger.info("refresh_ground: wrote %d pairs to %s",
                 len(payload["pairs"]), resolve_path(gm.GROUND_MATRIX_FILE))
-    return 0
+    return 1 if transit_service_failed else 0
 
 
 if __name__ == "__main__":
