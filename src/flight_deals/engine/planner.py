@@ -579,7 +579,7 @@ def _openjaw_candidate(
     base: str, d1: str, d2: str, out_fare: DayFare, ret_fare: DayFare, nights: int,
     ground_minutes: int, ground_cost: float, ground_mode: str,
     estimate_basis: Optional[str] = None, ground_distance_km: Optional[float] = None,
-    has_ferry: Optional[bool] = None,
+    has_ferry: Optional[bool] = None, transit_transfers: Optional[int] = None,
 ) -> _Candidate:
     """S4 open-jaw: fly ``base->d1``, ground ``d1->d2``, fly ``d2->base``. Two
     exact one-way Ryanair legs (CAL) + one ground hop. The trip's ``destination``
@@ -610,7 +610,8 @@ def _openjaw_candidate(
         legs=legs,
         ground=output.ground_summary(ground_minutes, ground_cost, ground_mode,
                                      estimate_basis=estimate_basis,
-                                     has_ferry=has_ferry),
+                                     has_ferry=has_ferry,
+                                     transit_transfers=transit_transfers),
         dedup=("openjaw", base, frozenset({d1, d2})),
     )
 
@@ -811,6 +812,11 @@ class Planner:
                 g_ferry = pair.get("has_ferry")
                 if g_ferry is None and "ferry" in str(g_mode).lower():
                     g_ferry = True
+                # Transit transfers surface only for a scheduled hop (Task 13):
+                # the merged pair carries transit_transfers when Transitous
+                # refinement was accepted (estimate_basis == "scheduled").
+                g_transfers = (pair.get("transit_transfers")
+                               if g_basis == "scheduled" else None)
                 best = None  # (total, d1, d2, out_fare, ret_fare, nights)
                 for d1, d2 in ((a, b), (b, a)):
                     outs = [f for f in cal_fares.get((base, d1), [])
@@ -831,7 +837,7 @@ class Planner:
                 _t, d1, d2, of, rf, n = best
                 out.append(_openjaw_candidate(base, d1, d2, of, rf, n, g_min, g_cost, g_mode,
                                               estimate_basis=g_basis, ground_distance_km=g_km,
-                                              has_ferry=g_ferry))
+                                              has_ferry=g_ferry, transit_transfers=g_transfers))
         return out
 
     def execute(self, plan: CallPlan, spec, *, fresh: bool = False) -> Dict[str, Any]:

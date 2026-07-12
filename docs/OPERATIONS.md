@@ -192,6 +192,10 @@ existing file untouched on failure.
 
 # Refresh the computed open-jaw ground matrix in place:
 .venv/bin/python scripts/refresh_ground.py
+
+# ...also refine durations with real Transitous/MOTIS timetables where
+# coverage exists (adds a third pass, ~2 min — see below):
+.venv/bin/python scripts/refresh_ground.py --transit
 ```
 
 `refresh_ground.py` makes **one** OSRM public `/table` request for the full
@@ -205,6 +209,18 @@ gains, removes, or moves an airport** — otherwise a new airport has no compute
 open-jaw pairs. If OSRM is down/refuses, the script exits non-zero and the
 committed matrix is left unchanged (the planner keeps serving the curated
 pairs plus the last good matrix).
+
+With `--transit` a **third pass** (Task 13) refines each kept pair's modeled
+duration with a real Transitous/MOTIS scheduled itinerary where coverage exists:
+two representative departures per pair (next Tuesday ≥14 days out, 10:00 &
+15:00 UTC), paced ~1 req/s — ~38 pairs × 2 ≈ **~2 minutes** on top of the
+table+route passes. Coverage is **sparse** (most airports have no on-site
+transit stop in Transitous's feeds — the 2026-07-12 live run refined 2 of 38
+pairs); pairs with no scheduled itinerary keep their modeled estimate
+(`transit: "no_coverage"`). A whole-service Transitous outage never invalidates
+the matrix: the script writes the table+route results and exits non-zero for the
+transit pass only. This pass is optional — plain `refresh_ground.py` (no
+`--transit`) is unchanged.
 
 Cron example (monthly, 1st at 05:00):
 

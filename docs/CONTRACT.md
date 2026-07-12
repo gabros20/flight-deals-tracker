@@ -199,8 +199,14 @@ Field-by-field:
   This is a convenience mirror of the ground leg(s) already present in
   `legs`, not new data. `estimate_basis` (additive, Task 11) is `"curated"`
   for a hand-verified hop (the 6 curated open-jaw pairs, the VIE/BTS
-  extended-origin legs) or `"computed"` for one derived from the OSRM ground
-  matrix (`data/ground_matrix.json`); absent when no provenance is attached.
+  extended-origin legs), `"computed"` for one derived from the OSRM ground
+  matrix (`data/ground_matrix.json`), or `"scheduled"` (additive, Task 13)
+  for a computed pair whose modeled duration was refined by a real
+  Transitous/MOTIS timetable itinerary; absent when no provenance is attached.
+  A `"scheduled"` hop also carries additive `transit_transfers` (the number
+  of transfers in that itinerary); its `duration_minutes` is the real
+  scheduled length (its `why` clause drops the `~` on the duration but keeps
+  `~` on the modeled `cost_eur`).
   `has_ferry` (additive, Task 12) is `true` when the ground hop crosses water on
   a ferry (a curated ferry corridor or a computed `ferry+ground` matrix pair);
   the `why` string then leads the hop with ⛴ so an agent discloses the crossing.
@@ -427,6 +433,26 @@ Both fields are absent on plans without the open-jaw shape.
 ---
 
 ## Changelog
+
+- **2026-07-12 (Task 13)** — Transitous/MOTIS scheduled-transit refinement;
+  additive, no frozen field changed shape:
+  - `estimate_basis` gains an additive enum value `"scheduled"` (§ 2) — a
+    computed open-jaw pair whose modeled duration was refined by a real
+    Transitous scheduled itinerary (where coverage exists). Fares stay modeled
+    (Transitous has no fares), so the `why` clause drops the `~` on the ground
+    **duration** but keeps `~` on the **cost** (`"3h48 scheduled, ~€30"`).
+  - Deal `ground` summary gains an additive `transit_transfers` (§ 2) on a
+    scheduled hop only. Absent otherwise, so non-scheduled deals stay
+    byte-identical.
+  - `data/ground_matrix.json` computed pairs gain additive `transit_minutes`/
+    `transit_transfers`/`transit_modes`/`transit_queried_at` (or `transit:
+    "no_coverage"`), written by `scripts/refresh_ground.py --transit` (manual
+    only). The read-path acceptance rule surfaces the scheduled minutes IFF
+    within [0.5×, 3.0×] of the modeled value (else `transit_suspect`, modeled
+    kept); the same 330/420 caps apply. `schema_version` stays `1` (additive
+    fields only, precedent: `airports_seen`). Coverage is best-effort and
+    sparse (see `.orchestrate/task-13-report.md`); the OSRM baseline is never
+    blocked and a whole-service failure never invalidates the matrix.
 
 - **2026-07-12 (Task 12)** — Ferry-aware ground modeling; additive, no frozen
   field changed shape:

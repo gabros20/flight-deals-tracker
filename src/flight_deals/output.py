@@ -123,7 +123,8 @@ def ground_leg(
 
 def ground_summary(duration_minutes: int, cost_eur: Optional[float], mode: str,
                    estimate_basis: Optional[str] = None,
-                   has_ferry: Optional[bool] = None) -> Dict[str, Any]:
+                   has_ferry: Optional[bool] = None,
+                   transit_transfers: Optional[int] = None) -> Dict[str, Any]:
     """The Deal-level ``ground`` convenience mirror (CONTRACT §2): total ground
     duration + total cost across all ground legs of the trip, plus the mode.
 
@@ -135,7 +136,12 @@ def ground_summary(duration_minutes: int, cost_eur: Optional[float], mode: str,
     ``has_ferry`` (Task 12, additive): ``True`` when the ground hop crosses water
     on a ferry (a curated ferry corridor or a computed ``ferry+ground`` matrix
     pair). Only attached when ``True`` so non-ferry deals stay byte-identical —
-    agents disclose the crossing (⛴ in the why-string) before the user commits."""
+    agents disclose the crossing (⛴ in the why-string) before the user commits.
+
+    ``transit_transfers`` (Task 13, additive): the number of transfers in the
+    real Transitous scheduled itinerary backing a ``estimate_basis="scheduled"``
+    hop. Only attached when set (scheduled pairs), so non-scheduled deals stay
+    byte-identical."""
     out: Dict[str, Any] = {
         "duration_minutes": duration_minutes,
         "cost_eur": None if cost_eur is None else round(float(cost_eur), 2),
@@ -145,6 +151,8 @@ def ground_summary(duration_minutes: int, cost_eur: Optional[float], mode: str,
         out["estimate_basis"] = estimate_basis
     if has_ferry:
         out["has_ferry"] = True
+    if transit_transfers is not None:
+        out["transit_transfers"] = transit_transfers
     return out
 
 
@@ -186,14 +194,21 @@ def ground_why_suffix(deal: Dict[str, Any]) -> str:
         d1 = deal["destination"]
         d2 = flight_legs[-1]["origin"] if flight_legs else "?"
         dur = _fmt_hm(g.get("duration_minutes"))
+        # A "scheduled" hop (Task 13) is backed by a real Transitous timetable:
+        # DROP the '~' on DURATION (a booked itinerary length, not a stated
+        # estimate) and add the word "scheduled"; KEEP '~' on COST (fares stay
+        # modeled — Transitous has no fares). Modeled/curated hops keep '~' on
+        # both. The ~ markers are thus split per field, not shared.
+        scheduled = g.get("estimate_basis") == "scheduled"
+        dur_piece = dur if (scheduled and dur) else (f"~{dur}" if dur else "")
+        cost_piece = f"~{cost_str}" if cost_str else ""
+        sched_word = "scheduled" if scheduled else ""
         if g.get("has_ferry"):
             # Ferry hop: lead with ⛴ so an agent discloses the sea crossing
             # before the user gets attached to a price (Task 12).
-            hop = " ".join(p for p in ("⛴", f"~{dur}" if dur else "",
-                                       f"~{cost_str}" if cost_str else "", "ferry") if p)
+            hop = " ".join(p for p in ("⛴", dur_piece, sched_word, cost_piece, "ferry") if p)
         else:
-            hop = " ".join(p for p in (mode, f"~{dur}" if dur else "",
-                                       f"~{cost_str}" if cost_str else "") if p)
+            hop = " ".join(p for p in (mode, dur_piece, sched_word, cost_piece) if p)
         return f" (fly into {d1}, {hop}, fly home from {d2})"
     return ""
 

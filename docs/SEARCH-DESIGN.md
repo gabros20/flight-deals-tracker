@@ -317,11 +317,34 @@ not crossing time). The fix, in authority order:
    step function at each boundary (~+45min crossing 15km, ~+€30 base /
    ~+80min wait crossing 60km) — acceptable for a STATED ESTIMATE and
    documented deliberately, not tuned away.
-4. **Transitous/MOTIS** (Task 13, deferred until explicitly activated):
-   `--transit` refresh flag replaces modeled durations with real scheduled
-   itineraries where coverage exists (`estimate_basis: "scheduled"`);
-   best-effort per pair, never blocking the OSRM baseline; fares stay
-   modeled/curated (Transitous does not do fares).
+4. **Transitous/MOTIS** (Task 13, as-built 2026-07-12): the
+   `scripts/refresh_ground.py --transit` third pass (manual-only, after
+   table+route) refines a kept pair's modeled duration with a real scheduled
+   itinerary where the free Transitous API (MOTIS) has coverage. Recipe (live
+   probed): `GET api.transitous.org/api/v1/plan?fromPlace=lat,lon&toPlace=lat,
+   lon&time=…&numItineraries=3&transitModes=<ground modes>`, querying two
+   representative departures (next Tuesday ≥14d, 10:00 & 15:00 UTC) and taking
+   the shortest ground itinerary (`min(endTime−startTime)`). **AIRPLANE legs are
+   excluded** — the load-bearing insight: airport-coordinate queries otherwise
+   return absurd air "connections" (e.g. BUD→CAG→VIE), not the ground hop.
+   Stored additively per pair (`transit_minutes`/`transit_transfers`/
+   `transit_modes`/`transit_queried_at`, else `transit:"no_coverage"`). The
+   read-path acceptance rule (`registry.ground_matrix.apply_transit_refinement`)
+   surfaces the scheduled minutes as `estimate_basis:"scheduled"` IFF within
+   [0.5×, 3.0×] of the modeled value (outside → `transit_suspect`, modeled kept),
+   with the same 330/420 land/ferry caps (a scheduled value over cap is an honest
+   "too far", dropped at refresh). The 0.5× floor is a deliberate tradeoff: a
+   legitimately fast train that comes in below half the modeled duration is
+   rejected as suspect and the slower modeled value is kept instead — the safe
+   direction (it never fabricates a too-good-to-be-true number) at the cost of
+   occasionally under-crediting a real deal. Scheduled values get **no** wait pad
+   (travellers plan around timetables) and lose the `~` on duration; fares stay
+   modeled/curated (Transitous has no fares), keeping `~` on cost. **Coverage is
+   sparse**: most registry airports have no on-site rail/bus stop in Transitous's
+   aggregated feeds, so airport→airport ground routing returns nothing (the live
+   run refined 2 of 38 computed pairs — AMS-CRL, CIA-NAP). Never blocks the OSRM
+   baseline; a whole-service failure never invalidates the matrix. Full probe +
+   coverage audit: `.orchestrate/task-13-report.md`.
 
 ## 8. Open questions (decide during implementation, low stakes)
 

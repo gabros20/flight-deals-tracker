@@ -1,0 +1,289 @@
+{
+  "_captured_live": true,
+  "_pair": "AMS-CRL",
+  "_kind": "rail",
+  "_slot": "2026-07-28T10:00:00Z",
+  "_url": "https://api.transitous.org/api/v1/plan",
+  "_params": "fromPlace=52.3086,4.7639&toPlace=50.4592,4.4538&time=2026-07-28T10:00:00Z&numItineraries=3&transitModes=RAIL,HIGHSPEED_RAIL,LONG_DISTANCE,NIGHT_RAIL,REGIONAL_FAST_RAIL,REGIONAL_RAIL,BUS,COACH,TRAM,SUBWAY,METRO,FERRY",
+  "_geometry_stripped": true,
+  "_note": "legGeometry+steps stripped; itineraries kept",
+  "body": {
+    "direct": [],
+    "itineraries": [
+      {
+        "duration": 14580,
+        "startTime": "2026-07-28T10:04:00Z",
+        "endTime": "2026-07-28T14:07:00Z",
+        "transfers": 2,
+        "legs": [
+          {
+            "mode": "WALK",
+            "duration": 480,
+            "from": {
+              "name": "START"
+            },
+            "to": {
+              "name": "Schiphol Airport"
+            }
+          },
+          {
+            "mode": "LONG_DISTANCE",
+            "duration": 7140,
+            "from": {
+              "name": "Schiphol Airport"
+            },
+            "to": {
+              "name": "Brussel-Zuid"
+            }
+          },
+          {
+            "mode": "WALK",
+            "duration": 300,
+            "from": {
+              "name": "Brussel-Zuid"
+            },
+            "to": {
+              "name": "Brux.-Midi/Brus.-Zuid"
+            }
+          },
+          {
+            "mode": "METRO",
+            "duration": 3000,
+            "from": {
+              "name": "Brux.-Midi/Brus.-Zuid"
+            },
+            "to": {
+              "name": "Charleroi-Central"
+            }
+          },
+          {
+            "mode": "WALK",
+            "duration": 300,
+            "from": {
+              "name": "Charleroi-Central"
+            },
+            "to": {
+              "name": "CHARLEROI Gare Centrale - Quai 18"
+            }
+          },
+          {
+            "mode": "BUS",
+            "duration": 600,
+            "from": {
+              "name": "CHARLEROI Gare Centrale - Quai 18"
+            },
+            "to": {
+              "name": "JUMET Monument"
+            }
+          },
+          {
+            "mode": "WALK",
+            "duration": 420,
+            "from": {
+              "name": "JUMET Monument"
+            },
+            "to": {
+              "name": "END"
+            }
+          }
+        ]
+      },
+      {
+        "duration": 13680,
+        "startTime": "2026-07-28T11:19:00Z",
+        "endTime": "2026-07-28T15:07:00Z",
+        "transfers": 2,
+        "legs": [
+          {
+            "mode": "WALK",
+            "duration": 480,
+            "from": {
+              "name": "START"
+            },
+            "to": {
+              "name": "Schiphol Airport"
+            }
+          },
+          {
+            "mode": "HIGHSPEED_RAIL",
+            "duration": 5940,
+            "from": {
+              "name": "Schiphol Airport"
+            },
+            "to": {
+              "name": "Brussel-Zuid"
+            }
+          },
+          {
+            "mode": "WALK",
+            "duration": 300,
+            "from": {
+              "name": "Brussel-Zuid"
+            },
+            "to": {
+              "name": "Brux.-Midi/Brus.-Zuid"
+            }
+          },
+          {
+            "mode": "REGIONAL_RAIL",
+            "duration": 3060,
+            "from": {
+              "name": "Brux.-Midi/Brus.-Zuid"
+            },
+            "to": {
+              "name": "Charleroi-Central"
+            }
+          },
+          {
+            "mode": "WALK",
+            "duration": 300,
+            "from": {
+              "name": "Charleroi-Central"
+            },
+            "to": {
+              "name": "CHARLEROI Gare Centrale - Quai 18"
+            }
+          },
+          {
+            "mode": "BUS",
+            "duration": 600,
+            "from": {
+              "name": "CHARLEROI Gare Centrale - Quai 18"
+            },
+            "to": {
+              "name": "JUMET Monument"
+            }
+          },
+          {
+            "mode": "WALK",
+            "duration": 420,
+            "from": {
+              "name": "JUMET Monument"
+            },
+            "to": {
+              "name": "END"
+            }
+          }
+        ]
+      },
+      {
+        "duration": 15840,
+        "startTime": "2026-07-28T11:34:00Z",
+        "endTime": "2026-07-28T15:58:00Z",
+        "transfers": 4,
+        "legs": [
+          {
+            "mode": "WALK",
+            "duration": 480,
+            "from": {
+              "name": "START"
+            },
+            "to": {
+              "name": "Schiphol Airport"
+            }
+          },
+          {
+            "mode": "LONG_DISTANCE",
+            "duration": 3300,
+            "from": {
+              "name": "Schiphol Airport"
+            },
+            "to": {
+              "name": "Breda"
+            }
+          },
+          {
+            "mode": "WALK",
+            "duration": 300,
+            "from": {
+              "name": "Breda"
+            },
+            "to": {
+              "name": "Breda (NL)"
+            }
+          },
+          {
+            "mode": "REGIONAL_RAIL",
+            "duration": 2040,
+            "from": {
+              "name": "Breda (NL)"
+            },
+            "to": {
+              "name": "Anvers-Central / Antwerpen-Centraal"
+            }
+          },
+          {
+            "mode": "WALK",
+            "duration": 300,
+            "from": {
+              "name": "Anvers-Central / Antwerpen-Centraal"
+            },
+            "to": {
+              "name": "Anvers-Central / Antwerpen-Centraal"
+            }
+          },
+          {
+            "mode": "REGIONAL_RAIL",
+            "duration": 6060,
+            "from": {
+              "name": "Anvers-Central / Antwerpen-Centraal"
+            },
+            "to": {
+              "name": "Charleroi-Central"
+            }
+          },
+          {
+            "mode": "WALK",
+            "duration": 300,
+            "from": {
+              "name": "Charleroi-Central"
+            },
+            "to": {
+              "name": "CHARLEROI Gare Centrale - Quai 02 (M)"
+            }
+          },
+          {
+            "mode": "SUBWAY",
+            "duration": 1380,
+            "from": {
+              "name": "CHARLEROI Gare Centrale - Quai 02 (M)"
+            },
+            "to": {
+              "name": "JUMET Madeleine (M)"
+            }
+          },
+          {
+            "mode": "WALK",
+            "duration": 120,
+            "from": {
+              "name": "JUMET Madeleine (M)"
+            },
+            "to": {
+              "name": "JUMET Madeleine"
+            }
+          },
+          {
+            "mode": "BUS",
+            "duration": 240,
+            "from": {
+              "name": "JUMET Madeleine"
+            },
+            "to": {
+              "name": "JUMET Monument"
+            }
+          },
+          {
+            "mode": "WALK",
+            "duration": 480,
+            "from": {
+              "name": "JUMET Monument"
+            },
+            "to": {
+              "name": "END"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

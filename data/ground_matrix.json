@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "computed_at": "2026-07-12T11:08:21.646214+00:00",
+  "computed_at": "2026-07-12T12:41:26.428639+00:00",
   "source": "OSRM public router.project-osrm.org /table + /route (driving profile)",
   "model": {
     "haversine_prefilter_km": 400.0,
@@ -43,7 +43,18 @@
     "ferry_pairs": 4,
     "land_pairs": 34,
     "route_pass_failed": 0,
-    "dropped_ferry_cap": 1
+    "dropped_ferry_cap": 1,
+    "dropped_island_null": 0,
+    "dropped_unverifiable": 0,
+    "transit_refined": 2,
+    "transit_suspect": 0,
+    "transit_no_coverage": 36,
+    "transit_errors": 0,
+    "transit_dropped_cap": 0,
+    "transit_slots": [
+      "2026-07-28T10:00:00Z",
+      "2026-07-28T15:00:00Z"
+    ]
   },
   "airports_seen": [
     "ACE",
@@ -135,7 +146,8 @@
       "km_road": 242.1,
       "straight_km": 166.7,
       "note": "computed via OSRM (drive ~218min / 242km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "AHO",
@@ -147,7 +159,8 @@
       "km_road": 129.8,
       "straight_km": 107.5,
       "note": "computed via OSRM (drive ~112min / 130km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "ALC",
@@ -159,7 +172,8 @@
       "km_road": 270.1,
       "straight_km": 196.3,
       "note": "computed via OSRM (drive ~201min / 270km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "ALC",
@@ -171,7 +185,8 @@
       "km_road": 195.0,
       "straight_km": 134.4,
       "note": "computed via OSRM (drive ~149min / 195km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "AMS",
@@ -183,7 +198,15 @@
       "km_road": 262.6,
       "straight_km": 206.8,
       "note": "computed via OSRM (drive ~191min / 263km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit_minutes": 228,
+      "transit_transfers": 2,
+      "transit_modes": [
+        "BUS",
+        "HIGHSPEED_RAIL",
+        "REGIONAL_RAIL"
+      ],
+      "transit_queried_at": "2026-07-12T12:38:09.550553+00:00"
     },
     {
       "a": "ATH",
@@ -195,7 +218,8 @@
       "km_road": 261.6,
       "straight_km": 194.9,
       "note": "computed via OSRM (drive ~186min / 262km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "BCN",
@@ -207,7 +231,8 @@
       "km_road": 268.1,
       "straight_km": 228.8,
       "note": "computed via OSRM (drive ~185min / 268km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "BCN",
@@ -219,7 +244,8 @@
       "km_road": 110.4,
       "straight_km": 87.9,
       "note": "computed via OSRM (drive ~88min / 110km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "BDS",
@@ -231,7 +257,8 @@
       "km_road": 127.1,
       "straight_km": 113.2,
       "note": "computed via OSRM (drive ~101min / 127km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "BGY",
@@ -243,7 +270,8 @@
       "km_road": 234.0,
       "straight_km": 177.4,
       "note": "computed via OSRM (drive ~150min / 234km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "BGY",
@@ -255,7 +283,8 @@
       "km_road": 192.2,
       "straight_km": 168.7,
       "note": "computed via OSRM (drive ~132min / 192km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "BGY",
@@ -267,7 +296,8 @@
       "km_road": 229.1,
       "straight_km": 206.9,
       "note": "computed via OSRM (drive ~147min / 229km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "BLQ",
@@ -279,7 +309,8 @@
       "km_road": 259.1,
       "straight_km": 235.0,
       "note": "computed via OSRM (drive ~179min / 259km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "BLQ",
@@ -291,7 +322,8 @@
       "km_road": 188.2,
       "straight_km": 118.7,
       "note": "computed via OSRM (drive ~135min / 188km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "BLQ",
@@ -303,7 +335,8 @@
       "km_road": 161.2,
       "straight_km": 136.4,
       "note": "computed via OSRM (drive ~108min / 161km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "BOJ",
@@ -315,7 +348,8 @@
       "km_road": 131.6,
       "straight_km": 77.9,
       "note": "computed via OSRM (drive ~139min / 132km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "BRI",
@@ -327,7 +361,8 @@
       "km_road": 246.8,
       "straight_km": 209.1,
       "note": "computed via OSRM (drive ~188min / 247km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "BTS",
@@ -339,7 +374,8 @@
       "km_road": 243.4,
       "straight_km": 173.0,
       "note": "computed via OSRM (drive ~164min / 243km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "BTS",
@@ -351,7 +387,8 @@
       "km_road": 74.5,
       "straight_km": 48.2,
       "note": "computed via OSRM (drive ~60min / 74km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "BUD",
@@ -363,7 +400,8 @@
       "km_road": 261.5,
       "straight_km": 214.2,
       "note": "computed via OSRM (drive ~173min / 261km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "BVA",
@@ -375,7 +413,8 @@
       "km_road": 256.1,
       "straight_km": 201.3,
       "note": "computed via OSRM (drive ~166min / 256km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "CDG",
@@ -387,7 +426,8 @@
       "km_road": 260.1,
       "straight_km": 211.4,
       "note": "computed via OSRM (drive ~162min / 260km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "CDT",
@@ -399,7 +439,8 @@
       "km_road": 82.1,
       "straight_km": 68.8,
       "note": "computed via OSRM (drive ~60min / 82km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "CFU",
@@ -414,7 +455,8 @@
       "has_ferry": true,
       "ferry_minutes": 75.0,
       "land_minutes": 130.3,
-      "sea_km": 18.1
+      "sea_km": 18.1,
+      "transit": "no_coverage"
     },
     {
       "a": "CHQ",
@@ -426,7 +468,8 @@
       "km_road": 161.9,
       "straight_km": 95.8,
       "note": "computed via OSRM (drive ~175min / 162km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "CIA",
@@ -438,7 +481,16 @@
       "km_road": 207.0,
       "straight_km": 174.2,
       "note": "computed via OSRM (drive ~136min / 207km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit_minutes": 183,
+      "transit_transfers": 4,
+      "transit_modes": [
+        "BUS",
+        "HIGHSPEED_RAIL",
+        "REGIONAL_RAIL",
+        "SUBWAY"
+      ],
+      "transit_queried_at": "2026-07-12T12:38:09.550553+00:00"
     },
     {
       "a": "CTA",
@@ -450,7 +502,8 @@
       "km_road": 242.3,
       "straight_km": 190.6,
       "note": "computed via OSRM (drive ~203min / 242km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "CTA",
@@ -465,7 +518,8 @@
       "has_ferry": true,
       "ferry_minutes": 40.0,
       "land_minutes": 174.6,
-      "sea_km": 6.5
+      "sea_km": 6.5,
+      "transit": "no_coverage"
     },
     {
       "a": "FAO",
@@ -477,7 +531,8 @@
       "km_road": 282.8,
       "straight_km": 221.7,
       "note": "computed via OSRM (drive ~207min / 283km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "FCO",
@@ -489,7 +544,8 @@
       "km_road": 239.9,
       "straight_km": 199.2,
       "note": "computed via OSRM (drive ~177min / 240km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "HER",
@@ -504,7 +560,8 @@
       "has_ferry": true,
       "ferry_minutes": 125.0,
       "land_minutes": 20.9,
-      "sea_km": 124.4
+      "sea_km": 124.4,
+      "transit": "no_coverage"
     },
     {
       "a": "KLX",
@@ -519,7 +576,8 @@
       "has_ferry": true,
       "ferry_minutes": 60.0,
       "land_minutes": 161.7,
-      "sea_km": 32.9
+      "sea_km": 32.9,
+      "transit": "no_coverage"
     },
     {
       "a": "KRK",
@@ -531,7 +589,8 @@
       "km_road": 298.9,
       "straight_km": 246.4,
       "note": "computed via OSRM (drive ~207min / 299km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "LIS",
@@ -543,7 +602,8 @@
       "km_road": 323.2,
       "straight_km": 277.0,
       "note": "computed via OSRM (drive ~217min / 323km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "MUC",
@@ -555,7 +615,8 @@
       "km_road": 356.4,
       "straight_km": 264.6,
       "note": "computed via OSRM (drive ~221min / 356km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "MXP",
@@ -567,7 +628,8 @@
       "km_road": 141.0,
       "straight_km": 96.8,
       "note": "computed via OSRM (drive ~105min / 141km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "MXP",
@@ -579,7 +641,8 @@
       "km_road": 313.4,
       "straight_km": 282.4,
       "note": "computed via OSRM (drive ~209min / 313km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     },
     {
       "a": "SPU",
@@ -591,7 +654,8 @@
       "km_road": 115.2,
       "straight_km": 99.2,
       "note": "computed via OSRM (drive ~92min / 115km road)",
-      "has_ferry": false
+      "has_ferry": false,
+      "transit": "no_coverage"
     }
   ]
 }
