@@ -2397,8 +2397,8 @@
             }
           ],
           "total_minutes": 240,
-          "total_cost_eur": 55.0,
-          "note": "JTR link runs Jun-Sep only and is pricier than the ATH routing. Source: operator schedules/Ferryhopper, 2026 season.",
+          "total_cost_eur": 74.0,
+          "note": "JTR link runs Jun-Sep only and is pricier than the ATH routing. Source: operator schedules/Ferryhopper, 2026 season. JTR fares not individually published in catalog — legs and total are estimates ('pricey' per research); verify before quoting. ATH routing is the sourced/cheaper option.",
           "season": "jun-sep"
         }
       ]
