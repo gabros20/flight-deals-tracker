@@ -25,6 +25,18 @@ and same ``multi_city`` group (those aren't open-jaw — they're one city with t
 airports). Kept pairs are additionally capped at ``ground_minutes <= 330`` (a
 5h30 ground crossing is the outer edge of "worth it for an open jaw").
 
+Ferry-aware modeling (Task 12): a sea crossing is NOT a road. After the land
+model above, ``scripts/refresh_ground.py`` runs a second OSRM ``/route`` pass
+(steps=true, manual-script-only) per kept pair; steps with ``mode=="ferry"``
+mean the hop crosses water. Such pairs are RE-modeled with a tiered ferry
+estimate (see ``FERRY_TIERS`` / :func:`ferry_ground_minutes_for` /
+:func:`ferry_est_cost_eur_for`): real ferry fares dwarf EUR 0.11/km and sparse
+sailings mean the WAIT dominates, so time = land×1.35 + ferry×1.15 + port +
+sailing-wait and cost = land road proxy + a ferry base + per-sea-km, tiered by
+``sea_km`` as a sailing-frequency proxy. Ferry hops carry ``mode="ferry+ground"``
+and a looser 420-min cap; a failed /route pass degrades to ``has_ferry: null``
+(never a fabricated land pair). Curated corridors (``open_jaw_pairs``) still win.
+
 Follow-up (documented, out of scope here): Transitous/MOTIS could later refine
 these driving-derived estimates with real public-transport timetables and fares.
 """
@@ -62,6 +74,40 @@ GROUND_MODE = "public_transit"
 # tolerance allows for airport-coordinate snapping to the nearest road.
 ROAD_SANITY_FACTOR = 0.85
 
+# --- ferry model parameters (Task 12; REVISED per 2026-07-12 corridor research) #
+# A sea crossing is NOT a road: real ferry fares are far above EUR 0.11/km and
+# sparse sailings mean the WAIT dominates, not the crossing time. When the OSRM
+# /route pass (scripts/refresh_ground.py, manual-only) sees ``mode=="ferry"``
+# steps we re-model the hop with a ferry-specific, TIERED estimate keyed on
+# ``sea_km`` as a sailing-frequency proxy (short straits run turn-up-and-go;
+# long crossings are 2-3/day so waiting dominates). Each tier is
+# (wait_min, base_eur, eur_per_sea_km, port_access_min):
+FERRY_MODE = "ferry+ground"
+FERRY_TIME_FACTOR = 1.15  # public-transport-vs-drive factor on the land legs' bus
+MAX_FERRY_GROUND_MINUTES = 420  # ferry hops keep a looser cap than land (330)
+FERRY_STRAIT_MAX_KM = 15.0   # < 15 km  -> shuttle strait (turn-up-and-go)
+FERRY_DOMESTIC_MAX_KM = 60.0  # 15..60 km -> domestic island line (a few/day)
+# Tier constants CALIBRATED 2026-07-12 against the five curated corridors (Task
+# 12 req 2 sanctions tuning): the brief's revised defaults (strait 15/5/.15/20,
+# domestic 60/10/.20/45, long 120/35/.15/45) over-shot duration on the
+# long-overland corridors (CFU-PVK, CTA-SUF, HER-JTR at the boundary). These
+# tuned values put DURATION within +-40% of ALL FIVE curated corridors and COST
+# within +-40% of four of them; the ferry FARE components they produce stay
+# realistic (Messina foot ~EUR6, Ionian ~EUR8-10, Aegean fast ~EUR50-54, Malta
+# ~EUR50). See .orchestrate/task-12-report.md for the calibration table.
+FERRY_TIERS: Dict[str, Dict[str, float]] = {
+    "strait":   {"wait": 5,   "base": 5,  "rate": 0.15, "port": 10},
+    "domestic": {"wait": 30,  "base": 5,  "rate": 0.15, "port": 30},
+    "long":     {"wait": 110, "base": 35, "rate": 0.15, "port": 45},
+}
+# Named island-region tags (+ 'malta'; + a coarse generic 'island' terrain
+# fallback) used only for the detection-sanity cross-check: an open-jaw pair
+# spanning two different island regions (or island vs mainland) that the /route
+# pass reports as has_ferry==False is logged as suspicious (Task 12 req 1).
+ISLAND_REGION_TAGS = frozenset(
+    {"sicily", "malta", "crete", "cyclades", "sardinia", "canaries", "baleares"}
+)
+
 MODEL_PARAMS: Dict[str, Any] = {
     "haversine_prefilter_km": HAVERSINE_PREFILTER_KM,
     "ground_minutes_formula": "round(drive_minutes * 1.35 + 30)",
@@ -71,6 +117,18 @@ MODEL_PARAMS: Dict[str, Any] = {
     "cost_per_km_eur": COST_PER_KM_EUR,
     "cost_floor_eur": COST_FLOOR_EUR,
     "max_ground_minutes": MAX_GROUND_MINUTES,
+    # Ferry model (Task 12) — applies to pairs the /route pass flags has_ferry.
+    "ferry_time_formula": (
+        "round(land_minutes*1.35 + ferry_minutes*1.15 + port_access + wait)"
+    ),
+    "ferry_cost_formula": "max(8, round(land_km*0.11)) + base + round(sea_km*rate)",
+    "ferry_time_factor": FERRY_TIME_FACTOR,
+    "ferry_tiers_by_sea_km": {
+        "strait (<15km)": FERRY_TIERS["strait"],
+        "domestic (15-60km)": FERRY_TIERS["domestic"],
+        "long (>=60km)": FERRY_TIERS["long"],
+    },
+    "max_ferry_ground_minutes": MAX_FERRY_GROUND_MINUTES,
 }
 
 
@@ -95,6 +153,114 @@ def ground_minutes_for(drive_minutes: float) -> int:
 def est_cost_eur_for(km_road: float) -> int:
     """Estimated ground ticket cost in EUR from the routed road distance."""
     return max(COST_FLOOR_EUR, round(km_road * COST_PER_KM_EUR))
+
+
+# --------------------------------------------------------------------------- #
+# Ferry model (Task 12) — applied when the /route pass detects a ferry step    #
+# --------------------------------------------------------------------------- #
+def ferry_tier_for(sea_km: float) -> Dict[str, float]:
+    """The ferry tier params for a crossing of ``sea_km`` kilometres (sailing
+    frequency proxy): strait shuttle / domestic line / long crossing."""
+    if sea_km < FERRY_STRAIT_MAX_KM:
+        return FERRY_TIERS["strait"]
+    if sea_km < FERRY_DOMESTIC_MAX_KM:
+        return FERRY_TIERS["domestic"]
+    return FERRY_TIERS["long"]
+
+
+def ferry_ground_minutes_for(land_minutes: float, ferry_minutes: float, sea_km: float) -> int:
+    """Total ferry-hop minutes: the land legs run as buses (×1.35), the crossing
+    at ×1.15, plus fixed port-access and sailing-wait pads from the tier."""
+    t = ferry_tier_for(sea_km)
+    return round(
+        max(0.0, land_minutes) * TRANSIT_FACTOR
+        + max(0.0, ferry_minutes) * FERRY_TIME_FACTOR
+        + t["port"] + t["wait"]
+    )
+
+
+def ferry_est_cost_eur_for(land_km: float, sea_km: float) -> int:
+    """Total ferry-hop cost: the land legs at the road proxy (EUR 0.11/km, EUR 8
+    floor) + a fixed ferry base fare + a per-sea-km ferry rate from the tier."""
+    t = ferry_tier_for(sea_km)
+    land_cost = max(COST_FLOOR_EUR, round(max(0.0, land_km) * COST_PER_KM_EUR))
+    return int(land_cost + t["base"] + round(max(0.0, sea_km) * t["rate"]))
+
+
+def parse_ferry_from_steps(steps: Optional[List[Dict[str, Any]]]) -> Tuple[float, float]:
+    """Sum ``(ferry_minutes, sea_km)`` over OSRM ``/route`` steps whose
+    ``mode == "ferry"``. Durations are seconds, distances metres. A route with
+    no ferry step returns ``(0.0, 0.0)``."""
+    ferry_sec = 0.0
+    ferry_m = 0.0
+    for step in steps or []:
+        if isinstance(step, dict) and step.get("mode") == "ferry":
+            ferry_sec += float(step.get("duration") or 0.0)
+            ferry_m += float(step.get("distance") or 0.0)
+    return ferry_sec / 60.0, ferry_m / 1000.0
+
+
+def apply_route_pass(
+    row: Dict[str, Any], steps: Optional[List[Dict[str, Any]]], *, route_ok: bool = True,
+) -> Optional[Dict[str, Any]]:
+    """Augment a land-derived matrix ``row`` (from :func:`derive_pairs`) with the
+    result of its OSRM ``/route`` pass (Task 12):
+
+    * ``route_ok is False`` — the /route call failed: attach ``has_ferry: None``
+      and keep the land estimate (never fabricate a false-negative land pair).
+    * no ferry step — ``has_ferry: False``; the land estimate is authoritative.
+    * a ferry step — re-model with the tiered ferry estimate: split the pair's
+      ``drive_minutes``/``km_road`` into land vs sea using the ferry step totals,
+      set ``mode="ferry+ground"`` and the ``has_ferry``/``ferry_minutes``/
+      ``land_minutes``/``sea_km`` fields, and DROP the pair (return ``None``) when
+      the ferry estimate exceeds :data:`MAX_FERRY_GROUND_MINUTES` (420)."""
+    out = dict(row)
+    if not route_ok:
+        out["has_ferry"] = None
+        return out
+    ferry_minutes, sea_km = parse_ferry_from_steps(steps)
+    if ferry_minutes <= 0 or sea_km <= 0:
+        out["has_ferry"] = False
+        return out
+    drive_minutes = float(out.get("drive_minutes") or 0.0)
+    km_road = float(out.get("km_road") or 0.0)
+    land_minutes = max(0.0, drive_minutes - ferry_minutes)
+    land_km = max(0.0, km_road - sea_km)
+    gm_min = ferry_ground_minutes_for(land_minutes, ferry_minutes, sea_km)
+    if gm_min > MAX_FERRY_GROUND_MINUTES:
+        return None
+    out["ground_minutes"] = gm_min
+    out["est_cost_eur"] = ferry_est_cost_eur_for(land_km, sea_km)
+    out["mode"] = FERRY_MODE
+    out["has_ferry"] = True
+    out["ferry_minutes"] = round(ferry_minutes, 1)
+    out["land_minutes"] = round(land_minutes, 1)
+    out["sea_km"] = round(sea_km, 1)
+    out["note"] = (
+        f"computed via OSRM (drive ~{round(drive_minutes)}min incl. "
+        f"~{round(ferry_minutes)}min ferry / ~{round(sea_km)}km sea crossing)"
+    )
+    return out
+
+
+def region_signature(tags: Any) -> frozenset:
+    """A coarse island-region signature for the detection cross-check: the named
+    island-region tags present, else ``{"island"}`` for an unspecified island,
+    else the empty set (mainland)."""
+    tagset = {str(t).lower() for t in (tags or [])}
+    named = ISLAND_REGION_TAGS & tagset
+    if named:
+        return frozenset(named)
+    if "island" in tagset:
+        return frozenset({"island"})
+    return frozenset()
+
+
+def ferry_detection_suspect(tags_a: Any, tags_b: Any) -> bool:
+    """True when two airports sit in DIFFERENT island regions (or island vs
+    mainland) — so a ``has_ferry == False`` /route detection between them is
+    suspicious and worth a logged warning (a sea gap seen as land)."""
+    return region_signature(tags_a) != region_signature(tags_b)
 
 
 # --------------------------------------------------------------------------- #

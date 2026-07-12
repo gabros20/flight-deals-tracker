@@ -27,9 +27,15 @@ Pipeline:
      they fit under the public 100-location limit (verified: the registry has
      well under 100 airports; the script re-checks and refuses otherwise).
   4. Derive per prefiltered pair: drive_minutes, km_road, ground_minutes,
-     est_cost_eur; keep pairs with ground_minutes <= 330.
-  5. Atomic write (tmp + os.replace) with schema_version, computed_at, and the
-     model params echoed. On ANY OSRM failure: clean non-zero exit, the existing
+     est_cost_eur; keep pairs with land ground_minutes <= 330.
+  5. Second pass (Task 12): one OSRM ``/route`` (steps=true) per kept pair,
+     paced ~1 req/s. Steps with ``mode=="ferry"`` mean a sea crossing — those
+     pairs are re-modeled with the tiered ferry estimate (has_ferry/ferry_minutes/
+     land_minutes/sea_km, mode "ferry+ground", 420-min cap). A per-pair /route
+     failure degrades to ``has_ferry: null`` + warning. An island-region
+     cross-check warns when a land-detected pair looks like it should cross water.
+  6. Atomic write (tmp + os.replace) with schema_version, computed_at, and the
+     model params echoed. On a /table failure: clean non-zero exit, the existing
      matrix is left UNTOUCHED (never half-written, never faked).
 
 Usage:
@@ -51,6 +57,7 @@ import json
 import logging
 import os
 import sys
+import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -63,6 +70,14 @@ from flight_deals.registry.destinations import DestinationRegistry
 logger = logging.getLogger("refresh_ground")
 
 OSRM_TABLE_URL = "https://router.project-osrm.org/table/v1/driving/{coords}"
+# Second pass (Task 12): one /route per kept pair, steps=true, to detect ferry
+# legs (steps carry mode=="ferry"). Manual-script-only, like the /table pass.
+OSRM_ROUTE_URL = (
+    "https://router.project-osrm.org/route/v1/driving/{lon1},{lat1};{lon2},{lat2}"
+)
+# Polite pacing for the route pass — the public demo server asks for ~1 req/s;
+# ~39 kept pairs => ~40s. Global Constraint 9 (the ~1 req/s house rule).
+ROUTE_PASS_PACE_SECONDS = 1.0
 OSRM_PUBLIC_LOCATION_LIMIT = 100
 # A realistic, honest UA identifying the tool (public.project-osrm.org asks for
 # a contactable UA on heavy use; this is a once-a-month single call).
@@ -108,22 +123,163 @@ def fetch_table(coords: str, timeout: int = 60) -> Dict[str, Any]:
     return data
 
 
+def fetch_route(lon1: float, lat1: float, lon2: float, lat2: float,
+                timeout: int = 30) -> Dict[str, Any]:
+    """One OSRM ``/route`` request (steps=true, overview=false) for a single
+    A->B pair. Raises ``OsrmError`` on any transport/status/schema problem so the
+    caller can degrade THIS pair to ``has_ferry: null`` (never fabricate)."""
+    url = OSRM_ROUTE_URL.format(lon1=lon1, lat1=lat1, lon2=lon2, lat2=lat2)
+    params = {"steps": "true", "overview": "false"}
+    headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
+    try:
+        resp = requests.get(url, params=params, headers=headers, timeout=timeout)
+    except requests.RequestException as e:
+        raise OsrmError(f"OSRM /route request failed: {e}") from e
+    if resp.status_code >= 400:
+        raise OsrmError(f"OSRM /route HTTP {resp.status_code}: {resp.text[:200]}")
+    try:
+        data = resp.json()
+    except ValueError as e:
+        raise OsrmError(f"OSRM /route non-JSON body: {resp.text[:200]}") from e
+    if data.get("code") != "Ok" or not data.get("routes"):
+        raise OsrmError(f"OSRM /route code != Ok: {data.get('code')} {data.get('message', '')}")
+    return data
+
+
+def _route_steps(route_json: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Flatten every step of the first route (mode/duration/distance carriers)."""
+    routes = route_json.get("routes") or []
+    if not routes:
+        return []
+    steps: List[Dict[str, Any]] = []
+    for leg in routes[0].get("legs") or []:
+        steps.extend(leg.get("steps") or [])
+    return steps
+
+
+def write_route_fixture(out_path: str, a: str, b: str, data: Dict[str, Any],
+                        lon1: float, lat1: float, lon2: float, lat2: float,
+                        kind: str) -> None:
+    """Record one live /route response as a fixture (Task 12 req 6): keep the
+    step ``mode``/``duration``/``distance``/``name`` but strip the verbose step
+    ``geometry``/``intersections`` (capture_fixtures.py truncation discipline)."""
+    routes_in = data.get("routes") or []
+    slim_routes: List[Dict[str, Any]] = []
+    for r in routes_in[:1]:
+        slim_legs = []
+        for leg in r.get("legs", []):
+            slim_steps = [
+                {"mode": s.get("mode"), "duration": s.get("duration"),
+                 "distance": s.get("distance"), "name": s.get("name")}
+                for s in leg.get("steps", [])
+            ]
+            slim_legs.append({"duration": leg.get("duration"),
+                              "distance": leg.get("distance"), "steps": slim_steps})
+        slim_routes.append({"duration": r.get("duration"),
+                            "distance": r.get("distance"), "legs": slim_legs})
+    fixture = {
+        "_captured_live": True,
+        "_pair": f"{a}-{b}",
+        "_kind": kind,
+        "_url": OSRM_ROUTE_URL.format(lon1=lon1, lat1=lat1, lon2=lon2, lat2=lat2),
+        "_params": "steps=true&overview=false",
+        "_geometry_stripped": True,
+        "body": {"code": data.get("code"), "routes": slim_routes},
+    }
+    path = resolve_path(out_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(fixture, indent=2) + "\n")
+    logger.info("wrote OSRM /route fixture (%s %s-%s) -> %s", kind, a, b, path)
+
+
+def run_route_pass(
+    rows: List[Dict[str, Any]], airports: List[Any],
+    capture_ferry: Optional[str] = None, capture_land: Optional[str] = None,
+    pace: float = ROUTE_PASS_PACE_SECONDS,
+) -> Tuple[List[Dict[str, Any]], Dict[str, int]]:
+    """Second OSRM pass: one /route per land-derived ``row`` to detect ferry
+    legs, then re-model ferry pairs (gm.apply_route_pass). Failures degrade to
+    ``has_ferry: null``; ferry pairs over the 420-min cap are dropped. Also runs
+    the island-region detection cross-check and records one ferry + one land
+    fixture. Returns ``(out_rows, stats)``."""
+    by_iata = {a.iata.upper(): a for a in airports}
+    tags_by_iata = {a.iata.upper(): set(getattr(a, "tags", []) or []) for a in airports}
+    out_rows: List[Dict[str, Any]] = []
+    stats = {"ferry": 0, "land": 0, "failed": 0, "dropped_ferry_cap": 0}
+    ferry_captured = land_captured = False
+    logger.info("route pass: %d kept pairs, one OSRM /route each (~%.0f req/s)...",
+                len(rows), 1.0 / pace if pace else 0)
+    for idx, row in enumerate(rows):
+        a, b = str(row["a"]).upper(), str(row["b"]).upper()
+        apa, apb = by_iata.get(a), by_iata.get(b)
+        if apa is None or apb is None:  # defensive: row IATA not in registry
+            out_rows.append(gm.apply_route_pass(row, None, route_ok=False))
+            stats["failed"] += 1
+            continue
+        if idx:
+            time.sleep(pace)
+        try:
+            data = fetch_route(apa.lon, apa.lat, apb.lon, apb.lat)
+        except OsrmError as e:
+            logger.warning("route pass: %s-%s /route failed (%s) -> has_ferry=null", a, b, e)
+            out_rows.append(gm.apply_route_pass(row, None, route_ok=False))
+            stats["failed"] += 1
+            continue
+        steps = _route_steps(data)
+        augmented = gm.apply_route_pass(row, steps, route_ok=True)
+        if augmented is None:
+            stats["dropped_ferry_cap"] += 1
+            logger.info("route pass: %s-%s DROPPED (ferry estimate > %dmin cap)",
+                        a, b, gm.MAX_FERRY_GROUND_MINUTES)
+            continue
+        if augmented.get("has_ferry"):
+            stats["ferry"] += 1
+            logger.info("route pass: %s-%s FERRY (~%smin sea / ~%skm) -> %dmin ~EUR%d %s",
+                        a, b, augmented.get("ferry_minutes"), augmented.get("sea_km"),
+                        augmented["ground_minutes"], augmented["est_cost_eur"], augmented["mode"])
+            if capture_ferry and not ferry_captured:
+                write_route_fixture(capture_ferry, a, b, data,
+                                    apa.lon, apa.lat, apb.lon, apb.lat, "ferry")
+                ferry_captured = True
+        else:
+            stats["land"] += 1
+            if gm.ferry_detection_suspect(tags_by_iata.get(a, set()), tags_by_iata.get(b, set())):
+                logger.warning(
+                    "route pass: %s-%s spans different island regions but "
+                    "has_ferry==False (detection sanity — a sea gap seen as land?)", a, b)
+            if capture_land and not land_captured:
+                write_route_fixture(capture_land, a, b, data,
+                                    apa.lon, apa.lat, apb.lon, apb.lat, "land")
+                land_captured = True
+        out_rows.append(augmented)
+    out_rows.sort(key=lambda r: (r["a"], r["b"]))
+    return out_rows, stats
+
+
 def build_matrix_payload(
-    airports: List[Any], prefiltered: List[Tuple[int, int, float]], table: Dict[str, Any],
+    airports: List[Any], prefiltered: List[Tuple[int, int, float]],
+    pairs: List[Dict[str, Any]], route_stats: Optional[Dict[str, int]] = None,
 ) -> Dict[str, Any]:
-    pairs = gm.derive_pairs(
-        airports, table["durations"], table["distances"], prefiltered,
-    )
+    stats: Dict[str, Any] = {
+        "airports": len(airports),
+        "prefiltered_candidates": len(prefiltered),
+        "pairs_kept": len(pairs),
+    }
+    if route_stats is not None:
+        stats.update({
+            "ferry_pairs": route_stats["ferry"],
+            "land_pairs": route_stats["land"],
+            "route_pass_failed": route_stats["failed"],
+            "dropped_ferry_cap": route_stats["dropped_ferry_cap"],
+        })
     return {
         "schema_version": gm.SCHEMA_VERSION,
         "computed_at": datetime.now(timezone.utc).isoformat(),
-        "source": "OSRM public router.project-osrm.org /table (driving profile)",
+        "source": (
+            "OSRM public router.project-osrm.org /table + /route (driving profile)"
+        ),
         "model": dict(gm.MODEL_PARAMS),
-        "stats": {
-            "airports": len(airports),
-            "prefiltered_candidates": len(prefiltered),
-            "pairs_kept": len(pairs),
-        },
+        "stats": stats,
         # Additive (Task 11 follow-up): the registry airports that were in the
         # prefilter input at capture time, so a later load can warn when the
         # registry has grown airports the matrix has never seen (drift signal
@@ -132,7 +288,9 @@ def build_matrix_payload(
         "note": (
             "Computed open-jaw ground hops. ground_minutes/est_cost_eur are STATED "
             "ESTIMATES from an OSRM driving route (see model); the deal envelope "
-            "marks them '~' and estimate_basis='computed'. Curated pairs in "
+            "marks them '~' and estimate_basis='computed'. Pairs the /route pass "
+            "found to cross water carry has_ferry/ferry_minutes/land_minutes/sea_km "
+            "and mode 'ferry+ground' (tiered ferry model). Curated pairs in "
             "data/destinations.json win on merge (estimate_basis='curated')."
         ),
         "pairs": pairs,
@@ -191,10 +349,17 @@ def _print_stats(payload: Dict[str, Any]) -> None:
     st = payload["stats"]
     logger.info(
         "ground matrix: %d airports -> %d prefiltered candidates -> %d pairs kept "
-        "(ground_minutes <= %d)",
+        "(land ground_minutes <= %d)",
         st["airports"], st["prefiltered_candidates"], st["pairs_kept"],
         gm.MAX_GROUND_MINUTES,
     )
+    if "ferry_pairs" in st:
+        logger.info(
+            "  route pass: %d ferry pairs, %d land pairs, %d route failures "
+            "(has_ferry=null), %d dropped by the %dmin ferry cap",
+            st["ferry_pairs"], st["land_pairs"], st["route_pass_failed"],
+            st["dropped_ferry_cap"], gm.MAX_FERRY_GROUND_MINUTES,
+        )
     pairs = payload["pairs"]
     if pairs:
         shortest = min(pairs, key=lambda p: p["ground_minutes"])
@@ -216,6 +381,10 @@ def main(argv: Optional[List[str]] = None) -> int:
                     help="Fetch + derive + print stats, but do NOT write the matrix.")
     ap.add_argument("--capture-fixture", metavar="PATH", default=None,
                     help="Also record the live OSRM /table response to this fixture path.")
+    ap.add_argument("--capture-ferry-route", metavar="PATH", default=None,
+                    help="Record the first FERRY /route response to this fixture path.")
+    ap.add_argument("--capture-land-route", metavar="PATH", default=None,
+                    help="Record the first LAND /route response to this fixture path.")
     ap.add_argument("--registry", default=None, help="Override destinations.json path.")
     args = ap.parse_args(argv)
 
@@ -247,11 +416,20 @@ def main(argv: Optional[List[str]] = None) -> int:
         logger.error("refresh_ground: existing data/ground_matrix.json left UNCHANGED")
         return 1
 
-    payload = build_matrix_payload(airports, prefiltered, table)
-    _print_stats(payload)
-
     if args.capture_fixture:
         write_fixture(args.capture_fixture, airports, table, coords_url)
+
+    # Table pass -> land-derived rows, then the /route pass detects + re-models
+    # ferry crossings (Task 12). The route pass is out-of-band and manual-only,
+    # exactly like the /table pass; a per-pair /route failure degrades to
+    # has_ferry:null (never a fabricated land pair).
+    rows = gm.derive_pairs(airports, table["durations"], table["distances"], prefiltered)
+    route_rows, route_stats = run_route_pass(
+        rows, airports,
+        capture_ferry=args.capture_ferry_route, capture_land=args.capture_land_route,
+    )
+    payload = build_matrix_payload(airports, prefiltered, route_rows, route_stats)
+    _print_stats(payload)
 
     if args.dry_run:
         logger.info("--dry-run: not writing %s", gm.GROUND_MATRIX_FILE)
