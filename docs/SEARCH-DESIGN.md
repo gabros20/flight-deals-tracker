@@ -345,6 +345,37 @@ not crossing time). The fix, in authority order:
    run refined 2 of 38 computed pairs — AMS-CRL, CIA-NAP). Never blocks the OSRM
    baseline; a whole-service failure never invalidates the matrix. Full probe +
    coverage audit: `.orchestrate/task-13-report.md`.
+5. **City-anchor hybrid** (Task 14, as-built 2026-07-12): the airport-anchor
+   pure pass (item 4) hits a coverage ceiling because most airports have no
+   on-site rail/bus stop in the feeds (only 2/38 refined). The `--transit`
+   FOURTH pass raises coverage by re-querying the pairs the pure pass left at
+   `no_coverage` from CITY-CENTER anchor → CITY-CENTER anchor (the intercity
+   line-haul, which the feeds DO cover) and adding modeled **airport-access
+   pads** on each end:
+
+       transit_hybrid_minutes = pad_a + best_city_linehaul_minutes + pad_b
+
+   The pads are included DELIBERATELY: the OSRM airport-to-airport baseline
+   already embeds airport-side travel, so the hybrid must too, or the acceptance
+   bounds ([0.5×, 3.0×] vs the modeled `ground_minutes`) and 330/420 caps would
+   compare unlike things. Because pad + line-haul + pad IS structurally the same
+   shape as the modeled minutes, the SAME bounds/caps hold. Pads: default
+   30 min/airport, curated per-airport `access_pad_minutes` overrides for
+   notoriously-far airports (BVA 75, STN 55, LTN 50, CRL 55, MXP 50, FCO/CIA 45,
+   BGY/BUD 40, VIE/BER/MAD/BCN 35 — full table in `data/destinations.json`, one
+   `access_pad_minutes` per airport). City anchors are curated `city_lat`/
+   `city_lon` per airport (no geocoding API), shared across a multi-airport city
+   (MXP+BGY → Milan, STN+LTN+LGW → London, FCO+CIA → Rome, CDG+BVA → Paris,
+   CRL → Brussels). This is an HONEST HYBRID: the line-haul is real scheduled
+   data, the access is modeled — so `estimate_basis` is `"scheduled-hybrid"`
+   (NOT `"scheduled"`), the `why` clause KEEPS the `~` on duration and says
+   "line-haul scheduled", and cost stays modeled. Precedence at read time:
+   `scheduled > scheduled-hybrid > modeled`. Stored additively per pair
+   (`transit_hybrid_minutes`/`transit_hybrid_transfers`/`transit_hybrid_modes`/
+   `transit_hybrid_queried_at` + raw `linehaul_minutes`); the pure
+   `transit:"no_coverage"` marker is left in place as a factual record. A hybrid
+   value over cap is dropped at refresh (honest "too far"). Coverage audit:
+   `.orchestrate/task-14-report.md`.
 
 ## 8. Open questions (decide during implementation, low stakes)
 

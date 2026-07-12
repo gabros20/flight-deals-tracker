@@ -194,7 +194,7 @@ existing file untouched on failure.
 .venv/bin/python scripts/refresh_ground.py
 
 # ...also refine durations with real Transitous/MOTIS timetables where
-# coverage exists (adds a third pass, ~2 min — see below):
+# coverage exists (adds a third pure pass + a fourth hybrid pass, ~4 min — see below):
 .venv/bin/python scripts/refresh_ground.py --transit
 ```
 
@@ -221,6 +221,16 @@ pairs); pairs with no scheduled itinerary keep their modeled estimate
 the matrix: the script writes the table+route results and exits non-zero for the
 transit pass only. This pass is optional — plain `refresh_ground.py` (no
 `--transit`) is unchanged.
+
+`--transit` also runs a **fourth pass** (Task 14, city-anchor hybrid): for each
+pair the pure third pass left at `no_coverage`, it re-queries CITY-CENTER anchor
+→ CITY-CENTER anchor for the intercity line-haul and adds modeled airport-access
+pads (`hybrid_minutes = pad_a + line-haul + pad_b`). Same two slots, same ~1
+req/s pacing — ~36 no_coverage pairs × 2 ≈ **~72 extra requests (~2 minutes)** on
+top of the third pass. Refined pairs surface as `estimate_basis:
+"scheduled-hybrid"` (the line-haul is scheduled, the pads are modeled, so the `~`
+stays on duration). Whole-pass failure isolation is identical to the third pass
+(the matrix stays valid; exits non-zero for the hybrid pass only).
 
 Cron example (monthly, 1st at 05:00):
 
