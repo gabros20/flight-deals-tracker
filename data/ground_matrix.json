@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "computed_at": "2026-07-12T14:04:19.695731+00:00",
+  "computed_at": "2026-07-12T15:47:20.482831+00:00",
   "source": "OSRM public router.project-osrm.org /table + /route (driving profile)",
   "model": {
     "haversine_prefilter_km": 400.0,
@@ -161,7 +161,7 @@
         "BUS",
         "REGIONAL_RAIL"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 248
     },
     {
@@ -183,7 +183,7 @@
         "COACH",
         "REGIONAL_RAIL"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 206
     },
     {
@@ -204,7 +204,7 @@
         "BUS",
         "HIGHSPEED_RAIL"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 193
     },
     {
@@ -225,7 +225,7 @@
         "BUS",
         "HIGHSPEED_RAIL"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 137
     },
     {
@@ -246,7 +246,7 @@
         "HIGHSPEED_RAIL",
         "REGIONAL_RAIL"
       ],
-      "transit_queried_at": "2026-07-12T13:57:18.410509+00:00"
+      "transit_queried_at": "2026-07-12T15:40:21.749280+00:00"
     },
     {
       "a": "ATH",
@@ -280,7 +280,7 @@
         "HIGHSPEED_RAIL",
         "REGIONAL_RAIL"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 139
     },
     {
@@ -301,7 +301,7 @@
         "HIGHSPEED_RAIL",
         "REGIONAL_RAIL"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 63
     },
     {
@@ -322,7 +322,7 @@
         "BUS",
         "HIGHSPEED_RAIL"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 67
     },
     {
@@ -357,7 +357,7 @@
         "SUBWAY",
         "TRAM"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 81
     },
     {
@@ -372,14 +372,14 @@
       "note": "computed via OSRM (drive ~147min / 229km road)",
       "has_ferry": false,
       "transit": "no_coverage",
-      "transit_hybrid_minutes": 232,
+      "transit_hybrid_minutes": 247,
       "transit_hybrid_transfers": 2,
       "transit_hybrid_modes": [
         "BUS",
         "HIGHSPEED_RAIL",
         "SUBWAY"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 162
     },
     {
@@ -439,7 +439,7 @@
         "BUS",
         "LONG_DISTANCE"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 215
     },
     {
@@ -460,7 +460,7 @@
         "BUS",
         "COACH"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 200
     },
     {
@@ -482,7 +482,7 @@
         "LONG_DISTANCE",
         "SUBWAY"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 170
     },
     {
@@ -504,7 +504,7 @@
         "REGIONAL_RAIL",
         "SUBWAY"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 77
     },
     {
@@ -526,7 +526,7 @@
         "SUBWAY",
         "TRAM"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 185
     },
     {
@@ -548,7 +548,7 @@
         "SUBWAY",
         "TRAM"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 116
     },
     {
@@ -563,14 +563,14 @@
       "note": "computed via OSRM (drive ~162min / 260km road)",
       "has_ferry": false,
       "transit": "no_coverage",
-      "transit_hybrid_minutes": 201,
+      "transit_hybrid_minutes": 216,
       "transit_hybrid_transfers": 3,
       "transit_hybrid_modes": [
         "HIGHSPEED_RAIL",
         "SUBWAY",
         "TRAM"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 116
     },
     {
@@ -591,7 +591,7 @@
         "BUS",
         "HIGHSPEED_RAIL"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 63
     },
     {
@@ -642,7 +642,7 @@
         "REGIONAL_RAIL",
         "SUBWAY"
       ],
-      "transit_queried_at": "2026-07-12T13:57:18.410509+00:00"
+      "transit_queried_at": "2026-07-12T15:40:21.749280+00:00"
     },
     {
       "a": "CTA",
@@ -692,7 +692,7 @@
         "METRO",
         "SUBWAY"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 248
     },
     {
@@ -713,7 +713,7 @@
         "HIGHSPEED_RAIL",
         "SUBWAY"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 87
     },
     {
@@ -767,7 +767,7 @@
         "HIGHSPEED_RAIL",
         "TRAM"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 190
     },
     {
@@ -789,7 +789,7 @@
         "REGIONAL_RAIL",
         "SUBWAY"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 219
     },
     {
@@ -811,7 +811,7 @@
         "SUBWAY",
         "TRAM"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 81
     },
     {
@@ -826,14 +826,14 @@
       "note": "computed via OSRM (drive ~209min / 313km road)",
       "has_ferry": false,
       "transit": "no_coverage",
-      "transit_hybrid_minutes": 242,
+      "transit_hybrid_minutes": 257,
       "transit_hybrid_transfers": 2,
       "transit_hybrid_modes": [
         "BUS",
         "HIGHSPEED_RAIL",
         "SUBWAY"
       ],
-      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "transit_hybrid_queried_at": "2026-07-12T15:43:34.590617+00:00",
       "linehaul_minutes": 162
     },
     {
