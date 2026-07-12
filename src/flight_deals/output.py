@@ -167,6 +167,27 @@ def ground_summary(duration_minutes: int, cost_eur: Optional[float], mode: str,
     return out
 
 
+def connection_summary(hub: str, connect_out_minutes: int, connect_ret_minutes: int,
+                       *, buffer_eur: Optional[float] = None) -> Dict[str, Any]:
+    """The Deal-level ``connection`` object for an S5 via-hub self-transfer
+    (Task 16, additive — CONTRACT §2b). Carries the hub, both VERIFIED
+    same-airport connection gaps (minutes), the displayed self-transfer risk
+    buffer, and the two hard honesty flags: ``verified: true`` (a displayed S5 is
+    always time-verified) and ``separate_tickets: true`` (a missed connection is
+    the traveller's own risk). Only ever attached to an S5 deal, so every other
+    shape stays byte-identical."""
+    out: Dict[str, Any] = {
+        "hub": hub,
+        "connect_out_minutes": connect_out_minutes,
+        "connect_ret_minutes": connect_ret_minutes,
+        "verified": True,
+        "separate_tickets": True,
+    }
+    if buffer_eur is not None:
+        out["buffer_eur"] = round(float(buffer_eur), 2)
+    return out
+
+
 def _fmt_hm(minutes: Optional[int]) -> str:
     if not minutes:
         return ""
@@ -274,6 +295,7 @@ def build_deal(
     legs: List[Dict[str, Any]],
     why: str,
     ground: Optional[Dict[str, Any]] = None,
+    connection: Optional[Dict[str, Any]] = None,
     estimated_price_eur: Optional[float] = None,
     group: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -293,6 +315,11 @@ def build_deal(
     nights: Optional[int] = None
     if return_date:
         nights = (_date.fromisoformat(return_date) - _date.fromisoformat(out_date)).days
+    # S5 self-transfer is two SEPARATE tickets through a hub, so a single
+    # origin->destination booking link would be a lie (there is no direct
+    # flight). Emit no combined link — the four segments live in ``legs`` and
+    # the hub in ``connection`` (CONTRACT §2b). Every other shape keeps its link.
+    links = {} if shape == "S5" else _links(carriers, origin, destination, out_date, return_date)
     deal: Dict[str, Any] = {
         "deal_id": deal_id(origin, destination, out_date, return_date, shape, carriers),
         "shape": shape,
@@ -307,8 +334,10 @@ def build_deal(
         "legs": legs,
         "ground": ground,
         "why": why,
-        "links": _links(carriers, origin, destination, out_date, return_date),
+        "links": links,
     }
+    if connection is not None:
+        deal["connection"] = connection
     if estimated_price_eur is not None:
         deal["estimated_price_eur"] = round(float(estimated_price_eur), 2)
     if group is not None:
@@ -329,6 +358,22 @@ def standout_group(deal: Dict[str, Any], history: Optional[Dict[str, Any]] = Non
     if typical and deal["price_eur"] < typical:
         return "solid"
     return "baseline"
+
+
+def via_hub_why(price_eur: float, connection: Dict[str, Any]) -> str:
+    """The S5 self-transfer ``why`` (Task 16). ALWAYS carries the separate-tickets
+    disclosure (a missed connection is the traveller's risk) and, when set, the
+    displayed self-transfer buffer — both are load-bearing honesty, never
+    dropped. Connection gaps are the VERIFIED ones."""
+    hub = connection.get("hub", "?")
+    co = _fmt_hm(connection.get("connect_out_minutes")) or "?"
+    cr = _fmt_hm(connection.get("connect_ret_minutes")) or "?"
+    buf = connection.get("buffer_eur")
+    buf_str = f", incl. ~€{buf:.0f} self-transfer buffer" if buf else ""
+    return (
+        f"€{price_eur:.0f} round-trip via {hub} — 2 SEPARATE tickets, self-transfer "
+        f"(missed connection is your risk; {co}/{cr} connections, ≥3h enforced){buf_str}"
+    )
 
 
 def why_string(price_eur: float, price_confidence: str, round_trip: bool) -> str:
@@ -405,10 +450,16 @@ def build_summary(
     # A gem-extended deal names the gem ("Halki (via RHO)") rather than the bare
     # gateway IATA, so the paste-ready summary reads honestly (Task 15).
     where = cheapest.get("destination_display") or cheapest["destination"]
+    # An S5 self-transfer must ALWAYS disclose the separate-tickets risk in the
+    # paste-ready summary too, not only in the deal's why (Task 16).
+    s5_note = ""
+    if cheapest.get("shape") == "S5":
+        hub = (cheapest.get("connection") or {}).get("hub", "a hub")
+        s5_note = f" [self-transfer via {hub}, 2 separate tickets]"
     return (
         f"Found {n} {plural} from {origin_str}, cheapest {where} "
         f"€{cheapest['price_eur']:.0f} {trip} {dates} ({conf})"
-    ) + _coverage_gap_note(sources)
+    ) + s5_note + _coverage_gap_note(sources)
 
 
 def _spec_run_command(spec: Any, **overrides: Any) -> str:

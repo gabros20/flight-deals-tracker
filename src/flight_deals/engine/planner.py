@@ -25,9 +25,15 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from flight_deals import http, output
 from flight_deals.config import get_config
+from flight_deals.engine import via_hub as vh
 from flight_deals.models import DayFare, FareLeg, FarePair
 from flight_deals.orchestrator import aggregate_status, status_for_exception
-from flight_deals.registry.destinations import DestinationRegistry, gem_gateways_in_window
+from flight_deals.registry.destinations import (
+    HUB_IATAS,
+    KNOWN_DIRECT_ROUTES,
+    DestinationRegistry,
+    gem_gateways_in_window,
+)
 from flight_deals.registry.ground_matrix import GROUND_MODE
 from flight_deals.registry.where import WhereParseError
 
@@ -48,6 +54,31 @@ DEFAULT_MAX_CALLS = 40
 # are still deduped by (origin, destination, month), so the actual call count
 # stays well under 2×matched airports + the direct-shape calls.
 S4_PAIR_CAP = 40
+
+
+def resolve_hubs(spec, registry: DestinationRegistry, origin: str) -> List[str]:
+    """The S5 hub set for one base ``origin`` (PURE — no network).
+
+    ``spec.via`` drives it: ``"none"`` -> no hubs; an explicit list -> those of
+    its members that are known airports; ``"auto"`` (default) -> the registry
+    ``hub``-tagged airports, minus the origin, statically pre-filtered to the
+    origin's known direct routes when we have that data
+    (``KNOWN_DIRECT_ROUTES``) so ``compile`` stays pure. The exact
+    ryanair-served intersection is still enforced at execute time — a hub with
+    no live O->H fare in the discovery sweep simply produces no candidate — so
+    ``auto`` is an honest upper bound on the hub fan-out, never a fabrication."""
+    via = getattr(spec, "via", "auto")
+    origin = origin.upper()
+    known_iatas = {a.iata for a in registry.airports}
+    if via == "none":
+        return []
+    if isinstance(via, list):
+        return sorted({h.upper() for h in via if h.upper() in known_iatas} - {origin})
+    hubs = {h for h in HUB_IATAS if h in known_iatas} - {origin}
+    known_routes = KNOWN_DIRECT_ROUTES.get(origin)
+    if known_routes:
+        hubs &= {r.upper() for r in known_routes}
+    return sorted(hubs)
 
 
 def _capped_openjaw_pairs(registry, matched_set, cap: int = S4_PAIR_CAP):
@@ -146,6 +177,14 @@ class CallPlan:
     # is compiled, so non-open-jaw plans stay byte-identical.
     openjaw_pairs_considered: Optional[int] = None
     openjaw_pairs_dropped: Optional[int] = None
+    # S5 via-hub fan-out accounting (Task 16) — only set when the via-hub shape
+    # is compiled, so non-via-hub plans stay byte-identical. ``hubs`` is the
+    # planned discovery fan-out; ``verify_calls_max`` is the honest upper bound
+    # on the 4-leg exact-date verification (shortlist × 4), reserved in
+    # ``estimated_calls`` so --max-calls budgets for it (actual verify calls are
+    # <= this — never a silent cap).
+    via_hub_hubs: Optional[List[str]] = None
+    via_hub_verify_max: Optional[int] = None
 
     def to_dict(self) -> Dict[str, Any]:
         d: Dict[str, Any] = {
@@ -158,6 +197,14 @@ class CallPlan:
         if self.openjaw_pairs_considered is not None:
             d["openjaw_pairs_considered"] = self.openjaw_pairs_considered
             d["openjaw_pairs_dropped"] = self.openjaw_pairs_dropped
+        # Additive, present only for via-hub plans: the hub fan-out + the
+        # verification ceiling the estimate reserves.
+        if self.via_hub_hubs is not None:
+            d["via_hub"] = {
+                "hubs": self.via_hub_hubs,
+                "shortlist": vh.VIA_HUB_SHORTLIST,
+                "verify_calls_max": self.via_hub_verify_max,
+            }
         return d
 
 
@@ -267,15 +314,14 @@ def compile_plan(spec, registry: Optional[DestinationRegistry] = None, *, rate: 
     span."""
     registry = registry or DestinationRegistry()
 
-    # Enabled shapes: direct (S1/S2), extended-origin (S3), open-jaw (S4).
-    # via-hub (S5) stays refused — it needs the time-verification funnel (Task
-    # 5c / SEARCH-DESIGN §2, S5) that isn't built.
-    refused = [s for s in spec.shapes if s == "via-hub"]
-    if refused:
+    # Enabled shapes: direct (S1/S2), extended-origin (S3), open-jaw (S4),
+    # via-hub (S5). S5 is a round-trip self-transfer through a hub — it makes no
+    # sense one-way, so refuse via-hub without a nights range (spec-guide failure
+    # mode "via-hub without nights").
+    if "via-hub" in set(spec.shapes) and not spec.is_round_trip:
         raise PlannerRefusal(
-            "shape via-hub not yet enabled",
-            'via-hub (self-transfer) is not enabled yet; drop it from "shapes" '
-            '(use e.g. "shapes":["direct","extended-origin","open-jaw"])',
+            "via-hub needs a nights range",
+            'a self-transfer trip is a round-trip through a hub — add e.g. "nights":"4-7"',
         )
     depart = spec.depart_spec
     round_trip = spec.is_round_trip
@@ -396,12 +442,52 @@ def compile_plan(spec, registry: Optional[DestinationRegistry] = None, *, rate: 
                 params={"origin": o, "destination": d, "month": m},
             ))
 
+    # ------------------------------------------------------------------ #
+    # S5 via-hub self-transfer (round-trip only): discovery is a one-way  #
+    # anywhere sweep from the origin (to find hubs) plus one from EACH hub #
+    # (to find where-matched destinations). Verification (4 exact-date OW  #
+    # legs per shortlisted candidate) is dynamic — its count can't be     #
+    # known until discovery runs — so it isn't enumerated as concrete     #
+    # descriptors; instead its honest ceiling (shortlist × 4) is RESERVED  #
+    # in estimated_calls so --max-calls budgets for it. execute() re-uses  #
+    # resolve_hubs, so its discovery calls match these descriptors exactly.#
+    # ------------------------------------------------------------------ #
+    via_hub_hubs: Optional[List[str]] = None
+    via_hub_verify_max: Optional[int] = None
+    if "via-hub" in shapes and round_trip and want_ryanair:
+        all_hubs: set = set()
+        for base in origins:
+            hubs = resolve_hubs(spec, registry, base)
+            if not hubs:
+                continue  # no hubs from this origin -> no discovery sweep at all
+            all_hubs.update(hubs)
+            calls.append(CallDescriptor(
+                provider="ryanair", endpoint="oneWayFares", mode="anywhere", shape="S5",
+                params={"origin": base, "out_from": depart.out_from,
+                        "out_to": depart.out_to, "purpose": "discover-hubs"},
+            ))
+            for hub in hubs:
+                calls.append(CallDescriptor(
+                    provider="ryanair", endpoint="oneWayFares", mode="anywhere", shape="S5",
+                    params={"origin": hub, "base_origin": base, "out_from": depart.out_from,
+                            "out_to": depart.out_to, "purpose": "discover-dests"},
+                ))
+        via_hub_hubs = sorted(all_hubs)
+        # Reserve the verification ceiling only when there's actually a hub to
+        # discover through (via:none / no reachable hubs -> nothing to verify).
+        via_hub_verify_max = (vh.VIA_HUB_SHORTLIST * vh.VERIFY_LEGS_PER_CANDIDATE
+                              if all_hubs else 0)
+
     calls.sort(key=lambda c: c.sort_key())
     n = len(calls)
+    verify = via_hub_verify_max or 0
+    total = n + verify
     return CallPlan(
-        calls=calls, estimated_calls=n, estimated_seconds=round(n / rate, 1),
+        calls=calls, estimated_calls=total, estimated_seconds=round(total / rate, 1),
         openjaw_pairs_considered=openjaw_considered,
         openjaw_pairs_dropped=openjaw_dropped,
+        via_hub_hubs=via_hub_hubs,
+        via_hub_verify_max=via_hub_verify_max,
     )
 
 
@@ -456,6 +542,9 @@ class _Candidate:
     legs: List[Dict[str, Any]]
     shape: str = "S2"
     ground: Optional[Dict[str, Any]] = None
+    # S5 via-hub connection metadata (hub, verified connect gaps, buffer,
+    # separate_tickets) — additive, only set on an S5 candidate.
+    connection: Optional[Dict[str, Any]] = None
     # Dedup key override (S4 open-jaw). ``None`` -> ("point", origin, destination):
     # S1/S2/S3 to the same destination compete (cheapest wins, so an extended
     # origin surfaces only when it genuinely beats direct). S4 is a distinct
@@ -614,6 +703,39 @@ def _openjaw_candidate(
                                      has_ferry=has_ferry,
                                      transit_transfers=transit_transfers),
         dedup=("openjaw", base, frozenset({d1, d2})),
+    )
+
+
+def _via_hub_candidate(
+    base: str, hub: str, dest: str, out_date: str, ret_date: str, nights: int,
+    legs: List[DayFare], total: float, connect_out: int, connect_ret: int, buffer_eur: float,
+) -> _Candidate:
+    """A VERIFIED S5 self-transfer candidate: fly ``base->hub->dest`` on
+    ``out_date`` and ``dest->hub->base`` on ``ret_date`` — four exact one-way
+    Ryanair legs on two separate tickets, both same-airport connections passing
+    MCT. ``destination`` is the final ``dest`` (the hub lives inside ``legs`` and
+    ``connection``). ``total`` already includes the displayed self-transfer
+    buffer. Only ever built AFTER verification, so a displayed S5 is always
+    time-verified (the hard rule)."""
+    flight_legs = [
+        output.flight_leg(l.origin, l.destination, "ryanair", l.date, l.price_eur,
+                          departure_time=l.departure_time, flight_number=l.flight_number,
+                          duration_minutes=vh.connect_minutes(l.departure_at, l.arrival_at))
+        for l in legs
+    ]
+    return _Candidate(
+        origin=base,
+        destination=dest,
+        out_date=out_date,
+        return_date=ret_date,
+        nights=nights,
+        price_eur=round(total, 2),
+        price_confidence="exact",
+        carriers=["ryanair"],
+        shape="S5",
+        legs=flight_legs,
+        connection=output.connection_summary(hub, connect_out, connect_ret,
+                                             buffer_eur=round(buffer_eur, 2)),
     )
 
 
@@ -846,6 +968,124 @@ class Planner:
                                               has_ferry=g_ferry, transit_transfers=g_transfers))
         return out
 
+    # -- S5 via-hub: discovery fan-out -> shortlist -> 4-leg verification ---- #
+    def _ow_anywhere_discovery(self, origin: str, out_from: str, out_to: str, fresh: bool):
+        """One OW-ANYWHERE discovery sweep from ``origin`` (day-level fares with
+        times). Returns ``(fares, event)``; a failure is a logged empty sweep."""
+        try:
+            fares = self.ryanair.oneway_fares(
+                origin, dest=None, out_from=out_from, out_to=out_to, use_cache=not fresh,
+            )
+            return fares, {"provider": "ryanair", "status": "ok"}
+        except Exception as e:  # noqa: BLE001
+            logger.warning("planner: via-hub discovery %s failed: %s", origin, e)
+            return [], {"provider": "ryanair", "status": status_for_exception(e), "detail": str(e)}
+
+    def _exact_oneway_leg(self, origin: str, dest: str, day: str):
+        """Cheapest exact-date (cache-BYPASSED — verification must be fresh)
+        Ryanair one-way fare for ``origin->dest`` on ``day``, carrying times.
+        Returns ``(DayFare|None, event)``."""
+        try:
+            fares = self.ryanair.oneway_fares(origin, dest, out_from=day, out_to=day, use_cache=False)
+            hit = min((f for f in fares if f.date == day), key=lambda f: f.price_eur, default=None)
+            return hit, {"provider": "ryanair", "status": "ok"}
+        except Exception as e:  # noqa: BLE001
+            logger.warning("planner: via-hub verify %s->%s %s failed: %s", origin, dest, day, e)
+            return None, {"provider": "ryanair", "status": status_for_exception(e), "detail": str(e)}
+
+    def _verify_s5(self, base: str, disc: "vh.DiscoveredS5", lo: int, buffer_eur: float):
+        """Verify one shortlisted discovery candidate with FOUR fresh exact-date
+        one-way legs (O->H, H->D on the out date; D->H, H->O on the return date =
+        out + ``lo`` nights). Returns ``(candidate|None, events)``. Returns
+        ``None`` — dropped, never shown — if ANY leg is unbookable on its exact
+        date OR either verified same-airport connection fails MCT."""
+        out_date = disc.out_date
+        ret_date = (date.fromisoformat(out_date) + timedelta(days=lo)).isoformat()
+        hub, dest = disc.hub, disc.destination
+        leg_specs = [
+            (base, hub, out_date), (hub, dest, out_date),
+            (dest, hub, ret_date), (hub, base, ret_date),
+        ]
+        events: List[Dict[str, Any]] = []
+        legs: List[DayFare] = []
+        for (o, d, day) in leg_specs:
+            hit, event = self._exact_oneway_leg(o, d, day)
+            events.append(event)
+            if hit is None:
+                return None, events  # unbookable leg -> unverified -> never shown
+            legs.append(hit)
+        l1, l2, l3, l4 = legs
+        min_c, max_c = self.config.min_connect_minutes, self.config.max_connect_minutes
+        connect_out = vh.connect_minutes(l1.arrival_at, l2.departure_at)
+        connect_ret = vh.connect_minutes(l3.arrival_at, l4.departure_at)
+        if not vh.mct_ok(connect_out, min_c, max_c) or not vh.mct_ok(connect_ret, min_c, max_c):
+            logger.info("via-hub: %s via %s->%s connections %s/%s min fail MCT [%d,%d] — dropped",
+                        base, hub, dest, connect_out, connect_ret, min_c, max_c)
+            return None, events  # verified times fail MCT -> unverified -> never shown
+        total = l1.price_eur + l2.price_eur + l3.price_eur + l4.price_eur + buffer_eur
+        nights = (date.fromisoformat(ret_date) - date.fromisoformat(out_date)).days
+        cand = _via_hub_candidate(base, hub, dest, out_date, ret_date, nights, legs, total,
+                                  connect_out, connect_ret, buffer_eur)
+        return cand, events
+
+    def _run_via_hub(self, spec, fresh: bool):
+        """The full S5 funnel: per base origin, one OW-ANYWHERE discovery sweep
+        from the origin + one per hub (concurrent); compose same-day MCT-plausible
+        outbound candidates (``via_hub.discover``); shortlist the cheapest 6
+        globally; verify each with 4 fresh exact-date legs. Returns
+        ``(verified_candidates, events)``. Runs on the shared executor/token
+        bucket; verification's call count is bounded by the shortlist (<= the
+        plan's reserved ``verify_calls_max``) — dropped discovery candidates are
+        logged, never silently capped."""
+        cfg = self.config
+        buffer_eur = float(cfg.self_transfer_buffer_eur)
+        min_c, max_c = cfg.min_connect_minutes, cfg.max_connect_minutes
+        lo, _hi = spec.nights_range
+        depart = spec.depart_spec
+        matched = set(_matched_destinations(spec, self.registry))
+        executor = http.get_executor(self.config.max_workers)
+        events: List[Dict[str, Any]] = []
+        composed: List[Tuple[str, "vh.DiscoveredS5"]] = []
+
+        for base in sorted({o.upper() for o in spec.origins}):
+            hubs = resolve_hubs(spec, self.registry, base)
+            if not hubs:
+                continue
+            futs = {executor.submit(self._ow_anywhere_discovery, base, depart.out_from,
+                                    depart.out_to, fresh): ("origin", base)}
+            for hub in hubs:
+                futs[executor.submit(self._ow_anywhere_discovery, hub, depart.out_from,
+                                     depart.out_to, fresh)] = ("hub", hub)
+            origin_fares: List[DayFare] = []
+            hub_fares: Dict[str, List[DayFare]] = {}
+            for fut in as_completed(futs):
+                tag, who = futs[fut]
+                fares, event = fut.result()
+                events.append(event)
+                if tag == "origin":
+                    origin_fares = fares
+                else:
+                    hub_fares[who] = fares
+            for disc in vh.discover(base, hubs, origin_fares, hub_fares, matched,
+                                    min_connect=min_c, max_connect=max_c):
+                composed.append((base, disc))
+
+        kept, dropped = vh.shortlist([d for _b, d in composed])
+        if composed:
+            logger.info("via-hub: composed %d same-day MCT-plausible candidate(s), "
+                        "verifying cheapest %d (%d dropped over the shortlist cap)",
+                        len(composed), len(kept), dropped)
+        base_by_id = {id(d): b for b, d in composed}
+        verified: List[_Candidate] = []
+        vfuts = {executor.submit(self._verify_s5, base_by_id[id(d)], d, lo, buffer_eur): d
+                 for d in kept}
+        for fut in as_completed(vfuts):
+            cand, vevents = fut.result()
+            events.extend(vevents)
+            if cand is not None:
+                verified.append(cand)
+        return verified, events
+
     def execute(self, plan: CallPlan, spec, *, fresh: bool = False) -> Dict[str, Any]:
         """Run the plan concurrently on the shared pool. Returns a dict with
         ``results`` (rendered Deal dicts, final budget+rank cut on estimates),
@@ -882,6 +1122,12 @@ class Planner:
 
         futures = {}
         for call in plan.calls:
+            # S5 discovery descriptors are informational in the plan; the via-hub
+            # funnel (_run_via_hub) owns their actual execution + the dynamic
+            # verification, so they are NOT dispatched here (they'd otherwise be
+            # mis-processed as S1 one-way candidates by the oneWayFares branch).
+            if call.shape == "S5":
+                continue
             if call.mode == "anywhere" and call.endpoint == "roundTripFares":
                 futures[executor.submit(self._run_anywhere, call, fresh)] = call
             elif call.mode == "anywhere" and call.endpoint == "oneWayFares":
@@ -963,6 +1209,18 @@ class Planner:
             for cand in self._build_openjaw(spec, matched, cal_fares):
                 _offer(cand)
 
+        # S5 via-hub: its own two-stage discover/verify funnel (own provider
+        # calls through the same executor). Only VERIFIED candidates are offered
+        # — unverified ones are dropped inside _run_via_hub, never reaching here.
+        if "via-hub" in set(spec.shapes) and spec.is_round_trip:
+            try:
+                s5_cands, s5_events = self._run_via_hub(spec, fresh)
+                events.extend(s5_events)
+                for cand in s5_cands:
+                    _offer(cand)
+            except Exception as e:  # noqa: BLE001 — never let S5 sink the whole run
+                logger.warning("via-hub: funnel failed, no S5 deals this run: %s", e)
+
         aggregated = aggregate_status(events)
         provider_failed = any(not v["ok"] for v in aggregated.values())
 
@@ -1013,7 +1271,11 @@ class Planner:
 
     @staticmethod
     def _render(c: _Candidate) -> Dict[str, Any]:
-        round_trip = c.shape in ("S2", "S3", "S4")
+        round_trip = c.shape in ("S2", "S3", "S4", "S5")
+        if c.shape == "S5":
+            why = output.via_hub_why(c.price_eur, c.connection or {})
+        else:
+            why = output.why_string(c.price_eur, c.price_confidence, round_trip=round_trip)
         deal = output.build_deal(
             shape=c.shape,
             origin=c.origin,
@@ -1025,9 +1287,11 @@ class Planner:
             carriers=c.carriers,
             legs=c.legs,
             ground=c.ground,
-            why=output.why_string(c.price_eur, c.price_confidence, round_trip=round_trip),
+            connection=c.connection,
+            why=why,
         )
         # Append the honest ground-transfer clause for shaped deals (S3/S4).
+        # S5 has no ground leg (all flights), so this is a no-op there.
         deal["why"] = deal["why"] + output.ground_why_suffix(deal)
         return deal
 
