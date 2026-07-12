@@ -32,8 +32,11 @@ Pipeline:
      paced ~1 req/s. Steps with ``mode=="ferry"`` mean a sea crossing — those
      pairs are re-modeled with the tiered ferry estimate (has_ferry/ferry_minutes/
      land_minutes/sea_km, mode "ferry+ground", 420-min cap). A per-pair /route
-     failure degrades to ``has_ferry: null`` + warning. An island-region
-     cross-check warns when a land-detected pair looks like it should cross water.
+     failure degrades to ``has_ferry: null`` + warning — UNLESS the pair is
+     island-suspect (spans different island regions), in which case it is
+     DROPPED rather than kept mispriced as land. An island-region cross-check
+     also warns when a land-DETECTED (has_ferry==False) pair looks like it
+     should cross water.
   6. Atomic write (tmp + os.replace) with schema_version, computed_at, and the
      model params echoed. On a /table failure: clean non-zero exit, the existing
      matrix is left UNTOUCHED (never half-written, never faked).
@@ -199,13 +202,17 @@ def run_route_pass(
 ) -> Tuple[List[Dict[str, Any]], Dict[str, int]]:
     """Second OSRM pass: one /route per land-derived ``row`` to detect ferry
     legs, then re-model ferry pairs (gm.apply_route_pass). Failures degrade to
-    ``has_ferry: null``; ferry pairs over the 420-min cap are dropped. Also runs
-    the island-region detection cross-check and records one ferry + one land
-    fixture. Returns ``(out_rows, stats)``."""
+    ``has_ferry: null`` UNLESS the pair is island-suspect (spans different
+    island regions per gm.ferry_detection_suspect) — such a pair is DROPPED
+    (never a mispriced land estimate on a route we couldn't verify) and logged.
+    Also runs the island-region detection cross-check on has_ferry==False
+    results and records one ferry + one land fixture. Returns ``(out_rows,
+    stats)``."""
     by_iata = {a.iata.upper(): a for a in airports}
     tags_by_iata = {a.iata.upper(): set(getattr(a, "tags", []) or []) for a in airports}
     out_rows: List[Dict[str, Any]] = []
-    stats = {"ferry": 0, "land": 0, "failed": 0, "dropped_ferry_cap": 0}
+    stats = {"ferry": 0, "land": 0, "failed": 0, "dropped_ferry_cap": 0,
+             "dropped_island_null": 0}
     ferry_captured = land_captured = False
     logger.info("route pass: %d kept pairs, one OSRM /route each (~%.0f req/s)...",
                 len(rows), 1.0 / pace if pace else 0)
@@ -221,6 +228,16 @@ def run_route_pass(
         try:
             data = fetch_route(apa.lon, apa.lat, apb.lon, apb.lat)
         except OsrmError as e:
+            if gm.ferry_detection_suspect(tags_by_iata.get(a, set()), tags_by_iata.get(b, set())):
+                # A land estimate for an island-crossing pair we couldn't verify
+                # would silently mask a possible ferry hop — drop it rather than
+                # mispricing (Task 12 quality-review fix), and let the pair
+                # resurface on the next successful refresh.
+                stats["dropped_island_null"] += 1
+                logger.warning(
+                    "route pass: route-pass failed for island-crossing pair %s-%s; "
+                    "excluded rather than mispriced — re-run refresh (%s)", a, b, e)
+                continue
             logger.warning("route pass: %s-%s /route failed (%s) -> has_ferry=null", a, b, e)
             out_rows.append(gm.apply_route_pass(row, None, route_ok=False))
             stats["failed"] += 1
@@ -271,6 +288,7 @@ def build_matrix_payload(
             "land_pairs": route_stats["land"],
             "route_pass_failed": route_stats["failed"],
             "dropped_ferry_cap": route_stats["dropped_ferry_cap"],
+            "dropped_island_null": route_stats.get("dropped_island_null", 0),
         })
     return {
         "schema_version": gm.SCHEMA_VERSION,
@@ -356,9 +374,11 @@ def _print_stats(payload: Dict[str, Any]) -> None:
     if "ferry_pairs" in st:
         logger.info(
             "  route pass: %d ferry pairs, %d land pairs, %d route failures "
-            "(has_ferry=null), %d dropped by the %dmin ferry cap",
+            "(has_ferry=null), %d dropped by the %dmin ferry cap, %d dropped "
+            "(island-crossing pair, route pass failed)",
             st["ferry_pairs"], st["land_pairs"], st["route_pass_failed"],
             st["dropped_ferry_cap"], gm.MAX_FERRY_GROUND_MINUTES,
+            st.get("dropped_island_null", 0),
         )
     pairs = payload["pairs"]
     if pairs:

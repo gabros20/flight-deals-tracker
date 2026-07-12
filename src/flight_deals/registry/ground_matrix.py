@@ -33,9 +33,18 @@ estimate (see ``FERRY_TIERS`` / :func:`ferry_ground_minutes_for` /
 :func:`ferry_est_cost_eur_for`): real ferry fares dwarf EUR 0.11/km and sparse
 sailings mean the WAIT dominates, so time = land×1.35 + ferry×1.15 + port +
 sailing-wait and cost = land road proxy + a ferry base + per-sea-km, tiered by
-``sea_km`` as a sailing-frequency proxy. Ferry hops carry ``mode="ferry+ground"``
+``sea_km`` as a sailing-frequency proxy. The ×1.15 on the ferry leg itself pads
+OSRM's raw crossing duration for boarding/disembark overhead (queueing, vehicle
+loading), not a land-transit factor. Ferry hops carry ``mode="ferry+ground"``
 and a looser 420-min cap; a failed /route pass degrades to ``has_ferry: null``
-(never a fabricated land pair). Curated corridors (``open_jaw_pairs``) still win.
+(never a fabricated land pair) — UNLESS the pair is island-suspect (see
+:func:`ferry_detection_suspect`), in which case ``scripts/refresh_ground.py``
+drops it entirely rather than keep a possibly-mispriced land estimate for a
+route it could not verify. Curated corridors (``open_jaw_pairs``) still win.
+Because the tiers are selected by a ``sea_km`` threshold rather than a
+continuous function, the estimate steps sharply at each tier boundary (e.g.
+~+45min crossing 15km, ~+EUR30 base / ~+80min wait crossing 60km) — an
+acceptable, deliberately-documented tradeoff for a STATED ESTIMATE, not a bug.
 
 Follow-up (documented, out of scope here): Transitous/MOTIS could later refine
 these driving-derived estimates with real public-transport timetables and fares.
@@ -83,7 +92,11 @@ ROAD_SANITY_FACTOR = 0.85
 # long crossings are 2-3/day so waiting dominates). Each tier is
 # (wait_min, base_eur, eur_per_sea_km, port_access_min):
 FERRY_MODE = "ferry+ground"
-FERRY_TIME_FACTOR = 1.15  # public-transport-vs-drive factor on the land legs' bus
+# Pads OSRM's raw ferry-link duration for boarding/disembark overhead (queueing,
+# vehicle loading, walking on/off) that the routed crossing time alone omits —
+# NOT a land/public-transport factor (that's TRANSIT_FACTOR, applied separately
+# to the land legs).
+FERRY_TIME_FACTOR = 1.15
 MAX_FERRY_GROUND_MINUTES = 420  # ferry hops keep a looser cap than land (330)
 FERRY_STRAIT_MAX_KM = 15.0   # < 15 km  -> shuttle strait (turn-up-and-go)
 FERRY_DOMESTIC_MAX_KM = 60.0  # 15..60 km -> domestic island line (a few/day)

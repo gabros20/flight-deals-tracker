@@ -11,6 +11,7 @@ import importlib.util
 import json
 import sys
 from pathlib import Path
+from typing import Tuple
 
 import pytest
 
@@ -183,6 +184,44 @@ def test_run_route_pass_warns_on_island_false_negative(caplog):
     assert any("has_ferry==False" in r.message for r in caplog.records)
 
 
+def test_run_route_pass_drops_island_suspect_pair_on_route_failure(caplog):
+    """Quality-review fix: a /route failure for an island-crossing pair must
+    NOT resurrect the land estimate (a route we couldn't verify might actually
+    be a ferry hop) — the pair is dropped entirely, with a logged warning."""
+    module = _load_refresh_module()
+    module.fetch_route = lambda *a, **k: (_ for _ in ()).throw(module.OsrmError("boom"))
+    rows = [{"a": "CTA", "b": "MLA", "ground_minutes": 300, "est_cost_eur": 25,
+             "mode": gm.GROUND_MODE, "drive_minutes": 200.0, "km_road": 210.0,
+             "straight_km": 186.0, "note": "land"}]
+    airports = [_AP("CTA", 37.4668, 15.0664, ["italy", "sicily", "island"]),
+                _AP("MLA", 35.8575, 14.4775, ["malta", "island"])]
+    with caplog.at_level("WARNING", logger="refresh_ground"):
+        out, stats = module.run_route_pass(rows, airports, pace=0)
+    assert out == []                                    # dropped, not kept as land
+    assert stats["dropped_island_null"] == 1 and stats["failed"] == 0
+    assert any("route-pass failed for island-crossing pair CTA-MLA" in r.message
+               and "excluded rather than mispriced" in r.message
+               for r in caplog.records)
+
+
+def test_run_route_pass_keeps_non_suspect_pair_as_land_on_route_failure(caplog):
+    """A /route failure for a pair that is NOT island-suspect keeps degrading
+    to has_ferry:null with the land estimate retained — unchanged behaviour."""
+    module = _load_refresh_module()
+    module.fetch_route = lambda *a, **k: (_ for _ in ()).throw(module.OsrmError("boom"))
+    rows = [{"a": "AHO", "b": "OLB", "ground_minutes": 150, "est_cost_eur": 20,
+             "mode": gm.GROUND_MODE, "drive_minutes": 90.0, "km_road": 130.0,
+             "straight_km": 120.0, "note": "land"}]
+    airports = [_AP("AHO", 40.6321, 8.2908, ["italy", "sardinia", "island"]),
+                _AP("OLB", 40.8987, 9.5176, ["italy", "sardinia", "island"])]
+    with caplog.at_level("WARNING", logger="refresh_ground"):
+        out, stats = module.run_route_pass(rows, airports, pace=0)
+    assert len(out) == 1
+    assert out[0]["has_ferry"] is None
+    assert out[0]["ground_minutes"] == 150               # land estimate retained
+    assert stats["failed"] == 1 and stats["dropped_island_null"] == 0
+
+
 def test_run_route_pass_detects_ferry_from_recorded_fixture(caplog):
     module = _load_refresh_module()
     data = json.loads(FERRY_ROUTE_FIXTURE.read_text())["body"]
@@ -201,14 +240,34 @@ def test_run_route_pass_detects_ferry_from_recorded_fixture(caplog):
 # calibration — the model vs ALL FIVE curated corridors (Task 12 req 2)         #
 # --------------------------------------------------------------------------- #
 # (land_min, ferry_min, sea_km, land_km) split from the live 2026-07-12 /route
-# pass, and the hand-researched curated (minutes, EUR) target for each corridor.
-CALIBRATION = {
-    "CTA-MLA": ((121.0, 105.0, 100.0, 124.0), (350, 55)),
-    "HER-JTR": ((20.9, 125.0, 124.4, 15.8), (240, 45)),
-    "KLX-ZTH": ((161.7, 60.0, 32.9, 162.8), (335, 25)),
-    "CFU-PVK": ((130.3, 75.0, 18.1, 133.1), (236, 20)),
-    "CTA-SUF": ((174.6, 40.0, 6.5, 228.1), (215, 15)),
+# pass — these OSRM-derived splits aren't in destinations.json (only the
+# curated final ground_minutes/est_cost_eur are), so they stay hand-recorded.
+_ROUTE_SPLITS = {
+    "CTA-MLA": (121.0, 105.0, 100.0, 124.0),
+    "HER-JTR": (20.9, 125.0, 124.4, 15.8),
+    "KLX-ZTH": (161.7, 60.0, 32.9, 162.8),
+    "CFU-PVK": (130.3, 75.0, 18.1, 133.1),
+    "CTA-SUF": (174.6, 40.0, 6.5, 228.1),
 }
+
+
+def _curated_target(pair_key: str) -> Tuple[int, int]:
+    """The curated (ground_minutes, est_cost_eur) target for ``pair_key``
+    ("A-B"), read live from data/destinations.json open_jaw_pairs (Minor #3
+    fix): a curated edit re-validates the calibration band automatically
+    instead of drifting from a hardcoded copy."""
+    a, b = pair_key.split("-")
+    destinations = json.loads(
+        (Path(__file__).parent.parent / "data" / "destinations.json").read_text())
+    for p in destinations["open_jaw_pairs"]:
+        if {str(p["a"]).upper(), str(p["b"]).upper()} == {a, b}:
+            return p["ground_minutes"], p["est_cost_eur"]
+    raise AssertionError(f"no curated open_jaw_pairs entry found for {pair_key}")
+
+
+# (land_min, ferry_min, sea_km, land_km) hand-recorded route split, and the
+# curated (minutes, EUR) target loaded live from data/destinations.json.
+CALIBRATION = {key: (splits, _curated_target(key)) for key, splits in _ROUTE_SPLITS.items()}
 
 
 @pytest.mark.parametrize("corridor", list(CALIBRATION))
@@ -323,3 +382,39 @@ def test_planner_surfaces_curated_ferry_openjaw_with_has_ferry():
     assert d["ground"]["has_ferry"] is True
     assert d["ground"]["estimate_basis"] == "curated"
     assert "⛴" in d["why"]
+
+
+def test_planner_surfaces_null_ferry_openjaw_as_plain_land_hop():
+    """Minor #5 e2e: a computed matrix pair with ``has_ferry: null`` (a
+    non-suspect /route-pass failure — AHO<->OLB, both Sardinia) must surface
+    through the planner + envelope as a plain land hop: no ⛴, no ``has_ferry``
+    key on the deal's ``ground``."""
+    reg = DestinationRegistry()
+    reg.get_open_jaw_pairs = lambda: [
+        {"a": "AHO", "b": "OLB", "ground_minutes": 150, "est_cost_eur": 20,
+         "mode": gm.GROUND_MODE, "has_ferry": None, "estimate_basis": "computed"},
+    ]
+    spec = parse_spec({
+        "origins": ["BUD"], "where": "sardinia", "depart": "2026-08-22..2026-08-24",
+        "nights": "4-7", "shapes": ["direct", "open-jaw"], "carriers": ["ryanair"],
+    })
+    cal = {
+        ("BUD", "AHO"): [("2026-08-22", 80.0)],
+        ("OLB", "BUD"): [("2026-08-27", 75.0)],
+        ("BUD", "OLB"): [("2026-08-22", 140.0)],
+        ("AHO", "BUD"): [("2026-08-27", 140.0)],
+    }
+    p = Planner(registry=reg)
+    p.ryanair.roundtrip_fares = lambda origin, dest=None, **k: []
+    p.ryanair.cheapest_per_day = lambda origin, dest, month, **k: [
+        _df(origin, dest, d, pr) for d, pr in cal.get((origin, dest), [])]
+    p.wizz.timetable = lambda *a, **k: ([], [])
+
+    results = p.execute(compile_plan(spec, reg), spec)["results"]
+    oj = [d for d in results if d["shape"] == "S4"
+          and {d["destination"], d["legs"][-1]["origin"]} == {"AHO", "OLB"}]
+    assert oj, "expected the AHO-OLB null-ferry open-jaw to surface"
+    d = oj[0]
+    assert "has_ferry" not in d["ground"]
+    assert d["ground"]["mode"] == gm.GROUND_MODE
+    assert "⛴" not in d["why"]
