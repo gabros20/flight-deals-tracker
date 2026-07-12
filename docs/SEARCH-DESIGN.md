@@ -278,6 +278,29 @@ fights the engine (its output is a spec, which compiles deterministically).
   RT-ANYWHERE call per origin (not N calendars) + per-route TT for Wizz-served
   matches; CAL calendars are reserved for single-route watches and open-jaw.
 
+## 7b. Ferry-aware ground modeling (designed 2026-07-12; Task 12 in the orchestration plan)
+
+The computed ground matrix prices sea crossings with land math — wrong in both
+dimensions (real ferry fares ≫ €0.11/km; sparse sailings mean waiting dominates,
+not crossing time). The fix, in authority order:
+
+1. **Detection**: a second OSRM `/route` pass (steps=true) per kept pair splits
+   each route into `land_minutes` / `ferry_minutes` / `sea_km` via `mode=="ferry"`
+   steps; island-region tags cross-check detection. Route-pass failure degrades
+   to `has_ferry: null` + warning — never a silent false negative.
+2. **Curated corridors win** (existing mechanism): routes that matter get
+   hand-curated real figures (CTA↔MLA Virtu Ferries, HER↔JTR SeaJets/Blue Star).
+3. **Ferry model for the rest**: time = land×1.35 + ferry×1.15 + 30 access +
+   **120 sailing-wait pad**; cost = land_km×0.11 + €35 base + sea_km×0.15;
+   cap 420min (land keeps 330); calibrated ±40% against the curated corridors.
+   mode `ferry+ground`, ⛴ in why-strings, additive `has_ferry` in the envelope
+   so agents disclose the crossing before the user gets attached to a price.
+4. **Transitous/MOTIS** (Task 13, deferred until explicitly activated):
+   `--transit` refresh flag replaces modeled durations with real scheduled
+   itineraries where coverage exists (`estimate_basis: "scheduled"`);
+   best-effort per pair, never blocking the OSRM baseline; fares stay
+   modeled/curated (Transitous does not do fares).
+
 ## 8. Open questions (decide during implementation, low stakes)
 
 - Spec date DSL: support weekday patterns (`fri..sun of 2026-08`)? Start
