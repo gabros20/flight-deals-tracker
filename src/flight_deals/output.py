@@ -31,6 +31,7 @@ def deal_id(
     return_date: Optional[str],
     shape: str,
     carriers: List[str],
+    gem_slug: Optional[str] = None,
 ) -> str:
     key = "|".join([
         origin.upper(),
@@ -40,6 +41,13 @@ def deal_id(
         shape,
         "+".join(sorted(c.lower() for c in carriers)),
     ])
+    # Gem onward-extension (Task 15, CONTRACT §5 changelog 2026-07-12): an
+    # additive, APPEND-ONLY "|gem:<slug>" component so a gem-extended deal (the
+    # gateway flight PLUS the onward ferry/bus chain) gets a distinct id from
+    # the plain gateway deal. Absent when no gem is attached, so every existing
+    # id is byte-identical.
+    if gem_slug:
+        key += f"|gem:{gem_slug}"
     return hashlib.sha256(key.encode("utf-8")).hexdigest()[:10]
 
 
@@ -222,6 +230,37 @@ def ground_why_suffix(deal: Dict[str, Any]) -> str:
     return ""
 
 
+def onward_why_suffix(deal: Dict[str, Any]) -> str:
+    """The honest onward-chain clause appended to a gem-extended deal's ``why``
+    (Task 15 / SEARCH-DESIGN §2b). Empty when the deal has no ``onward``. Names
+    each hop's mode + duration (ferry legs lead with ⛴ so an agent discloses the
+    sea crossing), then the gem name and the shape-adjusted round-trip/one-way
+    onward cost with the ``~`` estimate marker (all onward costs are curated
+    estimates). Derived from the deal's own ``onward`` so it can't drift.
+
+    A marginal gem (reached via ``--to``) also surfaces the head of its gateway
+    note prominently — those are the day-trip/awkward-connection caveats."""
+    o = deal.get("onward")
+    if not o:
+        return ""
+    parts: List[str] = []
+    for leg in o.get("legs", []):
+        hm = _fmt_hm(leg.get("duration_minutes"))
+        mode = leg.get("mode", "transfer")
+        parts.append(f"⛴ {hm}".strip() if mode == "ferry" else f"{mode} {hm}".strip())
+    chain = " + ".join(p for p in parts if p)
+    cost = o.get("cost_eur")
+    cost_str = f", ~€{cost:.0f}" if cost is not None else ""
+    trip = "rt" if o.get("round_trip") else "ow"
+    suffix = f", then {chain} to {o.get('name')}{cost_str} {trip}"
+    if o.get("marginal"):
+        note = str(o.get("note") or "").strip()
+        head = note.split(".")[0].strip() if note else ""
+        if head:
+            suffix += f" — marginal: {head}"
+    return suffix
+
+
 def build_deal(
     *,
     shape: str,
@@ -363,8 +402,11 @@ def build_summary(
         trip = "rt"
     n = len(results)
     plural = "deal" if n == 1 else "deals"
+    # A gem-extended deal names the gem ("Halki (via RHO)") rather than the bare
+    # gateway IATA, so the paste-ready summary reads honestly (Task 15).
+    where = cheapest.get("destination_display") or cheapest["destination"]
     return (
-        f"Found {n} {plural} from {origin_str}, cheapest {cheapest['destination']} "
+        f"Found {n} {plural} from {origin_str}, cheapest {where} "
         f"€{cheapest['price_eur']:.0f} {trip} {dates} ({conf})"
     ) + _coverage_gap_note(sources)
 

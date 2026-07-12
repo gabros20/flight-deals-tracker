@@ -27,8 +27,9 @@ from flight_deals import http, output
 from flight_deals.config import get_config
 from flight_deals.models import DayFare, FareLeg, FarePair
 from flight_deals.orchestrator import aggregate_status, status_for_exception
-from flight_deals.registry.destinations import DestinationRegistry
+from flight_deals.registry.destinations import DestinationRegistry, gem_gateways_in_window
 from flight_deals.registry.ground_matrix import GROUND_MODE
+from flight_deals.registry.where import WhereParseError
 
 logger = logging.getLogger(__name__)
 
@@ -854,6 +855,23 @@ class Planner:
         (None when non-empty), ``exit_code`` and ``candidate_count`` (pre-budget,
         for the empty-state distinction)."""
         matched = set(_matched_destinations(spec, self.registry))
+        # Gem gateways (Task 15): a where-matched gem contributes its gateway
+        # airports to the fare FILTER so the (already-fetched, single-call)
+        # Ryanair RT/OW-ANYWHERE payload surfaces a candidate for each gateway —
+        # which intents.execute_spec then extends with the onward chain. This is
+        # filter-only and adds NO calls: ``compile``/``plan`` stay airport-only
+        # (byte-identical), so a plain search never fans out extra Wizz TT for a
+        # gem gateway. See gems_matching's design note.
+        render_set = set(matched)
+        if getattr(spec, "where", None):
+            depart0 = spec.depart_spec
+            window = (depart0.out_from, depart0.out_to)
+            try:
+                for gem in self.registry.gems_matching(spec.where, window=window):
+                    for gw in gem_gateways_in_window(gem, window):
+                        render_set.add(gw.airport)
+            except WhereParseError:
+                pass  # a bad expr already stopped upstream; never crash execute
         depart = spec.depart_spec
         # depart.kind == "dates" (an explicit comma list) must not silently
         # widen to the request window it spans (out_from..out_to) — the
@@ -896,13 +914,13 @@ class Planner:
                     ground = self.registry.get_origin_ground(call.params["origin"]) or {}
                     base = call.params.get("base_origin", "")
                     for fp in payload:
-                        if fp.destination in matched and (
+                        if fp.destination in render_set and (
                             allowed_dates is None or fp.out_date in allowed_dates
                         ):
                             _offer(_extended_origin_candidate(fp, base, ground))
                 else:
                     for fp in payload:  # FarePairs, already duration-filtered
-                        if fp.destination in matched and (
+                        if fp.destination in render_set and (
                             allowed_dates is None or fp.out_date in allowed_dates
                         ):
                             _offer(_farepair_to_candidate(fp))
@@ -914,7 +932,7 @@ class Planner:
                 o_from = date.fromisoformat(depart.out_from)
                 o_to = date.fromisoformat(depart.out_to)
                 for df in payload:
-                    if df.destination not in matched:
+                    if df.destination not in render_set:
                         continue
                     if not (o_from <= date.fromisoformat(df.date) <= o_to):
                         continue
@@ -930,7 +948,7 @@ class Planner:
                 # airport outside the where-expression's matched set must
                 # never surface as a deal (review item: destination/legs
                 # mismatch, e.g. requested BGY, actual fare for MXP).
-                if payload is not None and payload.destination not in matched:
+                if payload is not None and payload.destination not in render_set:
                     logger.warning(
                         "planner: wizz TT %s->%s actual fare airport %s is outside "
                         "the matched destination set; dropping to avoid a "

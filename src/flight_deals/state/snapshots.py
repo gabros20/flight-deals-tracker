@@ -47,7 +47,7 @@ def path_for(deal_id: str) -> Path:
 
 
 def _record_from_deal(deal: Dict[str, Any], now: datetime) -> Dict[str, Any]:
-    return {
+    record = {
         "schema_version": SCHEMA_VERSION,
         "deal_id": deal["deal_id"],
         "seen_at": now.isoformat(),
@@ -60,6 +60,13 @@ def _record_from_deal(deal: Dict[str, Any], now: datetime) -> Dict[str, Any]:
         "shape": deal["shape"],
         "carriers": deal["carriers"],
     }
+    # Gem onward-extension marker (Task 15): a gem-extended deal is shape S1/S2
+    # but its price is the fare PLUS the onward chain — record the gem slug so
+    # `check` recognises it (and declines a naive flight-only re-price).
+    onward = deal.get("onward")
+    if onward:
+        record["gem"] = onward.get("gem")
+    return record
 
 
 def _same_utc_day(prior_seen_at: str, now: datetime) -> bool:

@@ -66,11 +66,16 @@ def enrich(deals: List[Dict[str, Any]], history_store, *, window_days: Optional[
         # (controller ruling). Refuse it: force group=baseline and a
         # non-comparative why (no "% below typical"), keeping only the honest
         # ground/hop suffix so the shaped detail survives.
-        if d.get("shape") in ("S3", "S4"):
+        #
+        # A gem-extended deal (Task 15, ``onward`` present) is the same case: its
+        # price_eur is the fare PLUS the onward chain, so the direct-route history
+        # is the wrong baseline. Keep it baseline and append both the ground
+        # suffix (for an S3 gem) and the onward-chain suffix.
+        if d.get("shape") in ("S3", "S4") or d.get("onward"):
             base = output.why_string(
                 d["price_eur"], d["price_confidence"], round_trip=d.get("return_date") is not None
             )
-            d["why"] = base + output.ground_why_suffix(d)
+            d["why"] = base + output.ground_why_suffix(d) + output.onward_why_suffix(d)
             d["group"] = "baseline"
             continue
         try:

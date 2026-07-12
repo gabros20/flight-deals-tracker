@@ -438,6 +438,44 @@ Both fields are absent on plans without the open-jaw shape.
 
 ## Changelog
 
+- **2026-07-12 (Task 15b fix wave)** — `SearchSpec` (not part of the frozen
+  envelope, but a declarative artifact agents/saved searches produce — SEARCH-
+  DESIGN §4) gains an optional `gem: str|None`. Additive: absent by default,
+  every existing spec round-trips unchanged. Set by `--to <gem>` alongside the
+  existing gateway-airport `destinations` restriction, and validated against
+  the registry's gem slugs at spec-build time (unknown -> exit 2 + did-you-
+  mean, known -> normalised to the canonical slug). Persisting the gem itself
+  — not just its gateway airports — on the spec is what lets a saved
+  `watch add --to <gem> ...` replay the gem-only onward extension (and alert
+  on the extended total) from `brief`, which only ever has the loaded spec.
+- **2026-07-12 (Task 15)** — Gem onward-extension; additive, no frozen field
+  changed shape:
+  - **`deal_id` (§ 5)** gains an APPEND-ONLY `"|gem:<slug>"` component when a
+    deal carries an onward gem extension (the gateway flight PLUS the onward
+    ferry/bus/train chain). Absent otherwise, so every existing id is
+    byte-identical; a gem-extended deal never collides with the plain gateway
+    deal it was built from. Golden vector: `deal_id("BUD","RHO","2026-08-23",
+    "2026-08-29","S2",["ryanair"], gem_slug="halki") == "d78e104b78"` (vs the
+    plain `"0c2911c971"`).
+  - **Deal object (§ 2)** gains two additive, optional fields, present ONLY on a
+    gem-extended deal (absent — not null — elsewhere, so non-gem deals stay
+    byte-identical):
+    - `onward`: `{ gem, name, legs[], cost_eur, minutes, note, round_trip,
+      season?, has_ferry?, marginal? }`. `legs` reuse the ground-leg dict shape
+      (§ 2, `type:"ground"`, modes incl. `taxi`/`ferry`) and are the ONE-WAY
+      chain; `cost_eur`/`minutes` are the shape-adjusted totals (×2 for a
+      round-trip S2/S3, ×1 for a one-way S1). `has_ferry` true when a hop
+      crosses water (the `why` then leads that hop with ⛴). All onward costs
+      are curated estimates — the `why` marks them `~`.
+    - `destination_display`: e.g. `"Halki (via RHO)"` — the human label; the
+      Deal's `destination` stays the gateway IATA (`RHO`), and `shape` stays
+      S1/S2/S3 (a gem is a terminal EXTENSION, not a new shape). S4 open-jaw is
+      NOT gem-extended in v1 (return-routing ambiguity — documented scope cut).
+  - Ranking, budget filtering, and watch/alert thresholds all operate on the
+    EXTENDED total `price_eur` (fare + onward), the same ground-inclusive
+    precedent as S3/S4 — no alert-machine change. History enrichment treats a
+    gem deal like a composite (baseline group, non-comparative `why`, since its
+    total has no direct-route history to compare against).
 - **2026-07-12 (Task 14)** — City-anchor hybrid transit refinement; additive,
   no frozen field changed shape:
   - `estimate_basis` gains an additive enum value `"scheduled-hybrid"` (§ 2) — a

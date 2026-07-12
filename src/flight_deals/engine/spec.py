@@ -170,6 +170,31 @@ def parse_nights(expr: Optional[str]) -> Optional[tuple[int, int]]:
     return (lo, hi)
 
 
+def _validate_gem_slug(value: str) -> str:
+    """Resolve a spec's ``gem`` field against the registry at spec-build time
+    (Task 15b controller ruling): unknown -> :class:`SpecError` with a
+    did-you-mean hint (same courtesy as ``--to``'s gem/city resolution);
+    known -> normalised to the canonical slug, so a spec authored with the
+    gem's display name round-trips to the same slug ``--to`` would resolve.
+
+    A fresh :class:`~flight_deals.registry.destinations.DestinationRegistry`
+    is a cheap JSON-catalog read and only happens when ``gem`` is actually
+    set — matching the same ad hoc instantiation pattern already used by
+    ``check_where_gate``/``searches.add`` elsewhere in this codebase."""
+    from flight_deals.registry.destinations import DestinationRegistry
+
+    registry = DestinationRegistry()
+    gem = registry.resolve_gem(value)
+    if gem is not None:
+        return gem.slug
+    suggestion = registry.destination_suggestion(value)
+    hint = (
+        f'did you mean gem "{suggestion}"?' if suggestion else
+        f"{value!r} is not a known gem slug or name — run 'flight-deals where list' to see gems"
+    )
+    raise SpecError(f"unknown gem {value!r}", hint)
+
+
 # --------------------------------------------------------------------------- #
 # SearchSpec                                                                   #
 # --------------------------------------------------------------------------- #
@@ -192,6 +217,10 @@ class SearchSpec(BaseModel):
     budget: Optional[float] = None  # EUR, total per person
     carriers: List[Carrier] = Field(default_factory=lambda: ["ryanair", "wizzair"])
     max_results: int = Field(default=10, ge=1)
+    gem: Optional[str] = None  # Task 15b: a curated gem slug (SEARCH-DESIGN §2b) set by
+    # --to <gem>, in addition to restricting `destinations` to its gateways — carrying it
+    # on the spec (not just as a transient intents-layer flag) is what lets a saved search
+    # replay the gem-only onward extension on `brief`, not only an interactive run.
 
     model_config = {"extra": "forbid"}
 
@@ -262,6 +291,8 @@ class SearchSpec(BaseModel):
         # These raise SpecError (with hints); parse_spec surfaces them.
         self._depart_spec = parse_depart(self.depart)
         self._nights_range = parse_nights(self.nights)
+        if self.gem is not None:
+            self.gem = _validate_gem_slug(self.gem)
         return self
 
     # --- resolved accessors ---------------------------------------------- #

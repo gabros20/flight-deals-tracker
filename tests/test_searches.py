@@ -82,6 +82,37 @@ def test_add_allows_legit_empty_category():
     assert rec["spec"]["where"] == "ski"
 
 
+def test_add_persists_and_loads_gem_field_roundtrip(_isolated_searches_dir):
+    """`watch add --to <gem>` sets SearchSpec.gem (Task 15b controller ruling)
+    so a saved search carries the gem itself, not just its gateway airports —
+    that's what lets `brief` (which only has the loaded spec, never the
+    transient --to resolution) replay the gem-only extension."""
+    rec = searches.add(
+        name="halki-watch",
+        spec={"origins": ["BUD"], "destinations": ["RHO"], "gem": "halki",
+              "depart": "2026-08-20..2026-08-24", "nights": "5-7"},
+        alert={"max_price": 150},
+    )
+    assert rec["spec"]["gem"] == "halki"
+    loaded = searches.load("halki-watch")
+    assert loaded["spec"]["gem"] == "halki"
+    # And it re-parses to a valid, resolvable spec.
+    from flight_deals.engine.spec import parse_spec
+    assert parse_spec(loaded["spec"]).gem == "halki"
+
+
+def test_add_rejects_unknown_gem_slug(_isolated_searches_dir):
+    """An unknown gem is rejected at spec-build time (SpecError -> SearchError,
+    exit 2), the same courtesy `--to` already gives interactively — a typo
+    close to a real gem gets a did-you-mean hint."""
+    with pytest.raises(searches.SearchError) as ei:
+        searches.add(name="bad-gem", spec=_spec(where=None, destinations=["RHO"], gem="halky"))
+    assert "halki" in ei.value.hint.lower()
+
+    with pytest.raises(searches.SearchError):
+        searches.add(name="bad-gem2", spec=_spec(where=None, destinations=["RHO"], gem="not-a-real-gem-slug"))
+
+
 def test_watch_detection_and_name_slug(_isolated_searches_dir):
     rec = searches.add(name="BUD to CFU!", spec=_spec(), alert={"max_price": 150, "notify": "telegram"})
     assert rec["name"] == "bud-to-cfu"

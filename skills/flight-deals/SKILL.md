@@ -11,6 +11,7 @@ description: Finds flight deals, tracks prices, watches routes, reports on
 |---|---|
 | "cheap trip/getaway to <category>, back in ~N days" | `flight-deals getaway --depart <window> --where "<expr>" --nights <lo-hi> [--budget N] [--from ORIGIN]` |
 | "how much to fly to <place> / flights to Barcelona" | `flight-deals getaway --to <IATA\|city> --depart <window> --nights <lo-hi>` (one-way: `flight-deals oneway --to <IATA\|city> --depart <window>`) |
+| "cheap trip to a small island / hidden gem" | `flight-deals getaway --to <gem> --depart <window> --nights <lo-hi>` (or by category: `--where "hidden-gem & greece"`) |
 | "one-way / single leg to X" | `flight-deals oneway --depart <window> --where "<expr>" [--budget N]` |
 | "any flight news? / how are my watches doing?" | `flight-deals brief` |
 | "what am I watching? / list my watches" | `flight-deals watch list` |
@@ -36,6 +37,12 @@ tracked, not today's prices).
   → `"island & greece"`; "islands but not the Canaries" → `"island & !canaries"`.
   Unsure a word is a real tag? Run `flight-deals where list` first — never guess.
 - A watch with no `--nights` is a one-way watch: getaway watches need `--nights`.
+- **Gems** (small islands reached by gateway airport + ferry/bus) are places,
+  not airports: `--to Halki` (a slug/name), not an IATA. `--to <gem>` shows only
+  the gem-extended options (fly to the gateway, then the onward chain, cost ×2
+  for a round-trip); `--where` matching a gem's tags shows both the plain gateway
+  deal AND the gem variant. The extended total (fare + onward) is what budget and
+  watches compare. `where show "<expr>"` lists which gems a category reaches.
 - Cheaper trip shapes are opt-in: add `--shapes direct,extended-origin,open-jaw`
   to `getaway` to also consider nearby-airport departures (VIE/BTS, ground cost
   shown) and open-jaw city pairs (fly into one city, home from another). Default
@@ -71,6 +78,11 @@ Read `summary` (paste-ready), skim `results` for the ones worth naming, and if
 # Gotchas (grows from real failures)
 
 - A city is not a tag: use `--to` for named places, `--where` for categories.
+- Gems are places, not airports: `--to Halki` works (a gem slug/name), `--to RHO`
+  gets you only the gateway. Marginal/day-trip gems (awkward connections) are
+  hidden from `--where` matching and reachable ONLY via explicit `--to`; their
+  variant carries the caveat in its `why`. Out-of-season gems drop out of
+  `--where` automatically for a window outside their season.
 - Holidays aren't dates: translate "christmas" to a `--depart 2026-12-19..2026-12-27`
   style window yourself; the CLI only takes dates.
 - Never invent category names — run `flight-deals where list`; `where show

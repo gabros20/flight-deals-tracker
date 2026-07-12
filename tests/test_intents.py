@@ -84,7 +84,14 @@ def test_getaway_deals_are_exact_and_grouped_baseline_without_history():
     for d in env["results"]:
         assert d["price_confidence"] == "exact"
         assert d["group"] == "baseline"
-        assert "insufficient history" in d["why"]
+        # Gem-extended variants (Task 15) legitimately match "croatia & seaside"
+        # (Croatian gems) and, like S3/S4 composites, use a non-comparative why
+        # (their price is fare + onward chain, so direct-route history is the
+        # wrong baseline) — they carry the onward chain clause instead.
+        if d.get("onward"):
+            assert "to " in d["why"] and d["destination_display"]
+        else:
+            assert "insufficient history" in d["why"]
     assert "route_status" not in env
 
 
@@ -565,6 +572,53 @@ def test_check_declines_s4_composite(tmp_path, monkeypatch):
         "summary": f"deal {deal['deal_id']} is a S4 composite trip — "
                    "re-check it by re-running the getaway that found it "
                    "(--shapes ...); per-shape re-check isn't wired into `check` yet",
+        "sources": {},
+        "next": [],
+        "route_status": "no_match",
+    }
+
+
+def test_check_declines_gem_extended_deal(tmp_path, monkeypatch):
+    """A gem-extended deal's price is the gateway fare PLUS the onward chain —
+    re-checking it as if it were a plain flight would silently drop the onward
+    cost and misreport the delta. check_deal must recognise the snapshot's
+    ``gem`` marker (Task 15b review: this was dead code in
+    ``_record_from_deal`` until fixed) and decline honestly, mirroring the
+    S3/S4 composite decline (exit 0, empty results, no_match route_status,
+    explanatory summary naming the gem — not a flight-only price report)."""
+    from flight_deals.engine import gems as gems_engine
+    from flight_deals.output import build_deal
+    from flight_deals.registry.destinations import DestinationRegistry
+    from flight_deals.state import snapshots
+
+    monkeypatch.setattr(snapshots, "_deals_dir", lambda: tmp_path)
+
+    reg = DestinationRegistry()
+    halki = reg.resolve_gem("halki")  # RHO gateway, ferry onward chain
+    plain = build_deal(
+        shape="S2", origin="BUD", destination="RHO", out_date="2026-08-23",
+        return_date="2026-08-29", price_eur=100.0, price_confidence="exact",
+        carriers=["ryanair"],
+        legs=[{"type": "flight", "origin": "BUD", "destination": "RHO", "carrier": "ryanair",
+               "departure_date": "2026-08-23", "price_eur": 100.0}],
+        why="x",
+    )
+    gem_deal = gems_engine.extend_deals([plain], [halki], forced=True)[0]
+    snapshots.snapshot(gem_deal, now=datetime(2026, 6, 1, tzinfo=timezone.utc))
+
+    # The dead-code bug meant `gem` never made it into the snapshot record —
+    # guard that the fix actually landed before asserting check_deal's behavior.
+    snap = snapshots.latest(gem_deal["deal_id"])
+    assert snap["gem"] == "halki"
+
+    env, code = check_deal(gem_deal["deal_id"], today=FIXED_TODAY)
+
+    assert code == 0
+    assert env == {
+        "results": [],
+        "summary": f"deal {gem_deal['deal_id']} is a gem-extended trip — "
+                   "re-check it by re-running the getaway that found it "
+                   "(--to ...); per-shape re-check isn't wired into `check` yet",
         "sources": {},
         "next": [],
         "route_status": "no_match",

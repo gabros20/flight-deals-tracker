@@ -15,7 +15,7 @@ from datetime import date, datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from flight_deals import output
-from flight_deals.engine import combine, confirm as confirm_mod
+from flight_deals.engine import combine, confirm as confirm_mod, gems as gems_engine
 from flight_deals.engine.planner import Planner, check_max_calls, check_where_gate
 from flight_deals.engine.spec import parse_spec
 from flight_deals.registry.destinations import DestinationRegistry
@@ -118,17 +118,32 @@ def run_search(
     spec_dict: Dict[str, Any] = {"origins": valid_origins, "depart": depart, "max_results": max_results}
     if where:
         spec_dict["where"] = where
+    forced_gem = None
     if to is not None:
-        dests = registry.resolve_destination(to)
-        if not dests:
-            suggestion = registry.destination_suggestion(to)
-            hint = (
-                f"did you mean --to {suggestion}?" if suggestion else
-                f"{to!r} is not a known airport or city — use a 3-letter IATA "
-                "(e.g. --to BCN) or a city name (e.g. --to Barcelona)"
-            )
-            raise IntentError(f"unknown destination {to!r}", hint)
-        spec_dict["destinations"] = dests
+        # --to resolves a GEM first (slug/name), then an airport/city. A gem
+        # restricts the fare sweep to its gateway airports AND forces the onward
+        # extension — with an explicit --to gem, ONLY the gem-extended variants
+        # are displayed (the bare gateway flight is not what the user asked for).
+        gem = registry.resolve_gem(to)
+        if gem is not None:
+            forced_gem = gem
+            spec_dict["destinations"] = sorted({gw.airport for gw in gem.gateways})
+            # Persist the gem on the spec itself (Task 15b controller ruling),
+            # not just as this call's transient `forced_gem` — that's what lets
+            # `watch add --to <gem> ...` replay the gem-only extension on
+            # `brief`, which only ever has the saved spec to work from.
+            spec_dict["gem"] = gem.slug
+        else:
+            dests = registry.resolve_destination(to)
+            if not dests:
+                suggestion = registry.destination_suggestion(to)
+                hint = (
+                    f"did you mean --to {suggestion}?" if suggestion else
+                    f"{to!r} is not a known airport, city, or gem — use a 3-letter IATA "
+                    "(e.g. --to BCN), a city (e.g. --to Barcelona), or a gem (e.g. --to Halki)"
+                )
+                raise IntentError(f"unknown destination {to!r}", hint)
+            spec_dict["destinations"] = dests
     if nights is not None:
         spec_dict["nights"] = nights
     if budget is not None:
@@ -152,7 +167,42 @@ def run_search(
         do_confirm=do_confirm,
         fresh=fresh,
         max_calls=max_calls,
+        forced_gem=forced_gem,
     )
+
+
+def _gems_in_play(spec, registry, forced_gem) -> Tuple[List[Any], bool]:
+    """(gems, only_variants) for this run. An explicit ``forced_gem`` (--to,
+    passed by an interactive ``run_search`` call that already resolved it)
+    wins: exactly that gem, only its variants displayed. Failing that, a
+    persisted ``spec.gem`` (Task 15b controller ruling) is re-resolved against
+    the registry the same way — this is what lets a saved search (``brief``
+    never has ``forced_gem``, only the loaded spec) replay a ``watch add --to
+    <gem> ...`` as gem-only variants instead of silently degrading to a plain
+    destination-restricted search. A spec.gem that no longer resolves (catalog
+    changed after the search was saved) degrades to no gems rather than
+    raising — the caller already validated it at spec-build time; a stale
+    reference here should be a quiet no-op, not a crash. Otherwise a
+    ``--where`` matches KEEP gems by tag, season-gated to the window. No gems
+    for a plain ``--to`` airport/city or a where-less one-way with no
+    category."""
+    from flight_deals.registry.where import WhereParseError
+
+    if forced_gem is not None:
+        return [forced_gem], True
+    spec_gem_slug = getattr(spec, "gem", None)
+    if spec_gem_slug:
+        gem = registry.resolve_gem(spec_gem_slug)
+        if gem is not None:
+            return [gem], True
+        return [], False
+    if getattr(spec, "where", None):
+        window = (spec.depart_spec.out_from, spec.depart_spec.out_to)
+        try:
+            return registry.gems_matching(spec.where, window=window), False
+        except WhereParseError:
+            return [], False
+    return [], False
 
 
 def execute_spec(
@@ -166,6 +216,7 @@ def execute_spec(
     do_confirm: bool = True,
     fresh: bool = False,
     max_calls: int = 40,
+    forced_gem: Any = None,
 ) -> Tuple[Dict[str, Any], int]:
     """Run an already-parsed ``SearchSpec`` through the full intent pipeline
     (planner → estimate→confirm → history enrich → snapshot → envelope) and
@@ -202,16 +253,39 @@ def execute_spec(
     # filter, re-rank, and truncate to max_results using confirmed prices. The
     # extra confirm calls are bounded by the band size, never by the full
     # candidate pool (see planner._confirm_band_size).
+    # Gems in play for this run (Task 15): an explicit --to gem forces exactly
+    # that gem (marginal included, season ignored, ONLY-variants displayed); a
+    # --where matches KEEP gems by tag, season-gated to the search window, and
+    # shows BOTH the plain gateway deals and the gem-extended variants.
+    reg_for_gems = registry or getattr(planner, "registry", None) or DestinationRegistry()
+    gems_in_play, only_variants = _gems_in_play(spec, reg_for_gems, forced_gem)
+    window = (spec.depart_spec.out_from, spec.depart_spec.out_to)
+
+    def _recut(working: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Append gem-extended variants and re-apply budget/rank/max_results on
+        the EXTENDED totals (mirrors the confirm-band recut). With --to gem
+        (only_variants) the plain gateway deals are dropped."""
+        variants = (
+            gems_engine.extend_deals(working, gems_in_play, window=window, forced=only_variants)
+            if gems_in_play else []
+        )
+        combined = variants if only_variants else working + variants
+        if spec.budget is not None:
+            combined = [d for d in combined if d["price_eur"] <= float(spec.budget)]
+        combined.sort(key=lambda d: (d["price_eur"], d["price_confidence"] != "exact",
+                                     d["destination"], d["deal_id"]))
+        return combined[: spec.max_results]
+
     if do_confirm:
         band = outcome.get("confirm_band", results)
         if band:
             confirm_mod.confirm(band, wizz=planner.wizz, ryanair=planner.ryanair)
-            if spec.budget is not None:
-                band = [d for d in band if d["price_eur"] <= float(spec.budget)]
-            band.sort(key=lambda d: (d["price_eur"], d["price_confidence"] != "exact", d["destination"]))
-            results = band[: spec.max_results]
+            results = _recut(band)
         else:
             results = []
+    elif gems_in_play:
+        # No confirm pass, but gems still extend the (already-cut) results.
+        results = _recut(results)
 
     # History enrichment: honest why-strings + standout/solid/baseline groups.
     if history_store is None:
@@ -368,12 +442,16 @@ def check_deal(
     # bookable route to re-price directly — re-checking them exactly needs the
     # shape's own composition path (not yet wired for `check`). Be honest rather
     # than re-pricing them as if direct.
-    if snap.get("shape") not in ("S1", "S2"):
+    if snap.get("shape") not in ("S1", "S2") or snap.get("gem"):
+        if snap.get("gem"):
+            kind, how = "gem-extended", "--to"
+        else:
+            kind, how = f"{snap.get('shape')} composite", "--shapes"
         env = output.envelope(
             results=[], sources={},
-            summary=f"deal {deal_id} is a {snap.get('shape')} composite trip — "
+            summary=f"deal {deal_id} is a {kind} trip — "
                     "re-check it by re-running the getaway that found it "
-                    "(--shapes ...); per-shape re-check isn't wired into `check` yet",
+                    f"({how} ...); per-shape re-check isn't wired into `check` yet",
             next=[], route_status="no_match",
         )
         return env, 0

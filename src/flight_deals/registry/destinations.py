@@ -10,11 +10,68 @@ import json
 import logging
 from typing import Any, Dict, List, Optional, Set
 
-from flight_deals.models import Airport
+from flight_deals.models import Airport, Gem
 from flight_deals.paths import resolve_path
 from flight_deals.registry.where import WhereParseError, extract_identifiers, where_parse
 
 logger = logging.getLogger(__name__)
+
+
+# --------------------------------------------------------------------------- #
+# Gem season windows (Task 15) — "may-oct" style month ranges. Pure helpers so #
+# both the registry (gems_matching) and the planner/engine can season-gate a   #
+# gem against a search window without importing each other.                    #
+# --------------------------------------------------------------------------- #
+_MONTH_NUM = {
+    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+    "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+}
+
+
+def season_months(season: str) -> Set[int]:
+    """Month numbers a ``"may-oct"``/``"nov-feb"`` season covers (inclusive,
+    wrap-around aware). Unparseable input -> empty set (never raises)."""
+    try:
+        lo_s, hi_s = season.lower().split("-")
+        lo, hi = _MONTH_NUM[lo_s], _MONTH_NUM[hi_s]
+    except (ValueError, KeyError, AttributeError):
+        return set()
+    if lo <= hi:
+        return set(range(lo, hi + 1))
+    return set(range(lo, 13)) | set(range(1, hi + 1))  # wraps the year end
+
+
+def window_months(window: Optional[tuple]) -> Set[int]:
+    """The calendar months an ``(out_from, out_to)`` ISO-date window touches."""
+    if not window:
+        return set()
+    from datetime import date as _date
+    start, end = _date.fromisoformat(window[0]), _date.fromisoformat(window[1])
+    months, cur = set(), _date(start.year, start.month, 1)
+    while cur <= end:
+        months.add(cur.month)
+        cur = _date(cur.year + 1, 1, 1) if cur.month == 12 else _date(cur.year, cur.month + 1, 1)
+    return months
+
+
+def season_overlaps_window(season: Optional[str], window: Optional[tuple]) -> bool:
+    """True when a gem/gateway ``season`` overlaps the search ``window`` (or
+    either is absent — no season means year-round; no window means "don't gate")."""
+    if not season or not window:
+        return True
+    return bool(season_months(season) & window_months(window))
+
+
+def gem_gateways_in_window(gem: Gem, window: Optional[tuple]) -> List["Any"]:
+    """The gem's gateways whose EFFECTIVE season (gateway season, else the
+    gem-level season, else year-round) overlaps ``window``. ``window=None`` ->
+    all gateways (no season gating)."""
+    out = []
+    for gw in gem.gateways:
+        effective = gw.season or gem.season
+        if season_overlaps_window(effective, window):
+            out.append(gw)
+    return out
 
 
 # --------------------------------------------------------------------------- #
@@ -91,6 +148,7 @@ class DestinationRegistry:
         self.multi_city: Dict[str, List[str]] = {}
         self.origin_ground: Dict[str, Dict[str, Any]] = {}
         self.open_jaw_pairs: List[Dict[str, Any]] = []
+        self.gems: List[Gem] = []
         self._open_jaw_merged: Optional[List[Dict[str, Any]]] = None
         self._carrier_cache: Dict[str, Dict[str, Optional[bool]]] = {}
         self._load()
@@ -109,9 +167,36 @@ class DestinationRegistry:
             self.multi_city = data.get("multi_city", {})
             self.origin_ground = data.get("origin_ground", {})
             self.open_jaw_pairs = data.get("open_jaw_pairs", [])
+            self._load_gems(data.get("gems", []))
         else:  # legacy v1 (bare list) — tolerate for safety
             self.schema_version = 1
             self.airports = [Airport(**item) for item in data]
+
+    def _load_gems(self, raw_gems: List[Dict[str, Any]]) -> None:
+        """Validate + load the ``gems`` array (Task 15). A gem that fails
+        validation, references an unknown gateway airport, or carries an
+        off-taxonomy tag is skipped with a warning (Global Constraint 3: never
+        silently include broken data), so one bad entry can't poison the sweep."""
+        from pydantic import ValidationError
+
+        known_iatas = self._iatas()
+        tag_universe = TERRAIN_TAGS | VIBE_TAGS | REGION_TAGS | COUNTRY_TAGS | SEASONAL_TAGS
+        for item in raw_gems:
+            try:
+                gem = Gem(**item)
+            except ValidationError as e:
+                logger.warning("registry: skipping invalid gem %r: %s", item.get("slug"), e)
+                continue
+            bad_gw = [gw.airport for gw in gem.gateways if gw.airport not in known_iatas]
+            if bad_gw:
+                logger.warning("registry: skipping gem %r — unknown gateway airport(s) %s",
+                               gem.slug, bad_gw)
+                continue
+            bad_tags = [t for t in gem.tags if t not in tag_universe]
+            if bad_tags:
+                logger.warning("registry: gem %r carries off-taxonomy tag(s) %s (kept, but "
+                               "they can never match a where-expression)", gem.slug, bad_tags)
+            self.gems.append(gem)
 
     def _iatas(self) -> Set[str]:
         return {a.iata for a in self.airports}
@@ -142,6 +227,56 @@ class DestinationRegistry:
         """
         node = where_parse(expr, ALIASES)
         return [a for a in self.airports if node.eval(self._tagset(a, carrier_flags))]
+
+    # ------------------------------------------------------------------ #
+    # Gem matching (Task 15) — a SEPARATE seam from airport matching()    #
+    # ------------------------------------------------------------------ #
+    # DESIGN CHOICE (per Task 15 brief): ``matching()`` stays airport-only and
+    # network-free; gems are matched by this distinct ``gems_matching()`` which
+    # additionally season-gates against the search window. Keeping them apart
+    # means the deterministic ``compile``/``plan`` path (which fans out Wizz TT
+    # per airport) is untouched by gems — a gem contributes its gateway airports
+    # to the fare FILTER at execute-time (planner.execute) and an onward
+    # extension directive at intent-time, never new planned calls. See the Task
+    # 15b report + SEARCH-DESIGN §2b for the full rationale.
+    def _gem_tagset(self, gem: Gem) -> Set[str]:
+        """A gem's matchable tag set: its curated tags PLUS its country as a
+        tag (gems carry ``country: "Greece"`` but not a ``greece`` tag), so
+        ``island & greece`` can reach a Greek gem."""
+        return set(gem.tags) | {gem.country.lower()}
+
+    def gems_matching(self, expr: str, *, window: Optional[tuple] = None,
+                      include_marginal: bool = False) -> List[Gem]:
+        """Gems whose tags satisfy the where-expression ``expr``. KEEP gems only
+        by default (``marginal`` gems are reachable via ``--to``, not category
+        matching). When ``window`` is given, a gem is included only if it has at
+        least one gateway whose effective season overlaps that window (a wholly
+        out-of-season gem is dropped). Raises :class:`WhereParseError` on a bad
+        expression (same as :meth:`matching`)."""
+        node = where_parse(expr, ALIASES)
+        out: List[Gem] = []
+        for gem in self.gems:
+            if gem.marginal and not include_marginal:
+                continue
+            if not node.eval(self._gem_tagset(gem)):
+                continue
+            if window is not None and not gem_gateways_in_window(gem, window):
+                continue  # every gateway out of season for this window
+            out.append(gem)
+        return out
+
+    def resolve_gem(self, value: str) -> Optional[Gem]:
+        """Resolve a ``--to`` value to a gem by exact slug or case-insensitive
+        name (``"halki"`` / ``"Halki"``). ``None`` on a miss — the caller then
+        falls back to airport/city resolution, and only if THAT also misses does
+        it emit a did-you-mean hint (which now includes gem names/slugs)."""
+        if not value or not str(value).strip():
+            return None
+        low = str(value).strip().lower()
+        for gem in self.gems:
+            if gem.slug == low or gem.name.lower() == low:
+                return gem
+        return None
 
     def known_tag_universe(self) -> Set[str]:
         """All identifiers a where-expression may legally reference: every
@@ -329,11 +464,16 @@ class DestinationRegistry:
         return None
 
     def destination_suggestion(self, value: str) -> Optional[str]:
-        """Nearest known city name or IATA for a ``--to`` miss (did-you-mean)."""
+        """Nearest known city name, gem name, or IATA for a ``--to`` miss
+        (did-you-mean). Gem names AND slugs are in the pool so a typo like
+        ``"halky"`` suggests ``"Halki"``."""
         import difflib
         raw = str(value).strip()
-        cities = sorted({a.city for a in self.airports} | set(self.multi_city.keys()))
+        gem_names = {g.name for g in self.gems} | {g.slug for g in self.gems}
+        cities = sorted({a.city for a in self.airports} | set(self.multi_city.keys()) | gem_names)
         close = difflib.get_close_matches(raw, cities, n=1, cutoff=0.6)
+        if not close:
+            close = difflib.get_close_matches(raw.lower(), sorted(g.slug for g in self.gems), n=1, cutoff=0.6)
         if not close:
             close = difflib.get_close_matches(raw.upper(), sorted(self._iatas()), n=1, cutoff=0.6)
         return close[0] if close else None

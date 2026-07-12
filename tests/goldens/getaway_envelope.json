@@ -89,9 +89,454 @@
           "ryanair": "https://www.ryanair.com/gb/en/trip/flights/select?originIata=BUD&destinationIata=DBV&dateOut=2026-08-23&adults=1&dateIn=2026-08-30"
         },
         "group": "baseline"
+      },
+      {
+        "deal_id": "9736839174",
+        "shape": "S2",
+        "origin": "BUD",
+        "destination": "ZAD",
+        "out_date": "2026-08-23",
+        "return_date": "2026-08-29",
+        "nights": 6,
+        "price_eur": 63.66,
+        "price_confidence": "exact",
+        "carriers": [
+          "ryanair"
+        ],
+        "legs": [
+          {
+            "type": "flight",
+            "origin": "BUD",
+            "destination": "ZAD",
+            "carrier": "ryanair",
+            "departure_date": "2026-08-23",
+            "departure_time": "20:05",
+            "flight_number": "FR6521",
+            "price_eur": 19.99,
+            "duration_minutes": 75
+          },
+          {
+            "type": "flight",
+            "origin": "ZAD",
+            "destination": "BUD",
+            "carrier": "ryanair",
+            "departure_date": "2026-08-29",
+            "departure_time": "07:25",
+            "flight_number": "FR6522",
+            "price_eur": 26.67,
+            "duration_minutes": 70
+          }
+        ],
+        "ground": null,
+        "why": "\u20ac64 round-trip, exact Ryanair fare, then bus 18m + \u26f4 28m to Ugljan, ~\u20ac17 rt",
+        "links": {
+          "ryanair": "https://www.ryanair.com/gb/en/trip/flights/select?originIata=BUD&destinationIata=ZAD&dateOut=2026-08-23&adults=1&dateIn=2026-08-29"
+        },
+        "onward": {
+          "gem": "ugljan",
+          "name": "Ugljan",
+          "legs": [
+            {
+              "type": "ground",
+              "from_iata": "Zadar airport",
+              "to_iata": "Zadar port",
+              "mode": "bus",
+              "duration_minutes": 18,
+              "distance_km": null,
+              "cost_eur": 4.0
+            },
+            {
+              "type": "ground",
+              "from_iata": "Zadar port",
+              "to_iata": "Ugljan (Preko)",
+              "mode": "ferry",
+              "duration_minutes": 28,
+              "distance_km": null,
+              "cost_eur": 3.0
+            }
+          ],
+          "cost_eur": 17.0,
+          "minutes": 100,
+          "note": "Fastest hop in the catalog; Jadrolinija, 17-29 sailings/day. Source: operator schedules/Ferryhopper, 2026 season.",
+          "round_trip": true,
+          "has_ferry": true
+        },
+        "destination_display": "Ugljan (via ZAD)",
+        "group": "baseline"
+      },
+      {
+        "deal_id": "6613708edc",
+        "shape": "S2",
+        "origin": "BUD",
+        "destination": "ZAD",
+        "out_date": "2026-08-23",
+        "return_date": "2026-08-29",
+        "nights": 6,
+        "price_eur": 71.66,
+        "price_confidence": "exact",
+        "carriers": [
+          "ryanair"
+        ],
+        "legs": [
+          {
+            "type": "flight",
+            "origin": "BUD",
+            "destination": "ZAD",
+            "carrier": "ryanair",
+            "departure_date": "2026-08-23",
+            "departure_time": "20:05",
+            "flight_number": "FR6521",
+            "price_eur": 19.99,
+            "duration_minutes": 75
+          },
+          {
+            "type": "flight",
+            "origin": "ZAD",
+            "destination": "BUD",
+            "carrier": "ryanair",
+            "departure_date": "2026-08-29",
+            "departure_time": "07:25",
+            "flight_number": "FR6522",
+            "price_eur": 26.67,
+            "duration_minutes": 70
+          }
+        ],
+        "ground": null,
+        "why": "\u20ac72 round-trip, exact Ryanair fare, then bus 18m + \u26f4 1h12m to Dugi Otok, ~\u20ac25 rt",
+        "links": {
+          "ryanair": "https://www.ryanair.com/gb/en/trip/flights/select?originIata=BUD&destinationIata=ZAD&dateOut=2026-08-23&adults=1&dateIn=2026-08-29"
+        },
+        "onward": {
+          "gem": "dugi-otok",
+          "name": "Dugi Otok",
+          "legs": [
+            {
+              "type": "ground",
+              "from_iata": "Zadar airport",
+              "to_iata": "Zadar port",
+              "mode": "bus",
+              "duration_minutes": 18,
+              "distance_km": null,
+              "cost_eur": 4.0
+            },
+            {
+              "type": "ground",
+              "from_iata": "Zadar port",
+              "to_iata": "Dugi Otok",
+              "mode": "ferry",
+              "duration_minutes": 72,
+              "distance_km": null,
+              "cost_eur": 5.84
+            }
+          ],
+          "cost_eur": 25.0,
+          "minutes": 216,
+          "note": "Telascica NP; G&V/TP Line/Jadrolinija, 3-4x/day winter, more in summer. Source: operator schedules/Ferryhopper, 2026 season.",
+          "round_trip": true,
+          "has_ferry": true
+        },
+        "destination_display": "Dugi Otok (via ZAD)",
+        "group": "baseline"
+      },
+      {
+        "deal_id": "daa6848351",
+        "shape": "S2",
+        "origin": "BUD",
+        "destination": "ZAD",
+        "out_date": "2026-08-23",
+        "return_date": "2026-08-29",
+        "nights": 6,
+        "price_eur": 76.66,
+        "price_confidence": "exact",
+        "carriers": [
+          "ryanair"
+        ],
+        "legs": [
+          {
+            "type": "flight",
+            "origin": "BUD",
+            "destination": "ZAD",
+            "carrier": "ryanair",
+            "departure_date": "2026-08-23",
+            "departure_time": "20:05",
+            "flight_number": "FR6521",
+            "price_eur": 19.99,
+            "duration_minutes": 75
+          },
+          {
+            "type": "flight",
+            "origin": "ZAD",
+            "destination": "BUD",
+            "carrier": "ryanair",
+            "departure_date": "2026-08-29",
+            "departure_time": "07:25",
+            "flight_number": "FR6522",
+            "price_eur": 26.67,
+            "duration_minutes": 70
+          }
+        ],
+        "ground": null,
+        "why": "\u20ac77 round-trip, exact Ryanair fare, then taxi 35m + \u26f4 20m to Pasman, ~\u20ac30 rt",
+        "links": {
+          "ryanair": "https://www.ryanair.com/gb/en/trip/flights/select?originIata=BUD&destinationIata=ZAD&dateOut=2026-08-23&adults=1&dateIn=2026-08-29"
+        },
+        "onward": {
+          "gem": "pasman",
+          "name": "Pasman",
+          "legs": [
+            {
+              "type": "ground",
+              "from_iata": "Zadar airport",
+              "to_iata": "Biograd",
+              "mode": "taxi",
+              "duration_minutes": 35,
+              "distance_km": null,
+              "cost_eur": 11.0
+            },
+            {
+              "type": "ground",
+              "from_iata": "Biograd",
+              "to_iata": "Pasman (Tkon)",
+              "mode": "ferry",
+              "duration_minutes": 20,
+              "distance_km": null,
+              "cost_eur": 4.0
+            }
+          ],
+          "cost_eur": 30.0,
+          "minutes": 180,
+          "note": "Biograd land leg is taxi-only; frequent year-round. Source: operator schedules/Ferryhopper, 2026 season.",
+          "round_trip": true,
+          "has_ferry": true
+        },
+        "destination_display": "Pasman (via ZAD)",
+        "group": "baseline"
+      },
+      {
+        "deal_id": "ee3bb13679",
+        "shape": "S2",
+        "origin": "BUD",
+        "destination": "DBV",
+        "out_date": "2026-08-23",
+        "return_date": "2026-08-30",
+        "nights": 7,
+        "price_eur": 83.22,
+        "price_confidence": "exact",
+        "carriers": [
+          "ryanair"
+        ],
+        "legs": [
+          {
+            "type": "flight",
+            "origin": "BUD",
+            "destination": "DBV",
+            "carrier": "ryanair",
+            "departure_date": "2026-08-23",
+            "departure_time": "18:45",
+            "flight_number": "FR2488",
+            "price_eur": 21.99,
+            "duration_minutes": 75
+          },
+          {
+            "type": "flight",
+            "origin": "DBV",
+            "destination": "BUD",
+            "carrier": "ryanair",
+            "departure_date": "2026-08-30",
+            "departure_time": "20:25",
+            "flight_number": "FR2489",
+            "price_eur": 34.23,
+            "duration_minutes": 70
+          }
+        ],
+        "ground": null,
+        "why": "\u20ac83 round-trip, exact Ryanair fare, then bus 38m + \u26f4 1h10m to Sipan, ~\u20ac27 rt",
+        "links": {
+          "ryanair": "https://www.ryanair.com/gb/en/trip/flights/select?originIata=BUD&destinationIata=DBV&dateOut=2026-08-23&adults=1&dateIn=2026-08-30"
+        },
+        "onward": {
+          "gem": "sipan",
+          "name": "Sipan",
+          "legs": [
+            {
+              "type": "ground",
+              "from_iata": "Dubrovnik airport",
+              "to_iata": "Gruz port",
+              "mode": "bus",
+              "duration_minutes": 38,
+              "distance_km": null,
+              "cost_eur": 10.0
+            },
+            {
+              "type": "ground",
+              "from_iata": "Gruz port",
+              "to_iata": "Sipan",
+              "mode": "ferry",
+              "duration_minutes": 70,
+              "distance_km": null,
+              "cost_eur": 4.91
+            }
+          ],
+          "cost_eur": 27.0,
+          "minutes": 216,
+          "note": "Elaphiti bundle - same Jadrolinija line 807 also serves Kolocep and Lopud sub-stops; several sailings/day, year-round. Source: operator schedules/Ferryhopper, 2026 season.",
+          "round_trip": true,
+          "has_ferry": true
+        },
+        "destination_display": "Sipan (via DBV)",
+        "group": "baseline"
+      },
+      {
+        "deal_id": "ba55ba0a67",
+        "shape": "S2",
+        "origin": "BUD",
+        "destination": "DBV",
+        "out_date": "2026-08-23",
+        "return_date": "2026-08-30",
+        "nights": 7,
+        "price_eur": 99.22,
+        "price_confidence": "exact",
+        "carriers": [
+          "ryanair"
+        ],
+        "legs": [
+          {
+            "type": "flight",
+            "origin": "BUD",
+            "destination": "DBV",
+            "carrier": "ryanair",
+            "departure_date": "2026-08-23",
+            "departure_time": "18:45",
+            "flight_number": "FR2488",
+            "price_eur": 21.99,
+            "duration_minutes": 75
+          },
+          {
+            "type": "flight",
+            "origin": "DBV",
+            "destination": "BUD",
+            "carrier": "ryanair",
+            "departure_date": "2026-08-30",
+            "departure_time": "20:25",
+            "flight_number": "FR2489",
+            "price_eur": 34.23,
+            "duration_minutes": 70
+          }
+        ],
+        "ground": null,
+        "why": "\u20ac99 round-trip, exact Ryanair fare, then bus 38m + \u26f4 1h25m to Mljet, ~\u20ac43 rt",
+        "links": {
+          "ryanair": "https://www.ryanair.com/gb/en/trip/flights/select?originIata=BUD&destinationIata=DBV&dateOut=2026-08-23&adults=1&dateIn=2026-08-30"
+        },
+        "onward": {
+          "gem": "mljet",
+          "name": "Mljet",
+          "legs": [
+            {
+              "type": "ground",
+              "from_iata": "Dubrovnik airport",
+              "to_iata": "Gruz port",
+              "mode": "bus",
+              "duration_minutes": 38,
+              "distance_km": null,
+              "cost_eur": 10.0
+            },
+            {
+              "type": "ground",
+              "from_iata": "Gruz port",
+              "to_iata": "Mljet (Pomena)",
+              "mode": "ferry",
+              "duration_minutes": 85,
+              "distance_km": null,
+              "cost_eur": 8.7
+            }
+          ],
+          "cost_eur": 43.0,
+          "minutes": 250,
+          "note": "Best Croatian fit in the catalog; TP Line, year-round (Krilo-Pomena leg runs May-Oct, reduced winter service otherwise). Source: operator schedules/Ferryhopper, 2026 season.",
+          "round_trip": true,
+          "has_ferry": true
+        },
+        "destination_display": "Mljet (via DBV)",
+        "group": "baseline"
+      },
+      {
+        "deal_id": "d8b3858b5b",
+        "shape": "S2",
+        "origin": "BUD",
+        "destination": "DBV",
+        "out_date": "2026-08-23",
+        "return_date": "2026-08-30",
+        "nights": 7,
+        "price_eur": 116.22,
+        "price_confidence": "exact",
+        "carriers": [
+          "ryanair"
+        ],
+        "legs": [
+          {
+            "type": "flight",
+            "origin": "BUD",
+            "destination": "DBV",
+            "carrier": "ryanair",
+            "departure_date": "2026-08-23",
+            "departure_time": "18:45",
+            "flight_number": "FR2488",
+            "price_eur": 21.99,
+            "duration_minutes": 75
+          },
+          {
+            "type": "flight",
+            "origin": "DBV",
+            "destination": "BUD",
+            "carrier": "ryanair",
+            "departure_date": "2026-08-30",
+            "departure_time": "20:25",
+            "flight_number": "FR2489",
+            "price_eur": 34.23,
+            "duration_minutes": 70
+          }
+        ],
+        "ground": null,
+        "why": "\u20ac116 round-trip, exact Ryanair fare, then bus 38m + \u26f4 2h to Korcula, ~\u20ac60 rt",
+        "links": {
+          "ryanair": "https://www.ryanair.com/gb/en/trip/flights/select?originIata=BUD&destinationIata=DBV&dateOut=2026-08-23&adults=1&dateIn=2026-08-30"
+        },
+        "onward": {
+          "gem": "korcula",
+          "name": "Korcula",
+          "legs": [
+            {
+              "type": "ground",
+              "from_iata": "Dubrovnik airport",
+              "to_iata": "Gruz port",
+              "mode": "bus",
+              "duration_minutes": 38,
+              "distance_km": null,
+              "cost_eur": 10.0
+            },
+            {
+              "type": "ground",
+              "from_iata": "Gruz port",
+              "to_iata": "Korcula",
+              "mode": "ferry",
+              "duration_minutes": 120,
+              "distance_km": null,
+              "cost_eur": 22.5
+            }
+          ],
+          "cost_eur": 60.0,
+          "minutes": 310,
+          "note": "Krilo/TP Line, ~1x/day, May 1-Oct 15 only. Source: operator schedules/Ferryhopper, 2026 season.",
+          "round_trip": true,
+          "season": "may-oct",
+          "has_ferry": true
+        },
+        "destination_display": "Korcula (via DBV)",
+        "group": "baseline"
       }
     ],
-    "summary": "Found 2 deals from BUD, cheapest ZAD \u20ac47 rt 2026-08-23-2026-08-29 (exact)",
+    "summary": "Found 8 deals from BUD, cheapest ZAD \u20ac47 rt 2026-08-23-2026-08-29 (exact)",
     "sources": {
       "ryanair": "ok",
       "wizzair": "ok"

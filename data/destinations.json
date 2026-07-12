@@ -1354,5 +1354,3319 @@
       "has_ferry": true,
       "note": "Messina Strait shuttle 20min every 20-30min (~52/day), foot EUR3-8; drive legs ~80min each side (researched live 2026-07-12). Sources: directferries.com/villa_san_giovanni_messina_ferry.htm"
     }
+  ],
+  "gems": [
+    {
+      "slug": "halki",
+      "name": "Halki",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "hiking"
+      ],
+      "gateways": [
+        {
+          "airport": "RHO",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Rhodes airport",
+              "to": "Rhodes Town port",
+              "minutes": 30,
+              "cost_eur": 2.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Rhodes Town port",
+              "to": "Halki",
+              "minutes": 78,
+              "cost_eur": 7.75
+            }
+          ],
+          "total_minutes": 120,
+          "total_cost_eur": 10.0,
+          "note": "Dodekanisos Seaways, 5-7x/week year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "symi",
+      "name": "Symi",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "seaside",
+        "culture",
+        "quiet",
+        "hidden-gem"
+      ],
+      "gateways": [
+        {
+          "airport": "RHO",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Rhodes airport",
+              "to": "Rhodes Town port",
+              "minutes": 30,
+              "cost_eur": 2.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Rhodes Town port",
+              "to": "Symi",
+              "minutes": 68,
+              "cost_eur": 7.25
+            }
+          ],
+          "total_minutes": 105,
+          "total_cost_eur": 12.5,
+          "note": "Near-daily year-round; top link in this chain group. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "tilos",
+      "name": "Tilos",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "quiet",
+        "hiking",
+        "hidden-gem",
+        "winter-sun"
+      ],
+      "gateways": [
+        {
+          "airport": "RHO",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Rhodes airport",
+              "to": "Rhodes Town port",
+              "minutes": 30,
+              "cost_eur": 2.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Rhodes Town port",
+              "to": "Tilos",
+              "minutes": 120,
+              "cost_eur": 12.75
+            }
+          ],
+          "total_minutes": 165,
+          "total_cost_eur": 17.5,
+          "note": "5-7x/week year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "kastellorizo",
+      "name": "Kastellorizo",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "quiet",
+        "culture",
+        "hidden-gem"
+      ],
+      "gateways": [
+        {
+          "airport": "RHO",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Rhodes airport",
+              "to": "Rhodes Town port",
+              "minutes": 30,
+              "cost_eur": 2.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Rhodes Town port",
+              "to": "Kastellorizo",
+              "minutes": 140,
+              "cost_eur": 14.0
+            }
+          ],
+          "total_minutes": 162,
+          "total_cost_eur": 21.5,
+          "note": "Fast ferry 5-7x/week year-round (book the fast sailing); slow ferry ~4h, 2-4x/week backup. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "kalymnos",
+      "name": "Kalymnos",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "hiking",
+        "culture",
+        "family",
+        "seaside"
+      ],
+      "gateways": [
+        {
+          "airport": "KGS",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Kos airport",
+              "to": "Mastichari",
+              "minutes": 12,
+              "cost_eur": 15.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Mastichari",
+              "to": "Kalymnos",
+              "minutes": 25,
+              "cost_eur": 8.0
+            }
+          ],
+          "total_minutes": 50,
+          "total_cost_eur": 22.5,
+          "note": "Fastest chain in the catalog; several sailings daily year-round. Taxi dominates cost. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "nisyros",
+      "name": "Nisyros",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "hiking",
+        "culture",
+        "hidden-gem"
+      ],
+      "gateways": [
+        {
+          "airport": "KGS",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Kos airport",
+              "to": "Kos Town",
+              "minutes": 42,
+              "cost_eur": 3.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Kos Town",
+              "to": "Nisyros",
+              "minutes": 70,
+              "cost_eur": 7.5
+            }
+          ],
+          "total_minutes": 120,
+          "total_cost_eur": 15.0,
+          "note": "Volcano day-hike destination; 5-7x/week year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "lipsi",
+      "name": "Lipsi",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "quiet",
+        "seaside",
+        "hidden-gem",
+        "family"
+      ],
+      "gateways": [
+        {
+          "airport": "KGS",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Kos airport",
+              "to": "Kos Town",
+              "minutes": 42,
+              "cost_eur": 3.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Kos Town",
+              "to": "Lipsi",
+              "minutes": 105,
+              "cost_eur": 7.75
+            }
+          ],
+          "total_minutes": 150,
+          "total_cost_eur": 13.5,
+          "note": "5-7x/week year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "leros",
+      "name": "Leros",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "culture",
+        "quiet",
+        "family",
+        "hiking"
+      ],
+      "gateways": [
+        {
+          "airport": "KGS",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Kos airport",
+              "to": "Kos Town",
+              "minutes": 42,
+              "cost_eur": 3.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Kos Town",
+              "to": "Leros",
+              "minutes": 72,
+              "cost_eur": 11.5
+            }
+          ],
+          "total_minutes": 129,
+          "total_cost_eur": 17.5,
+          "note": "~daily in summer, several/week in winter. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "patmos",
+      "name": "Patmos",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "culture",
+        "quiet",
+        "hidden-gem",
+        "family"
+      ],
+      "gateways": [
+        {
+          "airport": "KGS",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Kos airport",
+              "to": "Kos Town",
+              "minutes": 42,
+              "cost_eur": 3.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Kos Town",
+              "to": "Patmos",
+              "minutes": 110,
+              "cost_eur": 11.25
+            }
+          ],
+          "total_minutes": 156,
+          "total_cost_eur": 17.5,
+          "note": "UNESCO site; near-daily in summer. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "pserimos",
+      "name": "Pserimos",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "seaside"
+      ],
+      "gateways": [
+        {
+          "airport": "KGS",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Kos airport",
+              "to": "Mastichari",
+              "minutes": 12,
+              "cost_eur": 15.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Mastichari",
+              "to": "Kalymnos",
+              "minutes": 25,
+              "cost_eur": 8.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Kalymnos",
+              "to": "Pserimos",
+              "minutes": 22,
+              "cost_eur": 3.0
+            }
+          ],
+          "total_minutes": 180,
+          "total_cost_eur": 17.5,
+          "note": "Connection-dependent via Kalymnos; direct sailing only ~1x/week Jun-Sep. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ],
+      "marginal": true
+    },
+    {
+      "slug": "folegandros",
+      "name": "Folegandros",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "hiking"
+      ],
+      "gateways": [
+        {
+          "airport": "JTR",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Santorini airport",
+              "to": "Athinios port",
+              "minutes": 20,
+              "cost_eur": 34.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Athinios port",
+              "to": "Folegandros",
+              "minutes": 112,
+              "cost_eur": 7.0
+            }
+          ],
+          "total_minutes": 135,
+          "total_cost_eur": 27.5,
+          "note": "Near-daily in summer, several/week in winter; taxi fare often shared. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "ios",
+      "name": "Ios",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "seaside",
+        "party",
+        "family"
+      ],
+      "gateways": [
+        {
+          "airport": "JTR",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Santorini airport",
+              "to": "Athinios port",
+              "minutes": 20,
+              "cost_eur": 34.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Athinios port",
+              "to": "Ios",
+              "minutes": 58,
+              "cost_eur": 13.0
+            }
+          ],
+          "total_minutes": 75,
+          "total_cost_eur": 17.5,
+          "note": "Frequent year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "sikinos",
+      "name": "Sikinos",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "hiking"
+      ],
+      "gateways": [
+        {
+          "airport": "JTR",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Santorini airport",
+              "to": "Athinios port",
+              "minutes": 20,
+              "cost_eur": 34.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Athinios port",
+              "to": "Sikinos",
+              "minutes": 82,
+              "cost_eur": 6.5
+            }
+          ],
+          "total_minutes": 105,
+          "total_cost_eur": 15.0,
+          "note": "Untouristed; 4-7x/week including off-season. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "anafi",
+      "name": "Anafi",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "hiking"
+      ],
+      "gateways": [
+        {
+          "airport": "JTR",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Santorini airport",
+              "to": "Athinios port",
+              "minutes": 20,
+              "cost_eur": 34.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Athinios port",
+              "to": "Anafi",
+              "minutes": 80,
+              "cost_eur": 7.0
+            }
+          ],
+          "total_minutes": 105,
+          "total_cost_eur": 15.0,
+          "note": "1-2x/day high season, 4-5x/week low season. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "amorgos",
+      "name": "Amorgos",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "hiking",
+        "quiet",
+        "hidden-gem",
+        "culture"
+      ],
+      "gateways": [
+        {
+          "airport": "JTR",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Santorini airport",
+              "to": "Athinios port",
+              "minutes": 20,
+              "cost_eur": 34.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Athinios port",
+              "to": "Amorgos",
+              "minutes": 75,
+              "cost_eur": 65.0
+            }
+          ],
+          "total_minutes": 105,
+          "total_cost_eur": 87.5,
+          "note": "SeaJets direct sailing May-Oct only; winter needs a Naxos connection. Source: operator schedules/Ferryhopper, 2026 season.",
+          "season": "may-oct"
+        }
+      ],
+      "season": "may-oct"
+    },
+    {
+      "slug": "tinos",
+      "name": "Tinos",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "culture",
+        "quiet",
+        "seaside",
+        "family"
+      ],
+      "gateways": [
+        {
+          "airport": "JMK",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Mykonos airport",
+              "to": "Mykonos new port",
+              "minutes": 18,
+              "cost_eur": 15.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Mykonos new port",
+              "to": "Tinos",
+              "minutes": 28,
+              "cost_eur": 24.5
+            }
+          ],
+          "total_minutes": 50,
+          "total_cost_eur": 40.0,
+          "note": "Daily year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "syros",
+      "name": "Syros",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "culture",
+        "quiet",
+        "hidden-gem"
+      ],
+      "gateways": [
+        {
+          "airport": "JMK",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Mykonos airport",
+              "to": "Mykonos new port",
+              "minutes": 18,
+              "cost_eur": 15.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Mykonos new port",
+              "to": "Syros",
+              "minutes": 60,
+              "cost_eur": 17.0
+            }
+          ],
+          "total_minutes": 75,
+          "total_cost_eur": 45.0,
+          "note": "Ermoupoli; daily year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "naxos",
+      "name": "Naxos",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "seaside",
+        "family",
+        "hiking",
+        "culture"
+      ],
+      "gateways": [
+        {
+          "airport": "JMK",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Mykonos airport",
+              "to": "Mykonos new port",
+              "minutes": 18,
+              "cost_eur": 15.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Mykonos new port",
+              "to": "Naxos",
+              "minutes": 62,
+              "cost_eur": 40.5
+            }
+          ],
+          "total_minutes": 75,
+          "total_cost_eur": 57.5,
+          "note": "Mainstream; up to 10x/day Apr-Nov. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "paros",
+      "name": "Paros",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "seaside",
+        "party",
+        "family"
+      ],
+      "gateways": [
+        {
+          "airport": "JMK",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Mykonos airport",
+              "to": "Mykonos new port",
+              "minutes": 18,
+              "cost_eur": 15.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Mykonos new port",
+              "to": "Paros",
+              "minutes": 35,
+              "cost_eur": 36.0
+            }
+          ],
+          "total_minutes": 75,
+          "total_cost_eur": 52.5,
+          "note": "Mainstream; up to 10x/day Apr-Nov. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "antiparos",
+      "name": "Antiparos",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "seaside"
+      ],
+      "gateways": [
+        {
+          "airport": "JMK",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Mykonos airport",
+              "to": "Mykonos new port",
+              "minutes": 18,
+              "cost_eur": 15.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Mykonos new port",
+              "to": "Paros",
+              "minutes": 35,
+              "cost_eur": 36.0
+            },
+            {
+              "mode": "shuttle",
+              "from": "Paros (Pounta)",
+              "to": "Antiparos",
+              "minutes": 18,
+              "cost_eur": 4.25
+            }
+          ],
+          "total_minutes": 105,
+          "total_cost_eur": 57.5,
+          "note": "Via Paros + Pounta shuttle, every 20-60m year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "koufonisia",
+      "name": "Koufonisia",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "seaside",
+        "family"
+      ],
+      "gateways": [
+        {
+          "airport": "JMK",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Mykonos airport",
+              "to": "Mykonos new port",
+              "minutes": 18,
+              "cost_eur": 15.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Mykonos new port",
+              "to": "Naxos",
+              "minutes": 62,
+              "cost_eur": 40.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Naxos",
+              "to": "Koufonisia",
+              "minutes": 95,
+              "cost_eur": 23.5
+            }
+          ],
+          "total_minutes": 240,
+          "total_cost_eur": 75.0,
+          "note": "Bundle also covers Iraklia/Schinoussa sub-stops on the same run. Frequent in summer; winter via Skopelitis ~6x/week (winter service is thinner - see season). Source: operator schedules/Ferryhopper, 2026 season.",
+          "season": "may-oct"
+        }
+      ],
+      "season": "may-oct"
+    },
+    {
+      "slug": "aegina",
+      "name": "Aegina",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "seaside",
+        "family",
+        "culture"
+      ],
+      "gateways": [
+        {
+          "airport": "ATH",
+          "legs": [
+            {
+              "mode": "train",
+              "from": "Athens airport",
+              "to": "Piraeus",
+              "minutes": 58,
+              "cost_eur": 9.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Piraeus",
+              "to": "Aegina",
+              "minutes": 50,
+              "cost_eur": 11.0
+            }
+          ],
+          "total_minutes": 111,
+          "total_cost_eur": 22.5,
+          "note": "Metro to Piraeus (bus alt. 90m/EUR5.50); near-hourly ferries year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "agistri",
+      "name": "Agistri",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "seaside"
+      ],
+      "gateways": [
+        {
+          "airport": "ATH",
+          "legs": [
+            {
+              "mode": "train",
+              "from": "Athens airport",
+              "to": "Piraeus",
+              "minutes": 58,
+              "cost_eur": 9.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Piraeus",
+              "to": "Agistri",
+              "minutes": 75,
+              "cost_eur": 13.0
+            }
+          ],
+          "total_minutes": 138,
+          "total_cost_eur": 27.5,
+          "note": "Daily. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "poros",
+      "name": "Poros",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "seaside",
+        "quiet",
+        "family"
+      ],
+      "gateways": [
+        {
+          "airport": "ATH",
+          "legs": [
+            {
+              "mode": "train",
+              "from": "Athens airport",
+              "to": "Piraeus",
+              "minutes": 58,
+              "cost_eur": 9.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Piraeus",
+              "to": "Poros",
+              "minutes": 55,
+              "cost_eur": 17.0
+            }
+          ],
+          "total_minutes": 114,
+          "total_cost_eur": 27.0,
+          "note": "Daily year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "hydra",
+      "name": "Hydra",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "culture",
+        "hidden-gem",
+        "quiet"
+      ],
+      "gateways": [
+        {
+          "airport": "ATH",
+          "legs": [
+            {
+              "mode": "train",
+              "from": "Athens airport",
+              "to": "Piraeus",
+              "minutes": 58,
+              "cost_eur": 9.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Piraeus",
+              "to": "Hydra",
+              "minutes": 92,
+              "cost_eur": 34.0
+            }
+          ],
+          "total_minutes": 153,
+          "total_cost_eur": 45.0,
+          "note": "Car-free island; daily year-round fast ferry. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "spetses",
+      "name": "Spetses",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "seaside",
+        "culture",
+        "quiet"
+      ],
+      "gateways": [
+        {
+          "airport": "ATH",
+          "legs": [
+            {
+              "mode": "train",
+              "from": "Athens airport",
+              "to": "Piraeus",
+              "minutes": 58,
+              "cost_eur": 9.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Piraeus",
+              "to": "Spetses",
+              "minutes": 112,
+              "cost_eur": 50.0
+            }
+          ],
+          "total_minutes": 165,
+          "total_cost_eur": 60.0,
+          "note": "Daily; fast direct sailing only. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "serifos",
+      "name": "Serifos",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "quiet",
+        "seaside",
+        "hidden-gem"
+      ],
+      "gateways": [
+        {
+          "airport": "ATH",
+          "legs": [
+            {
+              "mode": "train",
+              "from": "Athens airport",
+              "to": "Piraeus",
+              "minutes": 58,
+              "cost_eur": 9.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Piraeus",
+              "to": "Serifos",
+              "minutes": 120,
+              "cost_eur": 31.0
+            }
+          ],
+          "total_minutes": 210,
+          "total_cost_eur": 42.5,
+          "note": "4-7x/week year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "sifnos",
+      "name": "Sifnos",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "seaside",
+        "culture",
+        "hidden-gem",
+        "family"
+      ],
+      "gateways": [
+        {
+          "airport": "ATH",
+          "legs": [
+            {
+              "mode": "train",
+              "from": "Athens airport",
+              "to": "Piraeus",
+              "minutes": 58,
+              "cost_eur": 9.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Piraeus",
+              "to": "Sifnos",
+              "minutes": 145,
+              "cost_eur": 40.5
+            }
+          ],
+          "total_minutes": 225,
+          "total_cost_eur": 50.0,
+          "note": "Foodie island; 6-7x/week year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "milos",
+      "name": "Milos",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "seaside",
+        "hidden-gem",
+        "culture",
+        "hiking"
+      ],
+      "gateways": [
+        {
+          "airport": "ATH",
+          "legs": [
+            {
+              "mode": "train",
+              "from": "Athens airport",
+              "to": "Piraeus",
+              "minutes": 58,
+              "cost_eur": 9.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Piraeus",
+              "to": "Milos",
+              "minutes": 150,
+              "cost_eur": 33.0
+            }
+          ],
+          "total_minutes": 240,
+          "total_cost_eur": 40.0,
+          "note": "High-speed ferry, near-daily summer / year-round. Primary routing via ATH. Source: operator schedules/Ferryhopper, 2026 season."
+        },
+        {
+          "airport": "JTR",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Santorini airport",
+              "to": "Athinios port",
+              "minutes": 20,
+              "cost_eur": 34.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Athinios port",
+              "to": "Milos",
+              "minutes": 150,
+              "cost_eur": 40.0
+            }
+          ],
+          "total_minutes": 240,
+          "total_cost_eur": 74.0,
+          "note": "JTR link runs Jun-Sep only and is pricier than the ATH routing. Source: operator schedules/Ferryhopper, 2026 season. JTR fares not individually published in catalog — legs and total are estimates ('pricey' per research); verify before quoting. ATH routing is the sourced/cheaper option.",
+          "season": "jun-sep"
+        }
+      ]
+    },
+    {
+      "slug": "kythnos",
+      "name": "Kythnos",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "quiet",
+        "seaside",
+        "winter-sun"
+      ],
+      "gateways": [
+        {
+          "airport": "ATH",
+          "legs": [
+            {
+              "mode": "train",
+              "from": "Athens airport",
+              "to": "Piraeus",
+              "minutes": 58,
+              "cost_eur": 9.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Piraeus",
+              "to": "Kythnos",
+              "minutes": 100,
+              "cost_eur": 30.5
+            }
+          ],
+          "total_minutes": 165,
+          "total_cost_eur": 40.0,
+          "note": "High-speed ferry, year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "andros",
+      "name": "Andros",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "hiking",
+        "quiet",
+        "hidden-gem",
+        "culture"
+      ],
+      "gateways": [
+        {
+          "airport": "ATH",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Athens airport",
+              "to": "Rafina",
+              "minutes": 35,
+              "cost_eur": 3.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Rafina",
+              "to": "Andros",
+              "minutes": 90,
+              "cost_eur": 25.0
+            }
+          ],
+          "total_minutes": 120,
+          "total_cost_eur": 32.5,
+          "note": "Daily year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "kea",
+      "name": "Kea",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "quiet",
+        "seaside",
+        "family",
+        "winter-sun"
+      ],
+      "gateways": [
+        {
+          "airport": "ATH",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Athens airport",
+              "to": "Lavrio",
+              "minutes": 52,
+              "cost_eur": 80.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Lavrio",
+              "to": "Kea",
+              "minutes": 60,
+              "cost_eur": 11.5
+            }
+          ],
+          "total_minutes": 112,
+          "total_cost_eur": 92.5,
+          "note": "Taxi-dominated cost - flag prominently; multiple daily sailings in season. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "kimolos",
+      "name": "Kimolos",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "seaside"
+      ],
+      "gateways": [
+        {
+          "airport": "ATH",
+          "legs": [
+            {
+              "mode": "train",
+              "from": "Athens airport",
+              "to": "Piraeus",
+              "minutes": 58,
+              "cost_eur": 9.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Piraeus",
+              "to": "Kimolos",
+              "minutes": 205,
+              "cost_eur": 46.5
+            }
+          ],
+          "total_minutes": 274,
+          "total_cost_eur": 49.0,
+          "note": "Thin schedule, 3-7x/week; better used as a Milos hop. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ],
+      "marginal": true
+    },
+    {
+      "slug": "thassos",
+      "name": "Thassos",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "seaside",
+        "family",
+        "hiking",
+        "culture"
+      ],
+      "gateways": [
+        {
+          "airport": "SKG",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Thessaloniki airport",
+              "to": "Kavala",
+              "minutes": 135,
+              "cost_eur": 20.0
+            },
+            {
+              "mode": "taxi",
+              "from": "Kavala",
+              "to": "Keramoti",
+              "minutes": 15,
+              "cost_eur": 10.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Keramoti",
+              "to": "Thassos",
+              "minutes": 38,
+              "cost_eur": 9.0
+            }
+          ],
+          "total_minutes": 255,
+          "total_cost_eur": 47.5,
+          "note": "Fiddly Kavala leg - build in slack; ferry every 30-45m in summer. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "skopelos",
+      "name": "Skopelos",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "seaside",
+        "hiking",
+        "quiet",
+        "hidden-gem"
+      ],
+      "gateways": [
+        {
+          "airport": "SKG",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Thessaloniki airport",
+              "to": "Volos",
+              "minutes": 195,
+              "cost_eur": 25.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Volos",
+              "to": "Skopelos",
+              "minutes": 134,
+              "cost_eur": 37.5
+            }
+          ],
+          "total_minutes": 345,
+          "total_cost_eur": 62.5,
+          "note": "Over the practical time cap; <=11x/week in summer. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ],
+      "marginal": true
+    },
+    {
+      "slug": "paxos",
+      "name": "Paxos",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "seaside",
+        "hidden-gem",
+        "quiet",
+        "culture"
+      ],
+      "gateways": [
+        {
+          "airport": "CFU",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Corfu airport",
+              "to": "Corfu port",
+              "minutes": 10,
+              "cost_eur": 10.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Corfu port",
+              "to": "Paxos",
+              "minutes": 102,
+              "cost_eur": 15.0
+            }
+          ],
+          "total_minutes": 105,
+          "total_cost_eur": 22.5,
+          "note": "2-7x/week, reduced in winter. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "antipaxos",
+      "name": "Antipaxos",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "seaside",
+        "hidden-gem",
+        "quiet"
+      ],
+      "gateways": [
+        {
+          "airport": "CFU",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Corfu airport",
+              "to": "Corfu port",
+              "minutes": 10,
+              "cost_eur": 10.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Corfu port",
+              "to": "Paxos",
+              "minutes": 102,
+              "cost_eur": 15.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Paxos (Gaios)",
+              "to": "Antipaxos",
+              "minutes": 18,
+              "cost_eur": 1.9
+            }
+          ],
+          "total_minutes": 165,
+          "total_cost_eur": 25.0,
+          "note": "Local boat 2x/day, spring-autumn only; verify locally, low frequency. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ],
+      "marginal": true
+    },
+    {
+      "slug": "meganisi",
+      "name": "Meganisi",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "seaside",
+        "hidden-gem",
+        "quiet",
+        "family"
+      ],
+      "gateways": [
+        {
+          "airport": "PVK",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Preveza/Lefkada airport",
+              "to": "Nydri",
+              "minutes": 48,
+              "cost_eur": 50.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Nydri",
+              "to": "Meganisi",
+              "minutes": 22,
+              "cost_eur": 3.9
+            }
+          ],
+          "total_minutes": 84,
+          "total_cost_eur": 50.0,
+          "note": "~5x/day, year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "kalamos",
+      "name": "Kalamos",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "hidden-gem",
+        "quiet",
+        "hiking"
+      ],
+      "gateways": [
+        {
+          "airport": "PVK",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Preveza/Lefkada airport",
+              "to": "Mytikas",
+              "minutes": 75,
+              "cost_eur": 70.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Mytikas",
+              "to": "Kalamos",
+              "minutes": 35,
+              "cost_eur": 4.0
+            }
+          ],
+          "total_minutes": 135,
+          "total_cost_eur": 70.0,
+          "note": "Ferry Mon/Wed/Fri only, ~3x/week. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ],
+      "marginal": true
+    },
+    {
+      "slug": "ithaca",
+      "name": "Ithaca",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "culture",
+        "hiking",
+        "hidden-gem",
+        "quiet"
+      ],
+      "gateways": [
+        {
+          "airport": "EFL",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Kefalonia airport",
+              "to": "Sami",
+              "minutes": 40,
+              "cost_eur": 36.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Sami",
+              "to": "Ithaca",
+              "minutes": 20,
+              "cost_eur": 3.5
+            }
+          ],
+          "total_minutes": 75,
+          "total_cost_eur": 40.0,
+          "note": "Best Ionian chain in the catalog; daily year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "kythira",
+      "name": "Kythira",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "hidden-gem",
+        "quiet",
+        "culture",
+        "winter-sun"
+      ],
+      "gateways": [
+        {
+          "airport": "KLX",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Kalamata airport",
+              "to": "Neapoli",
+              "minutes": 180,
+              "cost_eur": 190.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Neapoli",
+              "to": "Kythira",
+              "minutes": 75,
+              "cost_eur": 12.5
+            }
+          ],
+          "total_minutes": 255,
+          "total_cost_eur": 190.0,
+          "note": "No viable bus for the land leg (taxi-only); ferry 6-7x/week year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ],
+      "marginal": true
+    },
+    {
+      "slug": "elafonisos",
+      "name": "Elafonisos",
+      "country": "Greece",
+      "tags": [
+        "island",
+        "seaside",
+        "family",
+        "hidden-gem",
+        "winter-sun"
+      ],
+      "gateways": [
+        {
+          "airport": "KLX",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Kalamata airport",
+              "to": "Neapoli",
+              "minutes": 180,
+              "cost_eur": 190.0
+            },
+            {
+              "mode": "shuttle",
+              "from": "Neapoli (Pounta)",
+              "to": "Elafonisos",
+              "minutes": 9,
+              "cost_eur": 2.0
+            }
+          ],
+          "total_minutes": 195,
+          "total_cost_eur": 167.5,
+          "note": "Same taxi-only land-leg problem as Kythira; superb shuttle every ~30m, daily year-round, but taxi-hinged cost. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ],
+      "marginal": true
+    },
+    {
+      "slug": "lipari",
+      "name": "Lipari",
+      "country": "Italy",
+      "tags": [
+        "island",
+        "seaside",
+        "culture",
+        "hiking"
+      ],
+      "gateways": [
+        {
+          "airport": "CTA",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Catania airport",
+              "to": "Milazzo",
+              "minutes": 110,
+              "cost_eur": 15.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Milazzo",
+              "to": "Lipari",
+              "minutes": 60,
+              "cost_eur": 17.0
+            }
+          ],
+          "total_minutes": 240,
+          "total_cost_eur": 34.0,
+          "note": "Giuntabus 4x/day summer, 2x/day winter; Liberty Lines hydrofoil. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "vulcano",
+      "name": "Vulcano",
+      "country": "Italy",
+      "tags": [
+        "island",
+        "seaside",
+        "quiet",
+        "hiking"
+      ],
+      "gateways": [
+        {
+          "airport": "CTA",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Catania airport",
+              "to": "Milazzo",
+              "minutes": 110,
+              "cost_eur": 15.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Milazzo",
+              "to": "Vulcano",
+              "minutes": 45,
+              "cost_eur": 16.0
+            }
+          ],
+          "total_minutes": 210,
+          "total_cost_eur": 31.5,
+          "note": "Giuntabus 4x/day summer, 2x/day winter; Liberty Lines hydrofoil. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "salina",
+      "name": "Salina",
+      "country": "Italy",
+      "tags": [
+        "island",
+        "seaside",
+        "quiet",
+        "hiking",
+        "family"
+      ],
+      "gateways": [
+        {
+          "airport": "CTA",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Catania airport",
+              "to": "Milazzo",
+              "minutes": 110,
+              "cost_eur": 15.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Milazzo",
+              "to": "Salina",
+              "minutes": 75,
+              "cost_eur": 19.0
+            }
+          ],
+          "total_minutes": 261,
+          "total_cost_eur": 37.5,
+          "note": "Needs an early arrival to make connections; thinner off-season. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ],
+      "marginal": true
+    },
+    {
+      "slug": "stromboli",
+      "name": "Stromboli",
+      "country": "Italy",
+      "tags": [
+        "island",
+        "hiking",
+        "hidden-gem",
+        "seaside"
+      ],
+      "gateways": [
+        {
+          "airport": "SUF",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Reggio Calabria airport",
+              "to": "Reggio port",
+              "minutes": 20,
+              "cost_eur": 2.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Reggio port",
+              "to": "Stromboli",
+              "minutes": 90,
+              "cost_eur": 20.0
+            }
+          ],
+          "total_minutes": 165,
+          "total_cost_eur": 22.0,
+          "note": "SUF routing only - via CTA is a >5h drop. Liberty Lines direct hydrofoil ~Jun 20-Sep only. Fare not published for this segment - estimated from comparable Aeolian hydrofoil fares (Panarea/Vulcano); verify before quoting. Source: operator schedules/Ferryhopper, 2026 season.",
+          "season": "jun-sep"
+        }
+      ],
+      "season": "jun-sep"
+    },
+    {
+      "slug": "panarea",
+      "name": "Panarea",
+      "country": "Italy",
+      "tags": [
+        "island",
+        "seaside",
+        "party",
+        "hidden-gem"
+      ],
+      "gateways": [
+        {
+          "airport": "CTA",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Catania airport",
+              "to": "Milazzo",
+              "minutes": 110,
+              "cost_eur": 15.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Milazzo",
+              "to": "Panarea",
+              "minutes": 82,
+              "cost_eur": 21.0
+            }
+          ],
+          "total_minutes": 270,
+          "total_cost_eur": 38.5,
+          "note": "Thin schedule in winter. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ],
+      "marginal": true
+    },
+    {
+      "slug": "favignana",
+      "name": "Favignana",
+      "country": "Italy",
+      "tags": [
+        "island",
+        "seaside",
+        "family",
+        "hiking",
+        "hidden-gem"
+      ],
+      "gateways": [
+        {
+          "airport": "PMO",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Palermo airport",
+              "to": "Trapani",
+              "minutes": 65,
+              "cost_eur": 10.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Trapani",
+              "to": "Favignana",
+              "minutes": 30,
+              "cost_eur": 11.0
+            }
+          ],
+          "total_minutes": 120,
+          "total_cost_eur": 21.0,
+          "note": "Very frequent hydrofoils, year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "levanzo",
+      "name": "Levanzo",
+      "country": "Italy",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "hiking",
+        "seaside"
+      ],
+      "gateways": [
+        {
+          "airport": "PMO",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Palermo airport",
+              "to": "Trapani",
+              "minutes": 65,
+              "cost_eur": 10.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Trapani",
+              "to": "Levanzo",
+              "minutes": 25,
+              "cost_eur": 6.5
+            }
+          ],
+          "total_minutes": 120,
+          "total_cost_eur": 19.0,
+          "note": "Frequent, year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "marettimo",
+      "name": "Marettimo",
+      "country": "Italy",
+      "tags": [
+        "island",
+        "hidden-gem",
+        "hiking",
+        "quiet"
+      ],
+      "gateways": [
+        {
+          "airport": "PMO",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Palermo airport",
+              "to": "Trapani",
+              "minutes": 65,
+              "cost_eur": 10.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Trapani",
+              "to": "Marettimo",
+              "minutes": 65,
+              "cost_eur": 16.5
+            }
+          ],
+          "total_minutes": 150,
+          "total_cost_eur": 26.5,
+          "note": "~4x/day year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "ustica",
+      "name": "Ustica",
+      "country": "Italy",
+      "tags": [
+        "island",
+        "quiet",
+        "hiking",
+        "hidden-gem",
+        "seaside"
+      ],
+      "gateways": [
+        {
+          "airport": "PMO",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Palermo airport",
+              "to": "Palermo port",
+              "minutes": 50,
+              "cost_eur": 6.3
+            },
+            {
+              "mode": "ferry",
+              "from": "Palermo port",
+              "to": "Ustica",
+              "minutes": 82,
+              "cost_eur": 31.0
+            }
+          ],
+          "total_minutes": 165,
+          "total_cost_eur": 37.0,
+          "note": "4x/day summer, ~1x/day winter - verify the off-season return sailing. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "procida",
+      "name": "Procida",
+      "country": "Italy",
+      "tags": [
+        "island",
+        "seaside",
+        "quiet",
+        "hidden-gem",
+        "family"
+      ],
+      "gateways": [
+        {
+          "airport": "NAP",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Naples airport",
+              "to": "Beverello",
+              "minutes": 32,
+              "cost_eur": 5.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Beverello",
+              "to": "Procida",
+              "minutes": 65,
+              "cost_eur": 9.8
+            }
+          ],
+          "total_minutes": 85,
+          "total_cost_eur": 20.0,
+          "note": "Cheapest chain in the catalog; very frequent, year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "ischia",
+      "name": "Ischia",
+      "country": "Italy",
+      "tags": [
+        "island",
+        "seaside",
+        "family",
+        "hiking",
+        "culture"
+      ],
+      "gateways": [
+        {
+          "airport": "NAP",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Naples airport",
+              "to": "Beverello",
+              "minutes": 32,
+              "cost_eur": 5.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Beverello",
+              "to": "Ischia",
+              "minutes": 55,
+              "cost_eur": 22.0
+            }
+          ],
+          "total_minutes": 90,
+          "total_cost_eur": 30.0,
+          "note": "Hydrofoil every 30-60m. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "capri",
+      "name": "Capri",
+      "country": "Italy",
+      "tags": [
+        "island",
+        "seaside",
+        "party",
+        "culture",
+        "family"
+      ],
+      "gateways": [
+        {
+          "airport": "NAP",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Naples airport",
+              "to": "Beverello",
+              "minutes": 32,
+              "cost_eur": 5.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Beverello",
+              "to": "Capri",
+              "minutes": 42,
+              "cost_eur": 25.0
+            }
+          ],
+          "total_minutes": 85,
+          "total_cost_eur": 30.0,
+          "note": "Frequent hydrofoils, year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "ponza",
+      "name": "Ponza",
+      "country": "Italy",
+      "tags": [
+        "island",
+        "seaside",
+        "party",
+        "hidden-gem",
+        "hiking"
+      ],
+      "gateways": [
+        {
+          "airport": "NAP",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Naples airport",
+              "to": "Napoli Centrale",
+              "minutes": 20,
+              "cost_eur": 5.0
+            },
+            {
+              "mode": "train",
+              "from": "Napoli Centrale",
+              "to": "Formia",
+              "minutes": 86,
+              "cost_eur": 10.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Formia",
+              "to": "Ponza",
+              "minutes": 75,
+              "cost_eur": 25.0
+            }
+          ],
+          "total_minutes": 172,
+          "total_cost_eur": 42.5,
+          "note": "Laziomar; up to 28 sailings/week in high season. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "ventotene",
+      "name": "Ventotene",
+      "country": "Italy",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "culture",
+        "seaside"
+      ],
+      "gateways": [
+        {
+          "airport": "NAP",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Naples airport",
+              "to": "Napoli Centrale",
+              "minutes": 20,
+              "cost_eur": 5.0
+            },
+            {
+              "mode": "train",
+              "from": "Napoli Centrale",
+              "to": "Formia",
+              "minutes": 86,
+              "cost_eur": 10.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Formia",
+              "to": "Ventotene",
+              "minutes": 60,
+              "cost_eur": 25.0
+            }
+          ],
+          "total_minutes": 158,
+          "total_cost_eur": 40.0,
+          "note": "Laziomar; 23 sailings/week, year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "giglio",
+      "name": "Giglio",
+      "country": "Italy",
+      "tags": [
+        "island",
+        "seaside",
+        "quiet",
+        "hidden-gem",
+        "hiking"
+      ],
+      "gateways": [
+        {
+          "airport": "FCO",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Rome Fiumicino airport",
+              "to": "Orbetello",
+              "minutes": 100,
+              "cost_eur": 15.0
+            },
+            {
+              "mode": "bus",
+              "from": "Orbetello",
+              "to": "port",
+              "minutes": 20,
+              "cost_eur": 5.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Orbetello area port",
+              "to": "Giglio",
+              "minutes": 65,
+              "cost_eur": 14.5
+            }
+          ],
+          "total_minutes": 220,
+          "total_cost_eur": 35.0,
+          "note": "Fragile dependency on a direct bus that runs only 2x/day; ferries 4-12x/day. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ],
+      "marginal": true
+    },
+    {
+      "slug": "elba",
+      "name": "Elba",
+      "country": "Italy",
+      "tags": [
+        "island",
+        "seaside",
+        "hiking",
+        "family",
+        "culture"
+      ],
+      "gateways": [
+        {
+          "airport": "PSA",
+          "legs": [
+            {
+              "mode": "train",
+              "from": "Pisa airport",
+              "to": "Piombino",
+              "minutes": 140,
+              "cost_eur": 12.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Piombino",
+              "to": "Elba",
+              "minutes": 57,
+              "cost_eur": 21.0
+            }
+          ],
+          "total_minutes": 225,
+          "total_cost_eur": 35.0,
+          "note": "PisaMover + train; 40+ sailings/day, year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "la-maddalena",
+      "name": "La Maddalena",
+      "country": "Italy",
+      "tags": [
+        "island",
+        "seaside",
+        "family",
+        "hiking",
+        "quiet"
+      ],
+      "gateways": [
+        {
+          "airport": "OLB",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Olbia airport",
+              "to": "Palau",
+              "minutes": 45,
+              "cost_eur": 45.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Palau",
+              "to": "La Maddalena",
+              "minutes": 15,
+              "cost_eur": 4.5
+            }
+          ],
+          "total_minutes": 80,
+          "total_cost_eur": 32.5,
+          "note": "Caprera reachable from La Maddalena by causeway - same bundle. Delcomar shuttle-grade frequency, every 15-30m year-round; sparse bus alt. (1h30, EUR4-5). Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "san-pietro",
+      "name": "San Pietro",
+      "country": "Italy",
+      "tags": [
+        "island",
+        "seaside",
+        "quiet",
+        "hidden-gem",
+        "culture"
+      ],
+      "gateways": [
+        {
+          "airport": "CAG",
+          "legs": [
+            {
+              "mode": "train",
+              "from": "Cagliari airport",
+              "to": "Calasetta",
+              "minutes": 135,
+              "cost_eur": 9.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Calasetta",
+              "to": "San Pietro (Carloforte)",
+              "minutes": 30,
+              "cost_eur": 4.5
+            }
+          ],
+          "total_minutes": 225,
+          "total_cost_eur": 22.5,
+          "note": "Land leg is only 1-2 buses/day - timing risk; Delcomar ~12x/day. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ],
+      "marginal": true
+    },
+    {
+      "slug": "asinara",
+      "name": "Asinara",
+      "country": "Italy",
+      "tags": [
+        "island",
+        "hidden-gem",
+        "quiet",
+        "hiking",
+        "culture"
+      ],
+      "gateways": [
+        {
+          "airport": "AHO",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Alghero airport",
+              "to": "Porto Torres",
+              "minutes": 35,
+              "cost_eur": 3.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Porto Torres",
+              "to": "Asinara",
+              "minutes": 75,
+              "cost_eur": 17.5
+            }
+          ],
+          "total_minutes": 120,
+          "total_cost_eur": 22.5,
+          "note": "Plan around sailing days (Tue/Fri/Sun x2 low season, more Jun-Sep); no on-island lodging. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "tremiti",
+      "name": "Tremiti",
+      "country": "Italy",
+      "tags": [
+        "island",
+        "seaside",
+        "family",
+        "hidden-gem",
+        "hiking",
+        "culture"
+      ],
+      "gateways": [
+        {
+          "airport": "BRI",
+          "legs": [
+            {
+              "mode": "train",
+              "from": "Bari airport",
+              "to": "Termoli",
+              "minutes": 132,
+              "cost_eur": 13.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Termoli",
+              "to": "Tremiti",
+              "minutes": 62,
+              "cost_eur": 22.5
+            }
+          ],
+          "total_minutes": 195,
+          "total_cost_eur": 37.5,
+          "note": "NLG jet, ~daily Jun-Sep, reduced off-season; best Apr-Oct (a BDS routing exists but is worse - don't advertise it). Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "gozo",
+      "name": "Gozo",
+      "country": "Malta",
+      "tags": [
+        "island",
+        "seaside",
+        "culture",
+        "hiking",
+        "quiet",
+        "family"
+      ],
+      "gateways": [
+        {
+          "airport": "MLA",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Malta airport",
+              "to": "Cirkewwa",
+              "minutes": 41,
+              "cost_eur": 2.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Cirkewwa",
+              "to": "Gozo",
+              "minutes": 25,
+              "cost_eur": 4.65
+            }
+          ],
+          "total_minutes": 65,
+          "total_cost_eur": 6.0,
+          "note": "Best chain in the catalog; Gozo Channel every 30m, 24/7/365. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "comino",
+      "name": "Comino",
+      "country": "Malta",
+      "tags": [
+        "island",
+        "seaside",
+        "hidden-gem",
+        "family"
+      ],
+      "gateways": [
+        {
+          "airport": "MLA",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Malta airport",
+              "to": "Cirkewwa",
+              "minutes": 41,
+              "cost_eur": 2.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Cirkewwa",
+              "to": "Comino (Blue Lagoon)",
+              "minutes": 20,
+              "cost_eur": 14.0
+            }
+          ],
+          "total_minutes": 60,
+          "total_cost_eur": 15.0,
+          "note": "Every 30m, Apr-Oct only; day-trip only, no lodging. Source: operator schedules/Ferryhopper, 2026 season.",
+          "season": "apr-oct"
+        }
+      ],
+      "marginal": true,
+      "season": "apr-oct"
+    },
+    {
+      "slug": "formentera",
+      "name": "Formentera",
+      "country": "Spain",
+      "tags": [
+        "island",
+        "seaside",
+        "family",
+        "hidden-gem"
+      ],
+      "gateways": [
+        {
+          "airport": "IBZ",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Ibiza airport",
+              "to": "Ibiza port",
+              "minutes": 20,
+              "cost_eur": 5.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Ibiza port",
+              "to": "Formentera",
+              "minutes": 30,
+              "cost_eur": 24.0
+            }
+          ],
+          "total_minutes": 50,
+          "total_cost_eur": 37.5,
+          "note": "~30 sailings/day in summer, daily year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "cabrera",
+      "name": "Cabrera",
+      "country": "Spain",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "hiking",
+        "culture"
+      ],
+      "gateways": [
+        {
+          "airport": "PMI",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Palma airport",
+              "to": "Colonia St Jordi",
+              "minutes": 40,
+              "cost_eur": 35.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Colonia St Jordi",
+              "to": "Cabrera",
+              "minutes": 45,
+              "cost_eur": 45.0
+            }
+          ],
+          "total_minutes": 98,
+          "total_cost_eur": 57.5,
+          "note": "Apr-Oct only, permit-capped; day-trip only. Source: operator schedules/Ferryhopper, 2026 season.",
+          "season": "apr-oct"
+        }
+      ],
+      "marginal": true,
+      "season": "apr-oct"
+    },
+    {
+      "slug": "sa-dragonera",
+      "name": "Sa Dragonera",
+      "country": "Spain",
+      "tags": [
+        "island",
+        "quiet",
+        "hiking"
+      ],
+      "gateways": [
+        {
+          "airport": "PMI",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Palma airport",
+              "to": "Sant Elm",
+              "minutes": 40,
+              "cost_eur": 40.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Sant Elm",
+              "to": "Sa Dragonera",
+              "minutes": 18,
+              "cost_eur": 18.0
+            }
+          ],
+          "total_minutes": 68,
+          "total_cost_eur": 92.5,
+          "note": "Feb-Oct, Tue-Sun; day-trip only. Source: operator schedules/Ferryhopper, 2026 season.",
+          "season": "feb-oct"
+        }
+      ],
+      "marginal": true,
+      "season": "feb-oct"
+    },
+    {
+      "slug": "la-gomera",
+      "name": "La Gomera",
+      "country": "Spain",
+      "tags": [
+        "island",
+        "hiking",
+        "quiet",
+        "culture",
+        "hidden-gem",
+        "winter-sun"
+      ],
+      "gateways": [
+        {
+          "airport": "TFS",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Tenerife South airport",
+              "to": "Los Cristianos",
+              "minutes": 25,
+              "cost_eur": 3.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Los Cristianos",
+              "to": "La Gomera",
+              "minutes": 50,
+              "cost_eur": 44.0
+            }
+          ],
+          "total_minutes": 82,
+          "total_cost_eur": 63.0,
+          "note": "Fred Olsen, 3-8 sailings/day, year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "la-graciosa",
+      "name": "La Graciosa",
+      "country": "Spain",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "seaside",
+        "hiking"
+      ],
+      "gateways": [
+        {
+          "airport": "ACE",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Lanzarote airport",
+              "to": "Orzola",
+              "minutes": 43,
+              "cost_eur": 38.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Orzola",
+              "to": "La Graciosa",
+              "minutes": 25,
+              "cost_eur": 18.0
+            }
+          ],
+          "total_minutes": 85,
+          "total_cost_eur": 42.5,
+          "note": "16-20 sailings/day in summer. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "el-hierro",
+      "name": "El Hierro",
+      "country": "Spain",
+      "tags": [
+        "island",
+        "hiking",
+        "quiet",
+        "hidden-gem",
+        "winter-sun"
+      ],
+      "gateways": [
+        {
+          "airport": "TFS",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Tenerife South airport",
+              "to": "Los Cristianos",
+              "minutes": 25,
+              "cost_eur": 3.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Los Cristianos",
+              "to": "El Hierro",
+              "minutes": 145,
+              "cost_eur": 46.0
+            }
+          ],
+          "total_minutes": 175,
+          "total_cost_eur": 70.0,
+          "note": "Thin schedule, ~2 sailings/day average; Binter flights are realistically a better option. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ],
+      "marginal": true
+    },
+    {
+      "slug": "lobos",
+      "name": "Lobos",
+      "country": "Spain",
+      "tags": [
+        "island",
+        "seaside",
+        "quiet",
+        "family",
+        "hiking"
+      ],
+      "gateways": [
+        {
+          "airport": "FUE",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Fuerteventura airport",
+              "to": "Corralejo",
+              "minutes": 20,
+              "cost_eur": 20.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Corralejo",
+              "to": "Lobos",
+              "minutes": 18,
+              "cost_eur": 17.0
+            }
+          ],
+          "total_minutes": 72,
+          "total_cost_eur": 45.0,
+          "note": "Daily 09:45-15:30 window with a 4h-stay cap; day-trip only, permit required. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ],
+      "marginal": true
+    },
+    {
+      "slug": "brac",
+      "name": "Brac",
+      "country": "Croatia",
+      "tags": [
+        "island",
+        "seaside",
+        "family",
+        "hiking"
+      ],
+      "gateways": [
+        {
+          "airport": "SPU",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Split airport",
+              "to": "Split port",
+              "minutes": 40,
+              "cost_eur": 5.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Split port",
+              "to": "Brac (Supetar)",
+              "minutes": 50,
+              "cost_eur": 5.5
+            }
+          ],
+          "total_minutes": 85,
+          "total_cost_eur": 14.0,
+          "note": "Jadrolinija, up to 22 sailings/day. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "solta",
+      "name": "Solta",
+      "country": "Croatia",
+      "tags": [
+        "island",
+        "seaside",
+        "quiet",
+        "hidden-gem",
+        "family"
+      ],
+      "gateways": [
+        {
+          "airport": "SPU",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Split airport",
+              "to": "Split port",
+              "minutes": 40,
+              "cost_eur": 5.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Split port",
+              "to": "Solta",
+              "minutes": 60,
+              "cost_eur": 5.7
+            }
+          ],
+          "total_minutes": 95,
+          "total_cost_eur": 15.0,
+          "note": "Jadrolinija, 4-6 sailings/day, year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "hvar",
+      "name": "Hvar",
+      "country": "Croatia",
+      "tags": [
+        "island",
+        "seaside",
+        "party",
+        "culture",
+        "family"
+      ],
+      "gateways": [
+        {
+          "airport": "SPU",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Split airport",
+              "to": "Split port",
+              "minutes": 40,
+              "cost_eur": 5.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Split port",
+              "to": "Hvar",
+              "minutes": 58,
+              "cost_eur": 15.0
+            }
+          ],
+          "total_minutes": 120,
+          "total_cost_eur": 18.5,
+          "note": "Catamaran ~19 sailings/day high season, 2-3/day winter (car ferry to Stari Grad is a 110m alt.). Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "vis",
+      "name": "Vis",
+      "country": "Croatia",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "culture",
+        "seaside"
+      ],
+      "gateways": [
+        {
+          "airport": "SPU",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Split airport",
+              "to": "Split port",
+              "minutes": 40,
+              "cost_eur": 5.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Split port",
+              "to": "Vis",
+              "minutes": 100,
+              "cost_eur": 17.5
+            }
+          ],
+          "total_minutes": 150,
+          "total_cost_eur": 17.5,
+          "note": "Catamaran daily year-round (car ferry alt. 2h20). Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "lastovo",
+      "name": "Lastovo",
+      "country": "Croatia",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "hiking"
+      ],
+      "gateways": [
+        {
+          "airport": "SPU",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Split airport",
+              "to": "Split port",
+              "minutes": 40,
+              "cost_eur": 5.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Split port",
+              "to": "Lastovo",
+              "minutes": 190,
+              "cost_eur": 13.5
+            }
+          ],
+          "total_minutes": 232,
+          "total_cost_eur": 25.0,
+          "note": "TP Line catamaran; ~1/day high season, 3x/week off-season - remote getaway. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ],
+      "marginal": true
+    },
+    {
+      "slug": "zlarin",
+      "name": "Zlarin",
+      "country": "Croatia",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "culture"
+      ],
+      "gateways": [
+        {
+          "airport": "SPU",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Split airport",
+              "to": "Sibenik",
+              "minutes": 70,
+              "cost_eur": 20.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Sibenik",
+              "to": "Zlarin",
+              "minutes": 28,
+              "cost_eur": 2.85
+            }
+          ],
+          "total_minutes": 120,
+          "total_cost_eur": 22.5,
+          "note": "Routed via Sibenik, a non-registry-gateway leg - gateway friction; 3-5 sailings/day. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ],
+      "marginal": true
+    },
+    {
+      "slug": "krapanj",
+      "name": "Krapanj",
+      "country": "Croatia",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "culture"
+      ],
+      "gateways": [
+        {
+          "airport": "SPU",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Split airport",
+              "to": "Sibenik",
+              "minutes": 70,
+              "cost_eur": 21.0
+            },
+            {
+              "mode": "shuttle",
+              "from": "Sibenik",
+              "to": "Krapanj",
+              "minutes": 10,
+              "cost_eur": 1.0
+            }
+          ],
+          "total_minutes": 142,
+          "total_cost_eur": 22.5,
+          "note": "Frequent shuttle boat; day-trip character. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ],
+      "marginal": true
+    },
+    {
+      "slug": "mljet",
+      "name": "Mljet",
+      "country": "Croatia",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "hiking",
+        "seaside"
+      ],
+      "gateways": [
+        {
+          "airport": "DBV",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Dubrovnik airport",
+              "to": "Gruz port",
+              "minutes": 38,
+              "cost_eur": 10.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Gruz port",
+              "to": "Mljet (Pomena)",
+              "minutes": 85,
+              "cost_eur": 8.7
+            }
+          ],
+          "total_minutes": 125,
+          "total_cost_eur": 21.5,
+          "note": "Best Croatian fit in the catalog; TP Line, year-round (Krilo-Pomena leg runs May-Oct, reduced winter service otherwise). Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "sipan",
+      "name": "Sipan",
+      "country": "Croatia",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "family",
+        "culture",
+        "seaside"
+      ],
+      "gateways": [
+        {
+          "airport": "DBV",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Dubrovnik airport",
+              "to": "Gruz port",
+              "minutes": 38,
+              "cost_eur": 10.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Gruz port",
+              "to": "Sipan",
+              "minutes": 70,
+              "cost_eur": 4.91
+            }
+          ],
+          "total_minutes": 108,
+          "total_cost_eur": 13.5,
+          "note": "Elaphiti bundle - same Jadrolinija line 807 also serves Kolocep and Lopud sub-stops; several sailings/day, year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "korcula",
+      "name": "Korcula",
+      "country": "Croatia",
+      "tags": [
+        "island",
+        "culture",
+        "seaside",
+        "hiking",
+        "hidden-gem"
+      ],
+      "gateways": [
+        {
+          "airport": "DBV",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Dubrovnik airport",
+              "to": "Gruz port",
+              "minutes": 38,
+              "cost_eur": 10.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Gruz port",
+              "to": "Korcula",
+              "minutes": 120,
+              "cost_eur": 22.5
+            }
+          ],
+          "total_minutes": 155,
+          "total_cost_eur": 30.0,
+          "note": "Krilo/TP Line, ~1x/day, May 1-Oct 15 only. Source: operator schedules/Ferryhopper, 2026 season.",
+          "season": "may-oct"
+        },
+        {
+          "airport": "SPU",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Split airport",
+              "to": "Split port",
+              "minutes": 40,
+              "cost_eur": 5.5
+            },
+            {
+              "mode": "ferry",
+              "from": "Split port",
+              "to": "Korcula",
+              "minutes": 240,
+              "cost_eur": 22.5
+            }
+          ],
+          "total_minutes": 270,
+          "total_cost_eur": 27.5,
+          "note": "Fallback routing, ~4h, Apr-Oct only. Source: operator schedules/Ferryhopper, 2026 season.",
+          "season": "apr-oct"
+        }
+      ]
+    },
+    {
+      "slug": "ugljan",
+      "name": "Ugljan",
+      "country": "Croatia",
+      "tags": [
+        "island",
+        "seaside",
+        "quiet",
+        "family",
+        "hiking"
+      ],
+      "gateways": [
+        {
+          "airport": "ZAD",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Zadar airport",
+              "to": "Zadar port",
+              "minutes": 18,
+              "cost_eur": 4.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Zadar port",
+              "to": "Ugljan (Preko)",
+              "minutes": 28,
+              "cost_eur": 3.0
+            }
+          ],
+          "total_minutes": 50,
+          "total_cost_eur": 8.5,
+          "note": "Fastest hop in the catalog; Jadrolinija, 17-29 sailings/day. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "pasman",
+      "name": "Pasman",
+      "country": "Croatia",
+      "tags": [
+        "island",
+        "seaside",
+        "quiet",
+        "hidden-gem",
+        "family"
+      ],
+      "gateways": [
+        {
+          "airport": "ZAD",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Zadar airport",
+              "to": "Biograd",
+              "minutes": 35,
+              "cost_eur": 11.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Biograd",
+              "to": "Pasman (Tkon)",
+              "minutes": 20,
+              "cost_eur": 4.0
+            }
+          ],
+          "total_minutes": 90,
+          "total_cost_eur": 15.0,
+          "note": "Biograd land leg is taxi-only; frequent year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "dugi-otok",
+      "name": "Dugi Otok",
+      "country": "Croatia",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "hiking",
+        "seaside"
+      ],
+      "gateways": [
+        {
+          "airport": "ZAD",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Zadar airport",
+              "to": "Zadar port",
+              "minutes": 18,
+              "cost_eur": 4.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Zadar port",
+              "to": "Dugi Otok",
+              "minutes": 72,
+              "cost_eur": 5.84
+            }
+          ],
+          "total_minutes": 108,
+          "total_cost_eur": 12.5,
+          "note": "Telascica NP; G&V/TP Line/Jadrolinija, 3-4x/day winter, more in summer. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "berlengas",
+      "name": "Berlengas",
+      "country": "Portugal",
+      "tags": [
+        "island",
+        "hiking",
+        "quiet",
+        "hidden-gem",
+        "seaside"
+      ],
+      "gateways": [
+        {
+          "airport": "LIS",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Lisbon airport",
+              "to": "Peniche",
+              "minutes": 75,
+              "cost_eur": 9.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Peniche",
+              "to": "Berlengas",
+              "minutes": 42,
+              "cost_eur": 18.0
+            }
+          ],
+          "total_minutes": 126,
+          "total_cost_eur": 27.0,
+          "note": "Viamar, ~May 9-mid-Oct only, 1-2 sailings/day, 350/day visitor cap; basic lodging only. Source: operator schedules/Ferryhopper, 2026 season.",
+          "season": "may-oct"
+        }
+      ],
+      "season": "may-oct"
+    },
+    {
+      "slug": "culatra",
+      "name": "Culatra",
+      "country": "Portugal",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "culture",
+        "seaside"
+      ],
+      "gateways": [
+        {
+          "airport": "FAO",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Faro airport",
+              "to": "Olhao",
+              "minutes": 18,
+              "cost_eur": 9.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Olhao",
+              "to": "Culatra",
+              "minutes": 30,
+              "cost_eur": 3.0
+            }
+          ],
+          "total_minutes": 52,
+          "total_cost_eur": 12.5,
+          "note": "Car-free village with real lodging; several sailings/day, year-round. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "ilha-deserta",
+      "name": "Ilha Deserta",
+      "country": "Portugal",
+      "tags": [
+        "island",
+        "seaside",
+        "quiet",
+        "family"
+      ],
+      "gateways": [
+        {
+          "airport": "FAO",
+          "legs": [
+            {
+              "mode": "taxi",
+              "from": "Faro airport",
+              "to": "Faro marina",
+              "minutes": 15,
+              "cost_eur": 3.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Faro marina",
+              "to": "Ilha Deserta",
+              "minutes": 25,
+              "cost_eur": 25.0
+            }
+          ],
+          "total_minutes": 42,
+          "total_cost_eur": 27.5,
+          "note": "Daily, denser Jun-Sep; day-trip only. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ],
+      "marginal": true
+    },
+    {
+      "slug": "porto-santo",
+      "name": "Porto Santo",
+      "country": "Portugal",
+      "tags": [
+        "island",
+        "seaside",
+        "family",
+        "winter-sun"
+      ],
+      "gateways": [
+        {
+          "airport": "FNC",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Madeira airport",
+              "to": "Funchal port",
+              "minutes": 33,
+              "cost_eur": 8.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Funchal port",
+              "to": "Porto Santo",
+              "minutes": 150,
+              "cost_eur": 28.5
+            }
+          ],
+          "total_minutes": 182,
+          "total_cost_eur": 47.5,
+          "note": "Porto Santo Line, ~1/day (6-7 days/week in season; ~2/week plus dry-dock gaps Oct-May) - plan around the single daily sailing. Source: operator schedules/Ferryhopper, 2026 season."
+        }
+      ]
+    },
+    {
+      "slug": "st-anastasia",
+      "name": "St. Anastasia",
+      "country": "Bulgaria",
+      "tags": [
+        "island",
+        "quiet",
+        "hidden-gem",
+        "culture",
+        "seaside"
+      ],
+      "gateways": [
+        {
+          "airport": "BOJ",
+          "legs": [
+            {
+              "mode": "bus",
+              "from": "Burgas airport",
+              "to": "Burgas Sea Station",
+              "minutes": 15,
+              "cost_eur": 5.0
+            },
+            {
+              "mode": "ferry",
+              "from": "Burgas Sea Station",
+              "to": "St. Anastasia",
+              "minutes": 35,
+              "cost_eur": 17.5
+            }
+          ],
+          "total_minutes": 55,
+          "total_cost_eur": 22.5,
+          "note": "<=5 sailings/day, May-Oct only; near-day-trip, ~5 monastery rooms only. Source: operator schedules/Ferryhopper, 2026 season.",
+          "season": "may-oct"
+        }
+      ],
+      "marginal": true,
+      "season": "may-oct"
+    }
   ]
 }

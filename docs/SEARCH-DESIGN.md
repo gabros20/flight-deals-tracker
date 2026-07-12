@@ -63,6 +63,63 @@ ground time, transfer count, unsociable hours. Output groups results as
 with a `why` string per deal ("€89 vs typical €140, 36% below, 42 observations")
 so agents can narrate honestly.
 
+## 2b. Gem destinations (as-built 2026-07-12; Task 15)
+
+A **gem** is a curated non-airport place — a small island, mostly — reached via
+a **gateway airport** plus an onward ferry/bus/train chain. A gem is a *terminal
+extension* of an ordinary deal, **not a new trip shape**: the flight is still an
+S1/S2/S3 to the gateway; the onward chain is appended after the fact using the
+existing ground-leg machinery (the same way S3/S4 attach ground). Nothing about
+fares, shapes, alerts, or `deal_id` for non-gem deals changes.
+
+**Data** (`data/destinations.json` → `gems`, additive; `schema_version` stays 2):
+each gem has `slug`, `name`, `country`, `tags` (existing taxonomy), and one or
+more `gateways`, each `{airport, legs:[{mode, from, to, minutes, cost_eur}],
+total_minutes, total_cost_eur, note, season?}`. A gem may carry a gem-level
+`season` (a `"may-oct"` month window; a gateway's own `season` overrides it) and
+`marginal: true` (day-trip / awkward-connection gems, curated but held back from
+category matching). All curated; `estimate_basis` is implicitly `"curated"`;
+totals are `~` estimates; ferry legs set `has_ferry`/⛴.
+
+**Onward arithmetic by shape** (settled): S2/S3 round-trip = onward cost & minutes
+**×2** (out AND back through the gateway); S1 one-way = **×1**; **S4 open-jaw is
+NOT gem-extended in v1** (which of the two cities does the onward hang off? —
+documented scope cut). Multi-gateway gems: a variant is built from each present
+gateway; the **cheapest total per (gem, origin) survives** (dedupe).
+
+**Matching — a deliberately separate seam from airport `matching()`.** The
+airport tag-matcher stays airport-only and network-free; gems are matched by a
+distinct `registry.gems_matching(expr, window)` that ALSO season-gates against
+the search window. The two are kept apart on purpose:
+
+- The deterministic `compile`/`plan` path is **untouched** by gems — it fans out
+  Wizz TT per *airport-matched* destination exactly as before, so `plan` output
+  (and its goldens) stay byte-identical and a plain search never burns extra
+  calls for a gem's gateway.
+- A where-matched gem instead contributes its gateway airports to the fare
+  **filter** at execute-time (`planner.execute`) — so the single already-fetched
+  Ryanair RT/OW-ANYWHERE payload surfaces a candidate for each gateway — and an
+  **onward extension directive** at intent-time (`intents.execute_spec`, after
+  confirm). No new planned calls; the gateway's exact Ryanair fare is free.
+
+**Season gating.** A gem matches `--where` only when at least one gateway's
+effective season (gateway season, else gem season, else year-round) overlaps the
+`--depart` window; a wholly out-of-season gem is dropped. `--to <gem>` is
+explicit and ignores season (the season is still surfaced in the `onward`
+object).
+
+**Reaching a gem.** `--where` matches KEEP gems by tag and shows **both** the
+plain gateway deal and the gem-extended variant (the gateway airport is also
+someone's plain destination). `--to <slug|name>` (via `resolve_gem`, typo-hinted)
+restricts the sweep to the gem's gateways, forces the extension (marginal gems
+included), and displays **only** the gem variants. Budget, rank, `max_results`,
+and watch/alert thresholds all apply to the extended total (fare + onward),
+mirroring the S3/S4 ground-inclusive precedent. `where show "<expr>"` lists
+matched gems distinctly (marginal flagged).
+
+**Out of scope (v1):** Azores (S5-dependent), pseudo-airports, live schedule
+APIs, and any S5 self-transfer onward.
+
 ## 3. Category algebra (the `--where` language)
 
 Categories are not a flat enum — the user thinks in combinations ("seaside, or

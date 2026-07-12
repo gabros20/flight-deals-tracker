@@ -451,7 +451,22 @@ def where_show(
         {"iata": a.iata, "city": a.city, "country": a.country, "tags": a.tags}
         for a in matches
     ]
-    payload = {"expr": expr, "count": len(airports), "airports": airports}
+    # Gems matching the same expression are listed distinctly (Task 15): they
+    # are places, not airports, so an agent can see a category also reaches
+    # (e.g.) "Halki (via RHO)". No season gating here — `where show` is an
+    # inspection tool with no search window; marginal gems are flagged.
+    gem_matches = registry.gems_matching(expr, include_marginal=True)
+    gems = [
+        {
+            "slug": g.slug, "name": g.name, "country": g.country, "tags": g.tags,
+            "gateways": sorted({gw.airport for gw in g.gateways}),
+            "marginal": g.marginal,
+            "season": g.season,
+        }
+        for g in gem_matches
+    ]
+    payload = {"expr": expr, "count": len(airports), "airports": airports,
+               "gem_count": len(gems), "gems": gems}
     if unknown:
         payload["unknown_tags"] = unknown
         payload["hint"] = hint
@@ -461,6 +476,11 @@ def where_show(
     console.print(f"[bold]{len(airports)}[/bold] airports match [cyan]{expr}[/cyan]")
     for a in airports:
         console.print(f"  {a['iata']} - {a['city']}, {a['country']} ({', '.join(a['tags'])})")
+    if gems:
+        console.print(f"[bold]{len(gems)}[/bold] gems match (reachable via gateway + onward chain)")
+        for g in gems:
+            marg = " [dim](marginal — via --to)[/dim]" if g["marginal"] else ""
+            console.print(f"  {g['name']} via {'/'.join(g['gateways'])}{marg}")
     if unknown:
         console.print(f"[yellow]unknown tags: {', '.join(unknown)}[/yellow] ({hint})")
 
