@@ -31,7 +31,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from flight_deals.models import DayFare
@@ -39,10 +39,31 @@ from flight_deals.models import DayFare
 logger = logging.getLogger(__name__)
 
 # Shortlist size: the top-N discovery candidates (cheapest outbound composite)
-# that earn a full 4-leg exact-date verification. Bounds verification fan-out at
-# N×4 calls regardless of how many hubs/candidates discovery composed.
+# that earn a return-window sweep + exact-date verification. Bounds the
+# verification fan-out regardless of how many hubs/candidates discovery composed.
 VIA_HUB_SHORTLIST = 6
-VERIFY_LEGS_PER_CANDIDATE = 4
+
+# Return-window sweep budget (Task 17). Per shortlisted candidate the outbound is
+# fixed from discovery (already carries times), and only the RETURN side is swept:
+#   * ``CAL_CALLS_PER_MONTH`` cheapestPerDay calls per return month (D→H and H→O,
+#     day-level minima, 6h calendar cache tier, deduped by (o,d,month) per run);
+#   * the best-priced valid return date is time-verified with 2 fresh exact-date
+#     oneWayFares calls, and on an MCT/bookability failure ONE retry runs on the
+#     next-best-priced date (2 more) — so ``RETURN_EXACT_CALLS_PER_CANDIDATE`` = 4.
+# The return month span is capped at ``RETURN_MONTHS_CAP`` months.
+RETURN_MONTHS_CAP = 2
+CAL_CALLS_PER_MONTH = 2
+RETURN_EXACT_CALLS_PER_CANDIDATE = 4
+
+
+def reserve_verify_calls(n_return_months: int) -> int:
+    """The honest per-candidate verification ceiling for the return-window sweep:
+    ``CAL_CALLS_PER_MONTH × n_return_months`` day-level calls (worst case, before
+    the (o,d,month) dedupe that can only *reduce* it) plus the 4 exact-date calls
+    (2 primary + 2 retry). Reserved × the shortlist in ``estimated_calls`` so
+    ``--max-calls`` never blows mid-run."""
+    months = max(1, min(n_return_months, RETURN_MONTHS_CAP))
+    return CAL_CALLS_PER_MONTH * months + RETURN_EXACT_CALLS_PER_CANDIDATE
 
 
 def parse_dt(iso: Optional[str]) -> Optional[datetime]:
@@ -85,12 +106,19 @@ class DiscoveredS5:
     the discovery (anywhere-sweep) data: O→``hub``→``destination`` on
     ``out_date``, with the outbound-composite price and the discovery-level
     connection gap. This is a *candidate*, not a deal — the return leg and the
-    exact fares/times are only pinned during verification."""
+    exact fares/times are only pinned during verification.
+
+    ``leg1``/``leg2`` are the actual outbound DayFares (O→hub, hub→dest) straight
+    from the discovery sweep: exact one-way fares carrying real times, so the
+    outbound is reused as-is at verification (its MCT was already checked here)
+    and contributes exact prices to the final total (no estimate leakage)."""
     hub: str
     destination: str
     out_date: str
     out_price_eur: float
     connect_out_minutes: int
+    leg1: Optional[DayFare] = None
+    leg2: Optional[DayFare] = None
 
 
 def discover(
@@ -151,7 +179,7 @@ def discover(
             out.append(DiscoveredS5(
                 hub=hub, destination=d, out_date=leg1.date,
                 out_price_eur=round(leg1.price_eur + leg2.price_eur, 2),
-                connect_out_minutes=cm,
+                connect_out_minutes=cm, leg1=leg1, leg2=leg2,
             ))
     return out
 
@@ -165,3 +193,67 @@ def shortlist(
     ordered = sorted(candidates, key=lambda c: (c.out_price_eur, c.hub, c.destination, c.out_date))
     kept = ordered[:size]
     return kept, max(0, len(ordered) - len(kept))
+
+
+@dataclass(frozen=True)
+class ReturnDateOption:
+    """One candidate return date for a shortlisted self-transfer, priced on the
+    CAL day-level minima: fly ``dest→hub→origin`` on ``ret_date``. ``ret_price_eur``
+    is the leg3+leg4 selection minimum — a *selection* price, replaced by the
+    exact fares once ``ret_date`` is time-verified (no estimate leakage)."""
+    ret_date: str
+    leg3_price_eur: float  # dest -> hub
+    leg4_price_eur: float  # hub -> origin
+    ret_price_eur: float   # leg3 + leg4 (CAL-selection minima)
+
+
+def _cheapest_by_date(fares: Sequence[DayFare]) -> Dict[str, DayFare]:
+    """Cheapest fare per calendar date (CAL rows are already day-level minima, but
+    a multi-month concat can carry duplicates; keep the cheapest defensively)."""
+    best: Dict[str, DayFare] = {}
+    for f in fares:
+        cur = best.get(f.date)
+        if cur is None or f.price_eur < cur.price_eur:
+            best[f.date] = f
+    return best
+
+
+def select_return_dates(
+    out_date: str,
+    dest_hub_fares: Sequence[DayFare],
+    hub_origin_fares: Sequence[DayFare],
+    *,
+    nights_lo: int,
+    nights_hi: int,
+) -> List[ReturnDateOption]:
+    """Rank candidate return dates for a self-transfer (PURE — no network).
+
+    A date qualifies iff it lies inside the nights window
+    ``[out_date + nights_lo, out_date + nights_hi]`` AND **both** return legs
+    exist in the CAL day-level data on that date (``dest→hub`` and ``hub→origin``).
+    Options are ranked by the leg3+leg4 selection sum (then date for a stable
+    order); the caller time-verifies them cheapest-first, retrying the next-best
+    once if the cheapest fails MCT/bookability.
+
+    This is the yield fix over Task 16's single fixed return date (out+min-nights):
+    it finds the cheapest return date where the two independently-cheapest legs
+    actually both fly, giving verification a real chance to connect."""
+    out = date.fromisoformat(out_date)
+    lo_d = out + timedelta(days=nights_lo)
+    hi_d = out + timedelta(days=nights_hi)
+    leg3_by_date = _cheapest_by_date(dest_hub_fares)
+    leg4_by_date = _cheapest_by_date(hub_origin_fares)
+    options: List[ReturnDateOption] = []
+    for day, f3 in leg3_by_date.items():
+        dd = date.fromisoformat(day)
+        if not (lo_d <= dd <= hi_d):
+            continue
+        f4 = leg4_by_date.get(day)
+        if f4 is None:  # both legs must exist on the same return date
+            continue
+        options.append(ReturnDateOption(
+            ret_date=day, leg3_price_eur=f3.price_eur, leg4_price_eur=f4.price_eur,
+            ret_price_eur=round(f3.price_eur + f4.price_eur, 2),
+        ))
+    options.sort(key=lambda o: (o.ret_price_eur, o.ret_date))
+    return options

@@ -475,8 +475,16 @@ def compile_plan(spec, registry: Optional[DestinationRegistry] = None, *, rate: 
         via_hub_hubs = sorted(all_hubs)
         # Reserve the verification ceiling only when there's actually a hub to
         # discover through (via:none / no reachable hubs -> nothing to verify).
-        via_hub_verify_max = (vh.VIA_HUB_SHORTLIST * vh.VERIFY_LEGS_PER_CANDIDATE
-                              if all_hubs else 0)
+        # Task 17 return-window sweep: per candidate reserve 2 CAL/return-month
+        # (capped at 2 months) + 2 exact + 2 retry. The return window spans
+        # [out_from + min-nights, out_to + max-nights].
+        if all_hubs:
+            ret_lo = (date.fromisoformat(depart.out_from) + timedelta(days=lo)).isoformat()
+            ret_hi = (date.fromisoformat(depart.out_to) + timedelta(days=hi)).isoformat()
+            n_ret_months = len(_months_spanning(ret_lo, ret_hi))
+            via_hub_verify_max = vh.VIA_HUB_SHORTLIST * vh.reserve_verify_calls(n_ret_months)
+        else:
+            via_hub_verify_max = 0
 
     calls.sort(key=lambda c: c.sort_key())
     n = len(calls)
@@ -993,40 +1001,102 @@ class Planner:
             logger.warning("planner: via-hub verify %s->%s %s failed: %s", origin, dest, day, e)
             return None, {"provider": "ryanair", "status": status_for_exception(e), "detail": str(e)}
 
-    def _verify_s5(self, base: str, disc: "vh.DiscoveredS5", lo: int, buffer_eur: float):
-        """Verify one shortlisted discovery candidate with FOUR fresh exact-date
-        one-way legs (O->H, H->D on the out date; D->H, H->O on the return date =
-        out + ``lo`` nights). Returns ``(candidate|None, events)``. Returns
-        ``None`` — dropped, never shown — if ANY leg is unbookable on its exact
-        date OR either verified same-airport connection fails MCT."""
-        out_date = disc.out_date
-        ret_date = (date.fromisoformat(out_date) + timedelta(days=lo)).isoformat()
-        hub, dest = disc.hub, disc.destination
-        leg_specs = [
-            (base, hub, out_date), (hub, dest, out_date),
-            (dest, hub, ret_date), (hub, base, ret_date),
-        ]
+    def _cal_return(self, origin: str, dest: str, months: List[str], fresh: bool,
+                    cal_cache: Dict[Tuple[str, str, str], List[DayFare]]):
+        """CAL (cheapestPerDay) day-level minima for one return direction across
+        ``months``. Deduped per run by (origin, dest, month) — a cache hit costs
+        no provider call and emits no event, so both the call accounting and the
+        ``sources`` status stay honest. Hits the 6h calendar cache tier unless
+        ``fresh``. Returns ``(list[DayFare], events)``."""
+        fares: List[DayFare] = []
         events: List[Dict[str, Any]] = []
-        legs: List[DayFare] = []
-        for (o, d, day) in leg_specs:
-            hit, event = self._exact_oneway_leg(o, d, day)
-            events.append(event)
-            if hit is None:
-                return None, events  # unbookable leg -> unverified -> never shown
-            legs.append(hit)
-        l1, l2, l3, l4 = legs
+        for m in months:
+            key = (origin, dest, m)
+            cached = cal_cache.get(key)
+            if cached is not None:
+                fares.extend(cached)
+                continue
+            try:
+                got = self.ryanair.cheapest_per_day(origin, dest, m, use_cache=not fresh)
+                cal_cache[key] = got
+                fares.extend(got)
+                events.append({"provider": "ryanair", "status": "ok"})
+            except Exception as e:  # noqa: BLE001
+                logger.warning("planner: via-hub return CAL %s->%s %s failed: %s", origin, dest, m, e)
+                cal_cache[key] = []
+                events.append({"provider": "ryanair", "status": status_for_exception(e), "detail": str(e)})
+        return fares, events
+
+    def _verify_return_date(self, base: str, disc: "vh.DiscoveredS5",
+                            opt: "vh.ReturnDateOption", buffer_eur: float):
+        """Time-verify ONE candidate return date with two fresh exact-date legs
+        (D->H, H->O on ``opt.ret_date``). The outbound (disc.leg1/leg2) is reused
+        as-is from discovery — its MCT was already checked and its exact fares
+        carry no estimate. Returns ``(candidate|None, events)``: ``None`` (dropped,
+        never shown) if either return leg is unbookable on that exact date OR the
+        verified return connection fails MCT. The exact leg3/leg4 fares REPLACE
+        the CAL selection minima in the total (no estimate leakage)."""
+        hub, dest, out_date = disc.hub, disc.destination, disc.out_date
+        ret_date = opt.ret_date
+        events: List[Dict[str, Any]] = []
+        l3, e3 = self._exact_oneway_leg(dest, hub, ret_date)
+        events.append(e3)
+        l4, e4 = self._exact_oneway_leg(hub, base, ret_date)
+        events.append(e4)
+        if l3 is None or l4 is None:
+            return None, events  # unbookable return leg -> unverified -> never shown
         min_c, max_c = self.config.min_connect_minutes, self.config.max_connect_minutes
-        connect_out = vh.connect_minutes(l1.arrival_at, l2.departure_at)
         connect_ret = vh.connect_minutes(l3.arrival_at, l4.departure_at)
-        if not vh.mct_ok(connect_out, min_c, max_c) or not vh.mct_ok(connect_ret, min_c, max_c):
-            logger.info("via-hub: %s via %s->%s connections %s/%s min fail MCT [%d,%d] — dropped",
-                        base, hub, dest, connect_out, connect_ret, min_c, max_c)
-            return None, events  # verified times fail MCT -> unverified -> never shown
-        total = l1.price_eur + l2.price_eur + l3.price_eur + l4.price_eur + buffer_eur
+        if not vh.mct_ok(connect_ret, min_c, max_c):
+            logger.info("via-hub: %s via %s->%s return %s connection %s min fails MCT [%d,%d]",
+                        base, hub, dest, ret_date, connect_ret, min_c, max_c)
+            return None, events  # verified return times fail MCT -> never shown
+        legs = [disc.leg1, disc.leg2, l3, l4]
+        total = (disc.leg1.price_eur + disc.leg2.price_eur
+                 + l3.price_eur + l4.price_eur + buffer_eur)  # exact fares, not CAL minima
         nights = (date.fromisoformat(ret_date) - date.fromisoformat(out_date)).days
         cand = _via_hub_candidate(base, hub, dest, out_date, ret_date, nights, legs, total,
-                                  connect_out, connect_ret, buffer_eur)
+                                  disc.connect_out_minutes, connect_ret, buffer_eur)
         return cand, events
+
+    def _verify_s5(self, base: str, disc: "vh.DiscoveredS5", nights_lo: int, nights_hi: int,
+                   buffer_eur: float, fresh: bool,
+                   cal_cache: Dict[Tuple[str, str, str], List[DayFare]]):
+        """Verify one shortlisted candidate via the return-window sweep (Task 17).
+
+        The outbound (O->H->D on disc.out_date) is fixed from discovery. For the
+        return: 2 CAL calls per month (D->H, H->O across the nights window, capped
+        at 2 months) pick the cheapest return date where BOTH legs fly; that date
+        is time-verified with 2 exact legs; on an MCT/bookability failure ONE
+        retry runs on the next-best-priced date, then the candidate is dropped
+        (logged, never shown). Returns ``(candidate|None, events)``."""
+        out_date = disc.out_date
+        ret_lo = (date.fromisoformat(out_date) + timedelta(days=nights_lo)).isoformat()
+        ret_hi = (date.fromisoformat(out_date) + timedelta(days=nights_hi)).isoformat()
+        months = _months_spanning(ret_lo, ret_hi)[: vh.RETURN_MONTHS_CAP]
+        hub, dest = disc.hub, disc.destination
+
+        events: List[Dict[str, Any]] = []
+        dh_fares, ev1 = self._cal_return(dest, hub, months, fresh, cal_cache)
+        hb_fares, ev2 = self._cal_return(hub, base, months, fresh, cal_cache)
+        events.extend(ev1)
+        events.extend(ev2)
+
+        options = vh.select_return_dates(out_date, dh_fares, hb_fares,
+                                         nights_lo=nights_lo, nights_hi=nights_hi)
+        if not options:
+            logger.info("via-hub: %s via %s->%s no return-date alignment in window — dropped",
+                        base, hub, dest)
+            return None, events
+        # Try the cheapest valid return date; on failure retry the next-best ONCE.
+        for opt in options[:2]:
+            cand, vevents = self._verify_return_date(base, disc, opt, buffer_eur)
+            events.extend(vevents)
+            if cand is not None:
+                return cand, events
+        logger.info("via-hub: %s via %s->%s return-date verification failed on cheapest %d "
+                    "date(s) — dropped", base, hub, dest, min(2, len(options)))
+        return None, events
 
     def _run_via_hub(self, spec, fresh: bool):
         """The full S5 funnel: per base origin, one OW-ANYWHERE discovery sweep
@@ -1040,7 +1110,7 @@ class Planner:
         cfg = self.config
         buffer_eur = float(cfg.self_transfer_buffer_eur)
         min_c, max_c = cfg.min_connect_minutes, cfg.max_connect_minutes
-        lo, _hi = spec.nights_range
+        lo, hi = spec.nights_range
         depart = spec.depart_spec
         matched = set(_matched_destinations(spec, self.registry))
         executor = http.get_executor(self.config.max_workers)
@@ -1077,8 +1147,30 @@ class Planner:
                         len(composed), len(kept), dropped)
         base_by_id = {id(d): b for b, d in composed}
         verified: List[_Candidate] = []
-        vfuts = {executor.submit(self._verify_s5, base_by_id[id(d)], d, lo, buffer_eur): d
-                 for d in kept}
+
+        # Phase 1 (serial, deduped): fetch the return-window CAL calendars. They
+        # dedupe by (origin, dest, month) across shortlisted candidates — every
+        # candidate through hub H shares the same H->origin calendar, so a shared
+        # hub is fetched once. Doing this serially (not under the concurrent
+        # verify) keeps the (o,d,month) dedupe exact and the call accounting/
+        # sources status honest, and leaves ``cal_cache`` read-only for phase 2.
+        cal_cache: Dict[Tuple[str, str, str], List[DayFare]] = {}
+        for disc in kept:
+            base_o = base_by_id[id(disc)]
+            out_date = disc.out_date
+            ret_lo = (date.fromisoformat(out_date) + timedelta(days=lo)).isoformat()
+            ret_hi = (date.fromisoformat(out_date) + timedelta(days=hi)).isoformat()
+            months = _months_spanning(ret_lo, ret_hi)[: vh.RETURN_MONTHS_CAP]
+            for (o, d) in ((disc.destination, disc.hub), (disc.hub, base_o)):
+                _f, ev = self._cal_return(o, d, months, fresh, cal_cache)
+                events.extend(ev)
+
+        # Phase 2 (concurrent): exact-date verification per candidate. ``cal_cache``
+        # is fully populated and read-only here, so the concurrent sweep touches no
+        # shared mutable state (every _cal_return call is a cache hit -> no event,
+        # no provider call).
+        vfuts = {executor.submit(self._verify_s5, base_by_id[id(d)], d, lo, hi,
+                                 buffer_eur, fresh, cal_cache): d for d in kept}
         for fut in as_completed(vfuts):
             cand, vevents = fut.result()
             events.extend(vevents)
