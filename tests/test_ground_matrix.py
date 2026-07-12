@@ -189,8 +189,10 @@ def test_registry_merges_committed_matrix():
     pairs = reg.get_open_jaw_pairs()
     bases = {p["estimate_basis"] for p in pairs}
     # "scheduled" appears once the committed matrix carries Transitous-refined
-    # pairs (Task 13); "curated"/"computed" are always present.
-    assert {"curated", "computed"} <= bases <= {"curated", "computed", "scheduled"}
+    # pairs (Task 13), "scheduled-hybrid" once the city-anchor hybrid pass refines
+    # some (Task 14); "curated"/"computed" are always present.
+    assert {"curated", "computed"} <= bases <= {
+        "curated", "computed", "scheduled", "scheduled-hybrid"}
     curated = [p for p in pairs if p["estimate_basis"] == "curated"]
     assert len(curated) == 11  # 6 land + 5 ferry corridors (Task 12), untouched
 
@@ -259,24 +261,26 @@ def _df(origin, dest, day, price):
 
 
 def test_planner_surfaces_a_computed_openjaw_pair():
-    """AHO<->OLB (Sardinia) is a COMPUTED pair from the committed matrix, not one
-    of the 6 curated ones. With CAL fares present, the planner must surface it as
-    an S4 open-jaw deal whose ground carries estimate_basis='computed'."""
+    """CHQ<->HER (both on Crete) is a COMPUTED pair from the committed matrix, not
+    one of the curated ones and not transit-refined (Crete has no Transitous
+    ground coverage, pure OR city-anchor hybrid — it stays modeled). With CAL
+    fares present, the planner must surface it as an S4 open-jaw deal whose ground
+    carries estimate_basis='computed'."""
     reg = DestinationRegistry()
     computed = {frozenset({p["a"], p["b"]}) for p in reg.get_open_jaw_pairs()
                 if p["estimate_basis"] == "computed"}
-    assert frozenset({"AHO", "OLB"}) in computed, "AHO-OLB should be a computed matrix pair"
+    assert frozenset({"CHQ", "HER"}) in computed, "CHQ-HER should be a computed matrix pair"
 
     spec = parse_spec({
-        "origins": ["BUD"], "where": "italy & seaside", "depart": "2026-08-22..2026-08-24",
+        "origins": ["BUD"], "where": "greece & seaside", "depart": "2026-08-22..2026-08-24",
         "nights": "5-8", "shapes": ["direct", "open-jaw"], "carriers": ["ryanair"],
     })
 
     cal = {
-        ("BUD", "AHO"): [("2026-08-22", 30.0)],
-        ("OLB", "BUD"): [("2026-08-28", 25.0)],
-        ("BUD", "OLB"): [("2026-08-22", 90.0)],
-        ("AHO", "BUD"): [("2026-08-28", 90.0)],
+        ("BUD", "CHQ"): [("2026-08-22", 30.0)],
+        ("HER", "BUD"): [("2026-08-28", 25.0)],
+        ("BUD", "HER"): [("2026-08-22", 90.0)],
+        ("CHQ", "BUD"): [("2026-08-28", 90.0)],
     }
     p = Planner(registry=reg)
     p.ryanair.roundtrip_fares = lambda origin, dest=None, **k: []
@@ -286,8 +290,8 @@ def test_planner_surfaces_a_computed_openjaw_pair():
 
     results = p.execute(compile_plan(spec, reg), spec)["results"]
     oj = [d for d in results if d["shape"] == "S4"
-          and {d["destination"], d["legs"][-1]["origin"]} == {"AHO", "OLB"}]
-    assert oj, "expected the computed AHO-OLB open-jaw to surface"
+          and {d["destination"], d["legs"][-1]["origin"]} == {"CHQ", "HER"}]
+    assert oj, "expected the computed CHQ-HER open-jaw to surface"
     d = oj[0]
     assert d["ground"]["estimate_basis"] == "computed"
     assert d["price_confidence"] == "exact"
@@ -297,8 +301,8 @@ def test_planner_surfaces_a_computed_openjaw_pair():
     # so curated pairs, with no km_road, stay None — see test_ground.py).
     ground_leg = [leg for leg in d["legs"] if leg["type"] == "ground"][0]
     matrix_pair = next(p for p in reg.get_open_jaw_pairs()
-                       if frozenset({p["a"], p["b"]}) == frozenset({"AHO", "OLB"}))
-    assert ground_leg["distance_km"] == matrix_pair["km_road"] == pytest.approx(129.8)
+                       if frozenset({p["a"], p["b"]}) == frozenset({"CHQ", "HER"}))
+    assert ground_leg["distance_km"] == matrix_pair["km_road"] == pytest.approx(161.9)
 
 
 # --------------------------------------------------------------------------- #
