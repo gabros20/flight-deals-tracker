@@ -1,0 +1,476 @@
+{
+  "_captured_live": true,
+  "_url": "https://www.ryanair.com/api/views/locate/searchWidget/routes/en/airport/LIS",
+  "_status_code": 200,
+  "_captured_at": "2026-07-13",
+  "_note": "LIS Ryanair route network. Records the Task 18 live finding: LIS serves FNC (Madeira) but NO Azores (PDL/TER) — Ryanair does not fly to the Azores.",
+  "_full_size": 38,
+  "body": [
+    {
+      "arrivalAirport": {
+        "code": "AGA",
+        "name": "Agadir",
+        "seoName": "agadir",
+        "city": {
+          "name": "Agadir",
+          "code": "AGADIR"
+        },
+        "country": "Morocco"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "AGP",
+        "name": "Malaga",
+        "seoName": "malaga",
+        "city": {
+          "name": "Malaga",
+          "code": "MALAGA"
+        },
+        "country": "Spain"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "ALC",
+        "name": "Alicante",
+        "seoName": "alicante",
+        "city": {
+          "name": "Alicante",
+          "code": "ALICANTE"
+        },
+        "country": "Spain"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "BCN",
+        "name": "Barcelona",
+        "seoName": "barcelona-el-prat",
+        "city": {
+          "name": "Barcelona",
+          "code": "BARCELONA",
+          "macCode": "BAR"
+        },
+        "country": "Spain"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "BER",
+        "name": "Berlin Brandenburg",
+        "seoName": "brandenburg",
+        "city": {
+          "name": "Berlin",
+          "code": "BERLIN",
+          "macCode": "BER"
+        },
+        "country": "Germany"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "BGY",
+        "name": "Milan Bergamo",
+        "seoName": "milan-bergamo",
+        "city": {
+          "name": "Bergamo",
+          "code": "BERGAMO"
+        },
+        "country": "Italy"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "BHX",
+        "name": "Birmingham",
+        "seoName": "birmingham",
+        "city": {
+          "name": "Birmingham",
+          "code": "BIRMINGHAM"
+        },
+        "country": "United Kingdom"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "BLQ",
+        "name": "Bologna",
+        "seoName": "bologna",
+        "city": {
+          "name": "Bologna",
+          "code": "BOLOGNA"
+        },
+        "country": "Italy"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "BUD",
+        "name": "Budapest",
+        "seoName": "budapest",
+        "city": {
+          "name": "Budapest",
+          "code": "BUDAPEST"
+        },
+        "country": "Hungary"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "BVA",
+        "name": "Paris Beauvais",
+        "seoName": "paris-beauvais",
+        "city": {
+          "name": "Paris",
+          "code": "PARIS",
+          "macCode": "PAR"
+        },
+        "country": "France"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "CGN",
+        "name": "Cologne",
+        "seoName": "cologne-bonn",
+        "city": {
+          "name": "Cologne",
+          "code": "COLOGNE"
+        },
+        "country": "Germany"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "CRL",
+        "name": "Brussels Charleroi",
+        "seoName": "brussels-charleroi",
+        "city": {
+          "name": "Charleroi",
+          "code": "CHARLEROI"
+        },
+        "country": "Belgium"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "DUB",
+        "name": "Dublin",
+        "seoName": "dublin",
+        "city": {
+          "name": "Dublin",
+          "code": "DUBLIN"
+        },
+        "country": "Ireland"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "EDI",
+        "name": "Edinburgh",
+        "seoName": "edinburgh",
+        "city": {
+          "name": "Edinburgh",
+          "code": "EDINBURGH"
+        },
+        "country": "United Kingdom"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "EIN",
+        "name": "Eindhoven",
+        "seoName": "eindhoven",
+        "city": {
+          "name": "Eindhoven",
+          "code": "EINDHOVEN"
+        },
+        "country": "Netherlands"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "FCO",
+        "name": "Rome Fiumicino",
+        "seoName": "rome-fiumicino",
+        "city": {
+          "name": "Rome",
+          "code": "ROME",
+          "macCode": "ROM"
+        },
+        "country": "Italy"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "FNC",
+        "name": "Madeira Funchal",
+        "seoName": "funchal",
+        "city": {
+          "name": "Funchal",
+          "code": "FUNCHAL"
+        },
+        "country": "Portugal"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "KRK",
+        "name": "Krakow",
+        "seoName": "krakow",
+        "city": {
+          "name": "Krakow",
+          "code": "KRAKOW"
+        },
+        "country": "Poland"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "LUX",
+        "name": "Luxembourg",
+        "seoName": "luxembourg",
+        "city": {
+          "name": "Luxembourg",
+          "code": "LUXEMBOURG"
+        },
+        "country": "Luxembourg"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "MAD",
+        "name": "Madrid",
+        "seoName": "madrid",
+        "city": {
+          "name": "Madrid",
+          "code": "MADRID"
+        },
+        "country": "Spain"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "MAN",
+        "name": "Manchester",
+        "seoName": "manchester",
+        "city": {
+          "name": "Manchester",
+          "code": "MANCHESTER"
+        },
+        "country": "United Kingdom"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "MLA",
+        "name": "Malta",
+        "seoName": "malta",
+        "city": {
+          "name": "Malta",
+          "code": "MALTA"
+        },
+        "country": "Malta"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "MRS",
+        "name": "Marseille",
+        "seoName": "marseille",
+        "city": {
+          "name": "Marseille",
+          "code": "MARSEILLE"
+        },
+        "country": "France"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "NAP",
+        "name": "Naples",
+        "seoName": "naples",
+        "city": {
+          "name": "Naples",
+          "code": "NAPLES"
+        },
+        "country": "Italy"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "NRN",
+        "name": "Dusseldorf Weeze",
+        "seoName": "dusseldorf",
+        "city": {
+          "name": "Dusseldorf",
+          "code": "DUSSELDORF",
+          "macCode": "DOF"
+        },
+        "country": "Germany"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "POZ",
+        "name": "Poznan",
+        "seoName": "poznan",
+        "city": {
+          "name": "Poznan",
+          "code": "POZNAN"
+        },
+        "country": "Poland"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "PSA",
+        "name": "Pisa",
+        "seoName": "pisa",
+        "city": {
+          "name": "Pisa",
+          "code": "PISA"
+        },
+        "country": "Italy"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "RAK",
+        "name": "Marrakesh",
+        "seoName": "marrakesh",
+        "city": {
+          "name": "Marrakesh",
+          "code": "MARRAKESH"
+        },
+        "country": "Morocco"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "STN",
+        "name": "London Stansted",
+        "seoName": "london-stansted",
+        "city": {
+          "name": "London",
+          "code": "LONDON",
+          "macCode": "LON"
+        },
+        "country": "United Kingdom"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "SVQ",
+        "name": "Seville",
+        "seoName": "seville",
+        "city": {
+          "name": "Seville",
+          "code": "SEVILLE"
+        },
+        "country": "Spain"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "TLS",
+        "name": "Toulouse",
+        "seoName": "toulouse",
+        "city": {
+          "name": "Toulouse",
+          "code": "TOULOUSE"
+        },
+        "country": "France"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "TNG",
+        "name": "Tangier",
+        "seoName": "tangier",
+        "city": {
+          "name": "Tangier",
+          "code": "TANGIER"
+        },
+        "country": "Morocco"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "TSF",
+        "name": "Venice Treviso",
+        "seoName": "venice-treviso",
+        "city": {
+          "name": "Venice",
+          "code": "VENICE",
+          "macCode": "VEN"
+        },
+        "country": "Italy"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "VCE",
+        "name": "Venice M.Polo",
+        "seoName": "venice",
+        "city": {
+          "name": "Venice",
+          "code": "VENICE",
+          "macCode": "VEN"
+        },
+        "country": "Italy"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "VIE",
+        "name": "Vienna",
+        "seoName": "vienna",
+        "city": {
+          "name": "Vienna",
+          "code": "VIENNA"
+        },
+        "country": "Austria"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "VLC",
+        "name": "Valencia",
+        "seoName": "valencia",
+        "city": {
+          "name": "Valencia",
+          "code": "VALENCIA",
+          "macCode": "VNC"
+        },
+        "country": "Spain"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "WMI",
+        "name": "Warsaw Modlin",
+        "seoName": "warsaw-modlin",
+        "city": {
+          "name": "Warsaw",
+          "code": "WARSAW",
+          "macCode": "WWA"
+        },
+        "country": "Poland"
+      }
+    },
+    {
+      "arrivalAirport": {
+        "code": "WRO",
+        "name": "Wroclaw",
+        "seoName": "wroclaw",
+        "city": {
+          "name": "Wroclaw",
+          "code": "WROCLAW"
+        },
+        "country": "Poland"
+      }
+    }
+  ]
+}

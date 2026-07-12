@@ -827,6 +827,44 @@
       "city_lon": -16.9241
     },
     {
+      "iata": "PDL",
+      "city": "Ponta Delgada (Sao Miguel, Azores)",
+      "country": "Portugal",
+      "lat": 37.7412,
+      "lon": -25.6987,
+      "tags": [
+        "portugal",
+        "azores",
+        "island",
+        "seaside",
+        "hiking",
+        "quiet",
+        "hidden-gem"
+      ],
+      "city_lat": 37.7436,
+      "city_lon": -25.6689,
+      "access_pad_minutes": 20
+    },
+    {
+      "iata": "TER",
+      "city": "Lajes (Terceira, Azores)",
+      "country": "Portugal",
+      "lat": 38.7618,
+      "lon": -27.0908,
+      "tags": [
+        "portugal",
+        "azores",
+        "island",
+        "seaside",
+        "hiking",
+        "quiet",
+        "hidden-gem"
+      ],
+      "city_lat": 38.6553,
+      "city_lon": -27.2178,
+      "access_pad_minutes": 35
+    },
+    {
       "iata": "SPU",
       "city": "Split",
       "country": "Croatia",

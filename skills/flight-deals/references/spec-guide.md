@@ -148,6 +148,12 @@ driver, with a ready-to-cron `deploy/agentic-wake.sh`), see
   connection is the traveller's own (two separate bookings, no protected
   connection). `via` picks the hubs: `auto` (default), an explicit `[VIE, BGY]`,
   or `none`. `check` on an S5 declines (re-run the getaway to re-verify).
+  - **Azores (`where: azores` → PDL/TER).** The tag is real and the airports are
+    in the registry, but **Ryanair does not fly to the Azores** (they're TAP/SATA
+    routes). A `where=azores --shapes via-hub` spec compiles hub descriptors
+    through LIS/OPO honestly, but no FR×FR self-transfer verifies — expect an
+    empty S5 result there. Don't retry it as a Ryanair via-hub; report the honest
+    no-service outcome.
 - **`--max-calls` exceeded.** `run`/`brief` refuse a plan whose `estimated_calls`
   exceeds the cap: `plan needs 57 calls, over the --max-calls 40 cap`. The
   hint gives the exact fix — narrow (tighter `--where`, fewer origins) or

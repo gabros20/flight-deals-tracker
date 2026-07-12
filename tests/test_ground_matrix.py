@@ -149,6 +149,19 @@ def test_committed_matrix_schema():
         assert p["est_cost_eur"] >= gm.COST_FLOOR_EUR
 
 
+def test_no_atlantic_ground_pairs_to_the_azores():
+    """The Azores (PDL/TER, Task 18) sit ~1400 km out in the mid-Atlantic — no
+    road or ferry reaches them from the European mainland. The haversine 400 km
+    prefilter + OSRM road-sanity guard must therefore NEVER fabricate a ground
+    open-jaw pair touching PDL or TER (a bug there would price a flight-only
+    crossing as a bus/ferry hop). Assert the committed matrix is clean."""
+    atlantic = {"PDL", "TER"}
+    pairs = gm.load_ground_matrix()
+    assert pairs is not None
+    offenders = [p for p in pairs if p["a"] in atlantic or p["b"] in atlantic]
+    assert offenders == [], f"fabricated Atlantic ground pair(s): {offenders}"
+
+
 # --------------------------------------------------------------------------- #
 # merge — curated wins, computed tagged, absent-matrix fallback                 #
 # --------------------------------------------------------------------------- #

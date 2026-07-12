@@ -84,7 +84,7 @@ COUNTRY_TAGS: Set[str] = {
     "morocco", "scandinavia", "balkans", "benelux",
 }
 # Island/region groups where the group is the real unit. Extra to a country tag.
-REGION_TAGS: Set[str] = {"sicily", "sardinia", "crete", "cyclades", "canaries", "baleares"}
+REGION_TAGS: Set[str] = {"sicily", "sardinia", "crete", "cyclades", "canaries", "baleares", "azores"}
 TERRAIN_TAGS: Set[str] = {"seaside", "island", "mountains", "lakes", "thermal"}
 VIBE_TAGS: Set[str] = {
     "city-break", "party", "quiet", "hidden-gem", "shopping", "family",
@@ -99,6 +99,9 @@ DERIVED_TAGS: Set[str] = {"ryanair-served", "wizz-served", "hub"}
 HUB_IATAS: Set[str] = {
     "VIE", "BTS", "BGY", "MXP", "FCO", "CIA", "BCN", "MAD", "STN", "LTN",
     "LGW", "BER", "AMS", "DUB", "IST", "SAW", "WAW", "PRG",
+    # Iberian hubs — the S5 gateway to the Azores (LIS->PDL/TER, OPO->PDL/TER
+    # are Ryanair-served) and useful for mainland Portugal/Spain self-transfers.
+    "LIS", "OPO",
 }
 
 # Aliases expand to sub-expressions before evaluation. Synonyms + a few

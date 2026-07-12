@@ -7,6 +7,7 @@ from typer.testing import CliRunner
 from flight_deals.cli import app
 from flight_deals.registry.destinations import (
     COUNTRY_TAGS,
+    HUB_IATAS,
     REGION_TAGS,
     SEASONAL_TAGS,
     TERRAIN_TAGS,
@@ -326,6 +327,7 @@ def test_region_tags_imply_their_country_tag():
         "sardinia": "italy",
         "crete": "greece",
         "cyclades": "greece",
+        "azores": "portugal",  # Task 18: PDL/TER carry both azores + portugal
     }
     reg = DestinationRegistry()
     violations = []
@@ -335,6 +337,36 @@ def test_region_tags_imply_their_country_tag():
             if region in tags and country not in tags:
                 violations.append((a.iata, region, country))
     assert not violations, f"region tags missing their country tag: {violations}"
+
+
+def test_azores_airports_present_and_matchable():
+    """Task 18: PDL (Ponta Delgada/São Miguel) + TER (Lajes/Terceira) are in the
+    registry, tagged ``azores`` (a REGION_TAG) alongside ``portugal``, and reached
+    by both ``where azores`` and ``where portugal``. ``azores`` is a known tag (not
+    a typo) so the where-gate never burns a call refusing it."""
+    reg = DestinationRegistry()
+    by_iata = {a.iata: a for a in reg.airports}
+    assert "PDL" in by_iata and "TER" in by_iata
+    for iata in ("PDL", "TER"):
+        tags = set(by_iata[iata].tags)
+        assert "azores" in tags and "portugal" in tags
+        assert "island" in tags  # a terrain tag so it passes the taxonomy check
+    assert "azores" in REGION_TAGS
+    assert reg.unknown_tags("azores") == []
+    matched = {a.iata for a in reg.matching("azores")}
+    assert matched == {"PDL", "TER"}
+    assert {"PDL", "TER"} <= {a.iata for a in reg.matching("portugal")}
+
+
+def test_lis_opo_are_s5_hubs():
+    """Task 18: LIS + OPO join HUB_IATAS so a where=azores (or mainland
+    Portugal/Spain) via-hub spec can compile self-transfer descriptors through
+    them. Live routes(2026-07-13) confirm BUD<->LIS and BUD<->OPO are Ryanair-
+    served — but NOT LIS/OPO->Azores (see test_lis_routes_fixture_has_no_azores)."""
+    assert {"LIS", "OPO"} <= HUB_IATAS
+    reg = DestinationRegistry()
+    known = {a.iata for a in reg.airports}
+    assert {"LIS", "OPO"} <= known
 
 
 def test_brief_required_airports_present():

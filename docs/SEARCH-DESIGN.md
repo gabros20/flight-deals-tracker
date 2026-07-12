@@ -188,8 +188,18 @@ airport-local datetime.
   price sweep across the whole nights window (both legs must fly), then
   time-verified, with one retry on the next-best date. The outbound stays fixed
   from discovery.
-- **Azores/PDL** (S5 follow-up, NOT in v1): needs registry additions +
-  LIS/OPO-hub validation. Recorded here; not implemented.
+- **Azores/PDL** (S5 follow-up — CLOSED 2026-07-13, Task 18): the registry now
+  carries PDL (Ponta Delgada/São Miguel) + TER (Lajes/Terceira) with an `azores`
+  region tag, and LIS + OPO joined `HUB_IATAS`, so a `where=azores --shapes
+  via-hub` spec compiles self-transfer descriptors through Lisbon/Porto. **Live
+  finding (routes() 2026-07-13): Ryanair does NOT serve the Azores.** LIS serves
+  FNC (Madeira) but no PDL/TER; OPO serves only FAO/FNC; PDL/TER are not Ryanair
+  airports at all (the Azores are TAP/SATA territory). Since S5 v1 is FR×FR only,
+  **no verified S5 to the Azores can surface** — the hub fan-out honestly offers
+  LIS/OPO but the onward leg simply doesn't exist in the Ryanair network (recorded
+  in `tests/fixtures/ryanair_routes_lis.json` + pinned by a test). The unlock is
+  data-complete and future-proof (a non-Ryanair provider or a TER+ferry gem would
+  light it up); the S5-via-Ryanair path is a dead end by real-world route reality.
 
 Live finding (2026-07-12 smoke, Task 16 baseline): verified-S5 yield was LOW with a single fixed return date — farfnd exposes only the cheapest fare per route per day, so verifying one date (out+min-nights) on independently-cheapest legs could only test whether those legs happen to connect; in the first live run 5/5 MCT-plausible outbound candidates verified but all 5 failed on the return connection (0-of-5). This was honest scarcity, not a defect — the funnel showed nothing rather than something unverified.
 

@@ -123,6 +123,20 @@ def test_routes_happy():
 
 
 @responses.activate
+def test_lis_routes_fixture_has_no_azores():
+    """Task 18 live finding (captured 2026-07-13): Ryanair serves FNC (Madeira)
+    from LIS but does NOT fly to the Azores (PDL/TER) — the Azores are TAP/SATA
+    territory. This pins the honest recorded fixture so a future "Azores via LIS"
+    S5 assumption can't silently creep in against a real Ryanair route list."""
+    url = ry.ROUTES_URL.format(origin="LIS")
+    responses.add(responses.GET, url, json=load_body("ryanair_routes_lis.json"), status=200)
+    codes = _p().routes("LIS")
+    assert "BUD" in codes  # BUD<->LIS is Ryanair-served (LIS is a valid S5 hub)
+    assert "FNC" in codes  # Madeira, yes
+    assert "PDL" not in codes and "TER" not in codes  # Azores, no
+
+
+@responses.activate
 def test_routes_schema_error_on_non_list():
     url = ry.ROUTES_URL.format(origin="BUD")
     responses.add(responses.GET, url, json={"unexpected": True}, status=200)
