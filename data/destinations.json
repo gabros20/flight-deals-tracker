@@ -12,7 +12,10 @@
         "city-break",
         "culture",
         "thermal"
-      ]
+      ],
+      "city_lat": 47.4979,
+      "city_lon": 19.0402,
+      "access_pad_minutes": 40
     },
     {
       "iata": "VIE",
@@ -25,7 +28,10 @@
         "city-break",
         "culture",
         "shopping"
-      ]
+      ],
+      "city_lat": 48.2082,
+      "city_lon": 16.3738,
+      "access_pad_minutes": 35
     },
     {
       "iata": "BTS",
@@ -37,7 +43,9 @@
         "slovakia",
         "city-break",
         "culture"
-      ]
+      ],
+      "city_lat": 48.1486,
+      "city_lon": 17.1077
     },
     {
       "iata": "CFU",
@@ -51,7 +59,9 @@
         "seaside",
         "family",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 39.6243,
+      "city_lon": 19.9217
     },
     {
       "iata": "HER",
@@ -66,7 +76,9 @@
         "seaside",
         "culture",
         "family"
-      ]
+      ],
+      "city_lat": 35.3387,
+      "city_lon": 25.1442
     },
     {
       "iata": "CHQ",
@@ -81,7 +93,9 @@
         "seaside",
         "quiet",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 35.5138,
+      "city_lon": 24.018
     },
     {
       "iata": "ZTH",
@@ -95,7 +109,9 @@
         "seaside",
         "party",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 37.787,
+      "city_lon": 20.899
     },
     {
       "iata": "JTR",
@@ -110,7 +126,9 @@
         "seaside",
         "culture",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 36.4165,
+      "city_lon": 25.4326
     },
     {
       "iata": "RHO",
@@ -125,7 +143,9 @@
         "family",
         "culture",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 36.4349,
+      "city_lon": 28.2176
     },
     {
       "iata": "JMK",
@@ -140,7 +160,9 @@
         "seaside",
         "party",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 37.4467,
+      "city_lon": 25.3289
     },
     {
       "iata": "KGS",
@@ -154,7 +176,9 @@
         "seaside",
         "family",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 36.8933,
+      "city_lon": 27.2889
     },
     {
       "iata": "PVK",
@@ -168,7 +192,9 @@
         "quiet",
         "hidden-gem",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 38.9591,
+      "city_lon": 20.7514
     },
     {
       "iata": "KLX",
@@ -182,7 +208,9 @@
         "culture",
         "hidden-gem",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 37.0389,
+      "city_lon": 22.1142
     },
     {
       "iata": "EFL",
@@ -196,7 +224,9 @@
         "seaside",
         "quiet",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 38.1754,
+      "city_lon": 20.489
     },
     {
       "iata": "SKG",
@@ -209,7 +239,9 @@
         "city-break",
         "culture",
         "seaside"
-      ]
+      ],
+      "city_lat": 40.6401,
+      "city_lon": 22.9444
     },
     {
       "iata": "ATH",
@@ -221,7 +253,9 @@
         "greece",
         "city-break",
         "culture"
-      ]
+      ],
+      "city_lat": 37.9838,
+      "city_lon": 23.7275
     },
     {
       "iata": "CTA",
@@ -236,7 +270,9 @@
         "seaside",
         "culture",
         "family"
-      ]
+      ],
+      "city_lat": 37.5079,
+      "city_lon": 15.083
     },
     {
       "iata": "PMO",
@@ -251,7 +287,9 @@
         "seaside",
         "culture",
         "city-break"
-      ]
+      ],
+      "city_lat": 38.1157,
+      "city_lon": 13.3615
     },
     {
       "iata": "CAG",
@@ -265,7 +303,9 @@
         "island",
         "seaside",
         "city-break"
-      ]
+      ],
+      "city_lat": 39.2238,
+      "city_lon": 9.1217
     },
     {
       "iata": "OLB",
@@ -280,7 +320,9 @@
         "seaside",
         "party",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 40.9236,
+      "city_lon": 9.4993
     },
     {
       "iata": "AHO",
@@ -295,7 +337,9 @@
         "seaside",
         "quiet",
         "hidden-gem"
-      ]
+      ],
+      "city_lat": 40.5589,
+      "city_lon": 8.3181
     },
     {
       "iata": "BRI",
@@ -308,7 +352,9 @@
         "seaside",
         "culture",
         "city-break"
-      ]
+      ],
+      "city_lat": 41.1171,
+      "city_lon": 16.8719
     },
     {
       "iata": "SUF",
@@ -321,7 +367,9 @@
         "seaside",
         "quiet",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 38.9659,
+      "city_lon": 16.311
     },
     {
       "iata": "BDS",
@@ -334,7 +382,9 @@
         "seaside",
         "culture",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 40.6327,
+      "city_lon": 17.9418
     },
     {
       "iata": "NAP",
@@ -348,7 +398,9 @@
         "city-break",
         "culture",
         "family"
-      ]
+      ],
+      "city_lat": 40.8518,
+      "city_lon": 14.2681
     },
     {
       "iata": "VCE",
@@ -362,7 +414,9 @@
         "culture",
         "shopping",
         "seaside"
-      ]
+      ],
+      "city_lat": 45.4408,
+      "city_lon": 12.3155
     },
     {
       "iata": "PSA",
@@ -374,7 +428,9 @@
         "italy",
         "city-break",
         "culture"
-      ]
+      ],
+      "city_lat": 43.7228,
+      "city_lon": 10.4017
     },
     {
       "iata": "BLQ",
@@ -387,7 +443,9 @@
         "city-break",
         "culture",
         "shopping"
-      ]
+      ],
+      "city_lat": 44.4949,
+      "city_lon": 11.3426
     },
     {
       "iata": "TRN",
@@ -400,7 +458,9 @@
         "city-break",
         "culture",
         "mountains"
-      ]
+      ],
+      "city_lat": 45.0703,
+      "city_lon": 7.6869
     },
     {
       "iata": "MXP",
@@ -413,7 +473,10 @@
         "city-break",
         "shopping",
         "culture"
-      ]
+      ],
+      "city_lat": 45.4642,
+      "city_lon": 9.19,
+      "access_pad_minutes": 50
     },
     {
       "iata": "BGY",
@@ -426,7 +489,10 @@
         "city-break",
         "shopping",
         "culture"
-      ]
+      ],
+      "city_lat": 45.4642,
+      "city_lon": 9.19,
+      "access_pad_minutes": 40
     },
     {
       "iata": "FCO",
@@ -438,7 +504,10 @@
         "italy",
         "city-break",
         "culture"
-      ]
+      ],
+      "city_lat": 41.9028,
+      "city_lon": 12.4964,
+      "access_pad_minutes": 45
     },
     {
       "iata": "CIA",
@@ -450,7 +519,10 @@
         "italy",
         "city-break",
         "culture"
-      ]
+      ],
+      "city_lat": 41.9028,
+      "city_lon": 12.4964,
+      "access_pad_minutes": 45
     },
     {
       "iata": "ALC",
@@ -463,7 +535,9 @@
         "seaside",
         "family",
         "party"
-      ]
+      ],
+      "city_lat": 38.3452,
+      "city_lon": -0.481
     },
     {
       "iata": "AGP",
@@ -478,7 +552,9 @@
         "culture",
         "family",
         "winter-sun"
-      ]
+      ],
+      "city_lat": 36.7213,
+      "city_lon": -4.4214
     },
     {
       "iata": "VLC",
@@ -493,7 +569,9 @@
         "culture",
         "shopping",
         "family"
-      ]
+      ],
+      "city_lat": 39.4699,
+      "city_lon": -0.3763
     },
     {
       "iata": "BCN",
@@ -508,7 +586,10 @@
         "shopping",
         "seaside",
         "party"
-      ]
+      ],
+      "city_lat": 41.3874,
+      "city_lon": 2.1686,
+      "access_pad_minutes": 35
     },
     {
       "iata": "MAD",
@@ -521,7 +602,10 @@
         "city-break",
         "culture",
         "shopping"
-      ]
+      ],
+      "city_lat": 40.4168,
+      "city_lon": -3.7038,
+      "access_pad_minutes": 35
     },
     {
       "iata": "GRO",
@@ -534,7 +618,9 @@
         "seaside",
         "quiet",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 41.9794,
+      "city_lon": 2.8214
     },
     {
       "iata": "CDT",
@@ -548,7 +634,9 @@
         "quiet",
         "hidden-gem",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 39.9864,
+      "city_lon": -0.0513
     },
     {
       "iata": "PMI",
@@ -564,7 +652,9 @@
         "party",
         "family",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 39.5696,
+      "city_lon": 2.6502
     },
     {
       "iata": "IBZ",
@@ -579,7 +669,9 @@
         "seaside",
         "party",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 38.9067,
+      "city_lon": 1.4206
     },
     {
       "iata": "MAH",
@@ -595,7 +687,9 @@
         "quiet",
         "family",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 39.8885,
+      "city_lon": 4.2658
     },
     {
       "iata": "TFS",
@@ -610,7 +704,9 @@
         "seaside",
         "winter-sun",
         "family"
-      ]
+      ],
+      "city_lat": 28.4636,
+      "city_lon": -16.2518
     },
     {
       "iata": "LPA",
@@ -625,7 +721,9 @@
         "seaside",
         "winter-sun",
         "family"
-      ]
+      ],
+      "city_lat": 28.1235,
+      "city_lon": -15.4363
     },
     {
       "iata": "ACE",
@@ -640,7 +738,9 @@
         "seaside",
         "winter-sun",
         "quiet"
-      ]
+      ],
+      "city_lat": 28.963,
+      "city_lon": -13.5477
     },
     {
       "iata": "FUE",
@@ -655,7 +755,9 @@
         "seaside",
         "winter-sun",
         "family"
-      ]
+      ],
+      "city_lat": 28.5004,
+      "city_lon": -13.8627
     },
     {
       "iata": "LIS",
@@ -669,7 +771,9 @@
         "culture",
         "seaside",
         "shopping"
-      ]
+      ],
+      "city_lat": 38.7223,
+      "city_lon": -9.1393
     },
     {
       "iata": "OPO",
@@ -682,7 +786,9 @@
         "city-break",
         "culture",
         "seaside"
-      ]
+      ],
+      "city_lat": 41.1579,
+      "city_lon": -8.6291
     },
     {
       "iata": "FAO",
@@ -696,7 +802,9 @@
         "family",
         "party",
         "winter-sun"
-      ]
+      ],
+      "city_lat": 37.0194,
+      "city_lon": -7.9304
     },
     {
       "iata": "FNC",
@@ -711,7 +819,9 @@
         "winter-sun",
         "hiking",
         "quiet"
-      ]
+      ],
+      "city_lat": 32.6669,
+      "city_lon": -16.9241
     },
     {
       "iata": "SPU",
@@ -725,7 +835,9 @@
         "city-break",
         "culture",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 43.5081,
+      "city_lon": 16.4402
     },
     {
       "iata": "DBV",
@@ -739,7 +851,9 @@
         "culture",
         "city-break",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 42.6507,
+      "city_lon": 18.0944
     },
     {
       "iata": "ZAD",
@@ -753,7 +867,9 @@
         "quiet",
         "culture",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 44.1194,
+      "city_lon": 15.2314
     },
     {
       "iata": "MLA",
@@ -768,7 +884,9 @@
         "winter-sun",
         "culture",
         "party"
-      ]
+      ],
+      "city_lat": 35.8989,
+      "city_lon": 14.5146
     },
     {
       "iata": "BOJ",
@@ -781,7 +899,9 @@
         "seaside",
         "party",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 42.5048,
+      "city_lon": 27.4626
     },
     {
       "iata": "VAR",
@@ -794,7 +914,9 @@
         "seaside",
         "family",
         "seasonal-summer"
-      ]
+      ],
+      "city_lat": 43.2141,
+      "city_lon": 27.9147
     },
     {
       "iata": "TIA",
@@ -808,7 +930,9 @@
         "hidden-gem",
         "culture",
         "city-break"
-      ]
+      ],
+      "city_lat": 41.3275,
+      "city_lon": 19.8187
     },
     {
       "iata": "STN",
@@ -821,7 +945,10 @@
         "city-break",
         "shopping",
         "culture"
-      ]
+      ],
+      "city_lat": 51.5074,
+      "city_lon": -0.1278,
+      "access_pad_minutes": 55
     },
     {
       "iata": "LTN",
@@ -833,7 +960,10 @@
         "uk",
         "city-break",
         "shopping"
-      ]
+      ],
+      "city_lat": 51.5074,
+      "city_lon": -0.1278,
+      "access_pad_minutes": 50
     },
     {
       "iata": "LGW",
@@ -845,7 +975,9 @@
         "uk",
         "city-break",
         "shopping"
-      ]
+      ],
+      "city_lat": 51.5074,
+      "city_lon": -0.1278
     },
     {
       "iata": "EDI",
@@ -857,7 +989,9 @@
         "uk",
         "city-break",
         "culture"
-      ]
+      ],
+      "city_lat": 55.9533,
+      "city_lon": -3.1883
     },
     {
       "iata": "DUB",
@@ -870,7 +1004,9 @@
         "city-break",
         "culture",
         "party"
-      ]
+      ],
+      "city_lat": 53.3498,
+      "city_lon": -6.2603
     },
     {
       "iata": "CDG",
@@ -883,7 +1019,9 @@
         "city-break",
         "culture",
         "shopping"
-      ]
+      ],
+      "city_lat": 48.8566,
+      "city_lon": 2.3522
     },
     {
       "iata": "BVA",
@@ -896,7 +1034,10 @@
         "city-break",
         "culture",
         "shopping"
-      ]
+      ],
+      "city_lat": 48.8566,
+      "city_lon": 2.3522,
+      "access_pad_minutes": 75
     },
     {
       "iata": "AMS",
@@ -910,7 +1051,9 @@
         "culture",
         "party",
         "shopping"
-      ]
+      ],
+      "city_lat": 52.3676,
+      "city_lon": 4.9041
     },
     {
       "iata": "CRL",
@@ -922,7 +1065,10 @@
         "belgium",
         "city-break",
         "culture"
-      ]
+      ],
+      "city_lat": 50.8503,
+      "city_lon": 4.3517,
+      "access_pad_minutes": 55
     },
     {
       "iata": "BER",
@@ -936,7 +1082,10 @@
         "culture",
         "party",
         "shopping"
-      ]
+      ],
+      "city_lat": 52.52,
+      "city_lon": 13.405,
+      "access_pad_minutes": 35
     },
     {
       "iata": "MUC",
@@ -949,7 +1098,9 @@
         "city-break",
         "culture",
         "mountains"
-      ]
+      ],
+      "city_lat": 48.1351,
+      "city_lon": 11.582
     },
     {
       "iata": "FRA",
@@ -961,7 +1112,9 @@
         "germany",
         "city-break",
         "shopping"
-      ]
+      ],
+      "city_lat": 50.1109,
+      "city_lon": 8.6821
     },
     {
       "iata": "PRG",
@@ -974,7 +1127,9 @@
         "city-break",
         "culture",
         "party"
-      ]
+      ],
+      "city_lat": 50.0755,
+      "city_lon": 14.4378
     },
     {
       "iata": "KRK",
@@ -987,7 +1142,9 @@
         "city-break",
         "culture",
         "party"
-      ]
+      ],
+      "city_lat": 50.0647,
+      "city_lon": 19.945
     },
     {
       "iata": "WAW",
@@ -1000,7 +1157,9 @@
         "city-break",
         "culture",
         "shopping"
-      ]
+      ],
+      "city_lat": 52.2297,
+      "city_lon": 21.0122
     },
     {
       "iata": "WMI",
@@ -1012,7 +1171,9 @@
         "poland",
         "city-break",
         "culture"
-      ]
+      ],
+      "city_lat": 52.2297,
+      "city_lon": 21.0122
     },
     {
       "iata": "IST",
@@ -1025,7 +1186,9 @@
         "city-break",
         "culture",
         "shopping"
-      ]
+      ],
+      "city_lat": 41.0082,
+      "city_lon": 28.9784
     },
     {
       "iata": "SAW",
@@ -1038,7 +1201,9 @@
         "city-break",
         "culture",
         "shopping"
-      ]
+      ],
+      "city_lat": 41.0082,
+      "city_lon": 28.9784
     }
   ],
   "multi_city": {
