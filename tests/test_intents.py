@@ -84,7 +84,14 @@ def test_getaway_deals_are_exact_and_grouped_baseline_without_history():
     for d in env["results"]:
         assert d["price_confidence"] == "exact"
         assert d["group"] == "baseline"
-        assert "insufficient history" in d["why"]
+        # Gem-extended variants (Task 15) legitimately match "croatia & seaside"
+        # (Croatian gems) and, like S3/S4 composites, use a non-comparative why
+        # (their price is fare + onward chain, so direct-route history is the
+        # wrong baseline) — they carry the onward chain clause instead.
+        if d.get("onward"):
+            assert "to " in d["why"] and d["destination_display"]
+        else:
+            assert "insufficient history" in d["why"]
     assert "route_status" not in env
 
 
