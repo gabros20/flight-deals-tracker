@@ -128,6 +128,11 @@ def run_search(
         if gem is not None:
             forced_gem = gem
             spec_dict["destinations"] = sorted({gw.airport for gw in gem.gateways})
+            # Persist the gem on the spec itself (Task 15b controller ruling),
+            # not just as this call's transient `forced_gem` — that's what lets
+            # `watch add --to <gem> ...` replay the gem-only extension on
+            # `brief`, which only ever has the saved spec to work from.
+            spec_dict["gem"] = gem.slug
         else:
             dests = registry.resolve_destination(to)
             if not dests:
@@ -167,14 +172,30 @@ def run_search(
 
 
 def _gems_in_play(spec, registry, forced_gem) -> Tuple[List[Any], bool]:
-    """(gems, only_variants) for this run. An explicit ``forced_gem`` (--to)
-    wins: exactly that gem, only its variants displayed. Otherwise a ``--where``
-    matches KEEP gems by tag, season-gated to the window. No gems for a plain
-    ``--to`` airport/city or a where-less one-way with no category."""
+    """(gems, only_variants) for this run. An explicit ``forced_gem`` (--to,
+    passed by an interactive ``run_search`` call that already resolved it)
+    wins: exactly that gem, only its variants displayed. Failing that, a
+    persisted ``spec.gem`` (Task 15b controller ruling) is re-resolved against
+    the registry the same way — this is what lets a saved search (``brief``
+    never has ``forced_gem``, only the loaded spec) replay a ``watch add --to
+    <gem> ...`` as gem-only variants instead of silently degrading to a plain
+    destination-restricted search. A spec.gem that no longer resolves (catalog
+    changed after the search was saved) degrades to no gems rather than
+    raising — the caller already validated it at spec-build time; a stale
+    reference here should be a quiet no-op, not a crash. Otherwise a
+    ``--where`` matches KEEP gems by tag, season-gated to the window. No gems
+    for a plain ``--to`` airport/city or a where-less one-way with no
+    category."""
     from flight_deals.registry.where import WhereParseError
 
     if forced_gem is not None:
         return [forced_gem], True
+    spec_gem_slug = getattr(spec, "gem", None)
+    if spec_gem_slug:
+        gem = registry.resolve_gem(spec_gem_slug)
+        if gem is not None:
+            return [gem], True
+        return [], False
     if getattr(spec, "where", None):
         window = (spec.depart_spec.out_from, spec.depart_spec.out_to)
         try:

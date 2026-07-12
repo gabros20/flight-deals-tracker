@@ -295,6 +295,67 @@ def test_malformed_saved_searches_are_skipped_not_fatal(env_dirs):
     assert r.exit_code == 0                  # a skip never changes the exit code
 
 
+def test_gem_watch_alerts_on_extended_total(env_dirs):
+    """A `watch add --to <gem>` must persist the gem on SearchSpec (Task 15b
+    controller ruling) so `brief` — which only ever has the loaded spec, never
+    the transient --to resolution an interactive run gets — replays it as the
+    gem-only onward extension. The alert threshold has to apply to the
+    fare+onward EXTENDED total, not the bare gateway fare, mirroring the
+    interactive-path coverage in test_gems_engine.py::
+    test_watch_threshold_fires_on_extended_total."""
+    searches.add(
+        name="halki-watch",
+        spec={"origins": ["BUD"], "destinations": ["RHO"], "gem": "halki",
+              "depart": "2026-08-20..2026-08-24", "nights": "5-7"},
+        schedule="daily 08:30", alert={"max_price": 130, "notify": "telegram"},
+    )
+    planner = Planner()
+    planner.ryanair.roundtrip_fares = lambda origin, dest=None, **kw: [_farepair("RHO", 100.0)]
+    planner.wizz.timetable = lambda *a, **k: ([], [])
+
+    notifier = FakeNotifier()
+    r = _run(env_dirs, planner, notifier=notifier, send=True)
+
+    assert len(r.fired) == 1
+    fired = r.fired[0]
+    assert fired.get("onward", {}).get("gem") == "halki"
+    assert fired["price_eur"] == 120.0        # 100 gateway fare + 20 onward (RHO, ×2 rt)
+    assert notifier.sent                       # extended total (120) crossed the €130 cap
+    assert r.exit_code == 0
+
+
+def test_stale_gem_slug_in_saved_spec_skips_not_crash(env_dirs):
+    """A gem removed from the catalog after `watch add --to <gem>` was saved
+    must not crash `brief` — SearchSpec.gem re-validates on every parse_spec
+    (Task 15b), so a since-removed slug surfaces as an invalid-spec skip, the
+    same non-fatal handling already covering a bad schedule string or corrupt
+    YAML (searches.py's malformed-search guard)."""
+    sdir = searches.searches_dir()
+    searches.add(name="healthy", spec={"origins": ["BUD"], "destinations": ["CFU"],
+                                       "depart": "2026-08-20..2026-08-24", "nights": "5-7"},
+                 schedule="daily 08:30", alert={"max_price": 150})
+    # Bypass add()'s validation (which would reject this outright) to simulate
+    # a spec that was valid when saved and went stale after the catalog changed.
+    store.atomic_write_yaml(sdir / "stale-gem.yaml", {
+        "schema_version": searches.SCHEMA_VERSION,
+        "name": "stale-gem",
+        "spec": {"origins": ["BUD"], "destinations": ["RHO"], "gem": "not-a-real-gem-slug",
+                 "depart": "2026-08-20..2026-08-24", "nights": "5-7"},
+        "schedule": "daily 08:30",
+        "alert": {"max_price": 150},
+    })
+
+    r = brief_mod.run_brief(
+        force_all=True, now=NOW, today=TODAY, planner=_planner([[_farepair("CFU", 140)]]),
+        history_store=env_dirs["history"],
+        alert_machine=alert_state.AlertMachine(path=env_dirs["machine_path"]),
+        do_prune=False,
+    )
+    assert r.ran == ["healthy"]     # the stale-gem search never ran, but didn't crash
+    assert len(r.fired) == 1        # healthy watch alongside it still fired normally
+    assert r.exit_code == 0         # a skip alongside a healthy run stays green
+
+
 def test_nothing_due_sends_nothing(env_dirs):
     r = brief_mod.run_brief(
         force_all=False, now=NOW, today=TODAY, planner=_planner([]),
