@@ -261,9 +261,10 @@ def getaway(
     origins_opt: str = typer.Option(None, "--from", "--origins", help="Origin IATA(s), comma-separated (default from config)"),
     shapes: str = typer.Option(
         "direct", "--shapes",
-        help='Trip shapes, comma-separated: direct,extended-origin,open-jaw (default direct). '
+        help='Trip shapes, comma-separated: direct,extended-origin,open-jaw,via-hub (default direct). '
              'extended-origin adds nearby-airport sweeps (VIE/BTS) with ground cost; '
-             'open-jaw pairs fly-in/fly-home city pairs. via-hub is not yet enabled.',
+             'open-jaw pairs fly-in/fly-home city pairs; via-hub finds self-transfers '
+             '(two separate tickets through a hub, needs --nights).',
     ),
     max_calls: int = typer.Option(40, "--max-calls"),
     max_results: int = typer.Option(10, "--max-results"),

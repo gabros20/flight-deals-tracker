@@ -26,8 +26,11 @@ from flight_deals.models import Gem, GemGateway
 from flight_deals.registry.destinations import gem_gateways_in_window
 
 # Only point-to-point shapes carry a single gateway airport the onward chain can
-# hang off. S4 (open-jaw) is deliberately excluded (documented scope cut); S5 is
-# not enabled at all.
+# hang off. S4 (open-jaw) is deliberately excluded (documented scope cut); S5
+# (via-hub self-transfer, Task 16) is ALSO excluded — its "destination" is
+# reached by two flights through a hub, and bolting an onward ferry/bus chain
+# onto an already time-verified self-transfer would compound risk we won't
+# stack. Both are absent from this set, so a gem never extends an S4/S5 deal.
 EXTENDABLE_SHAPES = {"S1", "S2", "S3"}
 
 

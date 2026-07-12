@@ -87,6 +87,25 @@ def test_plan_golden_shapes_on():
     assert plan_dict["estimated_calls"] == len(plan_dict["calls"])
 
 
+def test_plan_golden_via_hub():
+    """Compile golden for a via-hub (S5) spec: the plan is byte-stable, shows the
+    hub fan-out (discovery descriptors + the ``via_hub`` block), and reserves the
+    4-leg verification ceiling in ``estimated_calls`` — honest, no silent cap
+    (Task 16)."""
+    spec = _load_spec("via_hub")
+    plan_dict = compile_plan(spec).to_dict()
+    golden = GOLDENS / "plan_via_hub.json"
+    if _regen():
+        golden.write_text(json.dumps(plan_dict, indent=2) + "\n")
+    expected = json.loads(golden.read_text())
+    assert plan_dict == expected
+    s5 = [c for c in plan_dict["calls"] if c["shape"] == "S5"]
+    assert s5, "expected S5 discovery descriptors"
+    assert plan_dict["via_hub"]["verify_calls_max"] == 24
+    # estimate reserves the concrete calls PLUS the verification ceiling.
+    assert plan_dict["estimated_calls"] == len(plan_dict["calls"]) + 24
+
+
 def test_run_golden_single_dest_is_one_exact_deal():
     """Sanity anchor for the single-dest golden (so a silent golden regen can't
     hide a regression): exactly one exact-confidence deal, and its deal_id is
