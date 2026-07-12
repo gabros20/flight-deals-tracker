@@ -130,8 +130,8 @@
       }
     }
   ],
-  "estimated_calls": 34,
-  "estimated_seconds": 34.0,
+  "estimated_calls": 46,
+  "estimated_seconds": 46.0,
   "via_hub": {
     "hubs": [
       "BCN",
@@ -144,6 +144,6 @@
       "VIE"
     ],
     "shortlist": 6,
-    "verify_calls_max": 24
+    "verify_calls_max": 36
   }
 }
