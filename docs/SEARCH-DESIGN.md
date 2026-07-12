@@ -105,6 +105,32 @@ today's registry guesses, which is why sweeps waste calls on unserved routes.
 Extend `ground_transfers.json` with BUD↔VIE, BUD↔BTS, and the open-jaw city
 pairs inside each category cluster (NAP↔BRI, BCN↔VLC, ATH↔SKG…).
 
+**Computed ground matrix** (Task 11 — open-jaw for _any_ nearby registry pair,
+not just the 6 curated clusters): `data/ground_matrix.json`, precomputed
+out-of-band by `scripts/refresh_ground.py` and read (never fetched) by the
+registry + planner. The script haversine-prefilters registry pairs (straight
+line ≤ 400 km, excluding same airport and same `multi_city` group), makes **one**
+OSRM public `/table` request (`router.project-osrm.org`, driving profile,
+`annotations=duration,distance`) for the full airport coordinate set, and applies
+a stated estimate model:
+
+```
+ground_minutes = round(drive_minutes × 1.35 + 30)   # transit factor + airport-access pad
+est_cost_eur   = max(8, round(km_road × 0.11))        # ~0.11 EUR/km, 8 EUR floor
+```
+
+keeping only pairs with `ground_minutes ≤ 330`. A road-sanity guard drops
+disconnected-component pairs (e.g. separate Canary islands OSRM snaps to a
+degenerate ~0 route) so nothing fabricates a "30-min hop across open sea". These
+are **estimates, not fake precision** — the envelope marks them `~` and
+`estimate_basis:"computed"`. The 6 curated pairs always win on merge
+(`estimate_basis:"curated"`, exact hand-verified values). The planner considers
+the 40 shortest-ground matched pairs per run and reports any dropped count.
+**Refresh cadence**: monthly, or after any registry change that adds/moves
+airports (see `docs/OPERATIONS.md`). **Follow-up (out of scope here)**:
+Transitous/MOTIS could later replace the driving-derived estimate with real
+public-transport timetables + fares for the kept pairs.
+
 ## 4. The search spec — one artifact for agents, cron, and humans
 
 Everything above meets in a single declarative object. Agents produce it, saved

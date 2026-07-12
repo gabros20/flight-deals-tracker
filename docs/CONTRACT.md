@@ -193,10 +193,14 @@ Field-by-field:
   object so a consumer doesn't have to walk `legs` to answer "how much
   ground transfer is involved":
   ```jsonc
-  { "duration_minutes": 150, "cost_eur": 12.0, "mode": "driving" }
+  { "duration_minutes": 150, "cost_eur": 12.0, "mode": "public_transit",
+    "estimate_basis": "computed" }
   ```
   This is a convenience mirror of the ground leg(s) already present in
-  `legs`, not new data.
+  `legs`, not new data. `estimate_basis` (additive, Task 11) is `"curated"`
+  for a hand-verified hop (the 6 curated open-jaw pairs, the VIE/BTS
+  extended-origin legs) or `"computed"` for one derived from the OSRM ground
+  matrix (`data/ground_matrix.json`); absent when no provenance is attached.
 - **`why`**: one sentence, always includes a number and a comparison basis
   (`"vs typical €X"`, `"N observations"`) per SEARCH-DESIGN §2. Never a bare
   adjective ("great deal!") — must be falsifiable/re-derivable from
@@ -373,6 +377,12 @@ Decisions locked in:
 }
 ```
 
+When the `open-jaw` shape is compiled, the plan additionally carries
+`openjaw_pairs_considered` and `openjaw_pairs_dropped` (both additive, Task 11):
+the open-jaw pairs are capped at the 40 shortest-ground among the where-matched
+airports, and the drop count makes any truncation visible rather than silent.
+Both fields are absent on plans without the open-jaw shape.
+
 - `calls`: ordered list of planned HTTP calls; each entry names the
   provider, endpoint, mode, the trip shape it serves, and the resolved
   params (post `--where` expansion — e.g. a category sweep is already
@@ -412,6 +422,20 @@ Decisions locked in:
 ---
 
 ## Changelog
+
+- **2026-07-12 (Task 11)** — Computed ground matrix (open-jaw for any nearby
+  registry pair); additive, no frozen field changed shape:
+  - Deal `ground` summary gains an optional `estimate_basis` (`"curated"` |
+    `"computed"`, § 2) — provenance for the ground hop. Absent when no
+    provenance is attached, so deals without it stay byte-identical.
+  - `plan` output gains optional `openjaw_pairs_considered` /
+    `openjaw_pairs_dropped` (§ 6), present only when the `open-jaw` shape is
+    compiled: open-jaw pairs are capped at the 40 shortest-ground among matched
+    airports and the drop count is reported (no silent truncation).
+  - New precomputed data file `data/ground_matrix.json` (refreshed out-of-band
+    by `scripts/refresh_ground.py` via OSRM; never read from the request path).
+    `registry.get_open_jaw_pairs()` merges it with the curated pairs — curated
+    always wins on a shared `{a, b}` combo; tolerant when the file is absent.
 
 - **2026-07-11 (Task 10)** — Trip shapes S3 (extended-origin) and S4 (open-jaw)
   enabled; additive, no frozen field changed shape:
