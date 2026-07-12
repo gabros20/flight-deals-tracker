@@ -83,6 +83,51 @@ class Airport(BaseModel):
     city_lon: Optional[float] = None
     access_pad_minutes: Optional[int] = None
 
+# --------------------------------------------------------------------------- #
+# Gem destinations (Task 15) — curated non-airport places reached via a gateway #
+# airport + an onward ferry/bus/train chain. A terminal EXTENSION of a deal,    #
+# never a new shape (see docs/SEARCH-DESIGN.md §2b).                            #
+# --------------------------------------------------------------------------- #
+class GemLeg(BaseModel):
+    """One onward ground/water hop of a gem's gateway chain. ``from_place``/
+    ``to_place`` are human place labels (e.g. "Rhodes Town port"), not IATAs —
+    a gem's chain runs between ports/towns, not airports."""
+    mode: str  # bus | train | taxi | ferry | shuttle
+    from_place: str = Field(validation_alias=AliasChoices("from_place", "from"))
+    to_place: str = Field(validation_alias=AliasChoices("to_place", "to"))
+    minutes: int
+    cost_eur: float
+    model_config = {"populate_by_name": True, "extra": "ignore"}
+
+
+class GemGateway(BaseModel):
+    """One airport a gem is reachable from, plus the onward chain, its curated
+    totals, an operator/frequency note, and an optional per-gateway ``season``
+    window (overrides the gem-level season for this gateway)."""
+    airport: str
+    legs: List[GemLeg]
+    total_minutes: int
+    total_cost_eur: float
+    note: str = ""
+    season: Optional[str] = None
+    model_config = {"extra": "ignore"}
+
+
+class Gem(BaseModel):
+    """A curated gem destination (small island etc.). ``marginal`` gems are
+    excluded from default ``--where`` matching and reachable only via ``--to``
+    (day-trip/awkward-connection caveats live in the gateway ``note``).
+    ``season`` (gem-level) applies to gateways that don't set their own."""
+    slug: str
+    name: str
+    country: str
+    tags: List[str]
+    gateways: List[GemGateway]
+    season: Optional[str] = None
+    marginal: bool = False
+    model_config = {"extra": "ignore"}
+
+
 class FlightLeg(BaseModel):
     type: Literal["flight"] = "flight"
     origin: str
