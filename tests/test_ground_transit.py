@@ -127,7 +127,7 @@ def test_accept_transit_within_bounds_surfaces_scheduled():
     out = gm.apply_transit_refinement(_pair(288, 228))
     assert out["ground_minutes"] == 228
     assert out["modeled_minutes"] == 288
-    assert out["_transit_accepted"] is True
+    assert out["_transit_basis"] == "scheduled"
     assert out["est_cost_eur"] == 30  # fare untouched
 
 
@@ -141,26 +141,26 @@ def test_suspect_bounds_both_sides_keep_modeled(modeled, transit, caplog):
     with caplog.at_level("WARNING"):
         out = gm.apply_transit_refinement(_pair(modeled, transit))
     assert out["ground_minutes"] == modeled
-    assert "_transit_accepted" not in out
+    assert "_transit_basis" not in out
     assert "transit_suspect" in caplog.text
 
 
 def test_accept_boundary_exactly_half_and_triple():
-    assert gm.apply_transit_refinement(_pair(200, 100))["_transit_accepted"] is True  # 0.5x
-    assert gm.apply_transit_refinement(_pair(100, 300))["_transit_accepted"] is True  # 3.0x
+    assert gm.apply_transit_refinement(_pair(200, 100))["_transit_basis"] == "scheduled"  # 0.5x
+    assert gm.apply_transit_refinement(_pair(100, 300))["_transit_basis"] == "scheduled"  # 3.0x
 
 
 def test_transit_over_land_cap_not_accepted():
     # Within 3.0x of a large modeled value but over the 330 land cap.
     out = gm.apply_transit_refinement(_pair(200, 400))
     assert out["ground_minutes"] == 200
-    assert "_transit_accepted" not in out
+    assert "_transit_basis" not in out
 
 
 def test_ferry_pair_uses_ferry_cap():
     out = gm.apply_transit_refinement(_pair(300, 400, has_ferry=True))
     assert out["ground_minutes"] == 400  # 400 <= 420 ferry cap, within 3.0x
-    assert out["_transit_accepted"] is True
+    assert out["_transit_basis"] == "scheduled"
 
 
 def test_no_coverage_keeps_modeled_untouched():
@@ -168,7 +168,7 @@ def test_no_coverage_keeps_modeled_untouched():
          "mode": gm.GROUND_MODE, "transit": "no_coverage"}
     out = gm.apply_transit_refinement(p)
     assert out["ground_minutes"] == 324
-    assert "_transit_accepted" not in out
+    assert "_transit_basis" not in out
 
 
 # --------------------------------------------------------------------------- #

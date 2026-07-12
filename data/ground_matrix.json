@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "computed_at": "2026-07-12T12:41:26.428639+00:00",
+  "computed_at": "2026-07-12T14:04:19.695731+00:00",
   "source": "OSRM public router.project-osrm.org /table + /route (driving profile)",
   "model": {
     "haversine_prefilter_km": 400.0,
@@ -39,7 +39,7 @@
   "stats": {
     "airports": 76,
     "prefiltered_candidates": 211,
-    "pairs_kept": 38,
+    "pairs_kept": 37,
     "ferry_pairs": 4,
     "land_pairs": 34,
     "route_pass_failed": 0,
@@ -54,7 +54,14 @@
     "transit_slots": [
       "2026-07-28T10:00:00Z",
       "2026-07-28T15:00:00Z"
-    ]
+    ],
+    "hybrid_candidates": 36,
+    "hybrid_refined": 23,
+    "hybrid_suspect": 0,
+    "hybrid_no_coverage": 12,
+    "hybrid_errors": 0,
+    "hybrid_dropped_cap": 1,
+    "hybrid_no_anchor": 0
   },
   "airports_seen": [
     "ACE",
@@ -147,7 +154,15 @@
       "straight_km": 166.7,
       "note": "computed via OSRM (drive ~218min / 242km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 308,
+      "transit_hybrid_transfers": 2,
+      "transit_hybrid_modes": [
+        "BUS",
+        "REGIONAL_RAIL"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 248
     },
     {
       "a": "AHO",
@@ -160,7 +175,16 @@
       "straight_km": 107.5,
       "note": "computed via OSRM (drive ~112min / 130km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 266,
+      "transit_hybrid_transfers": 2,
+      "transit_hybrid_modes": [
+        "BUS",
+        "COACH",
+        "REGIONAL_RAIL"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 206
     },
     {
       "a": "ALC",
@@ -173,7 +197,15 @@
       "straight_km": 196.3,
       "note": "computed via OSRM (drive ~201min / 270km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 253,
+      "transit_hybrid_transfers": 3,
+      "transit_hybrid_modes": [
+        "BUS",
+        "HIGHSPEED_RAIL"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 193
     },
     {
       "a": "ALC",
@@ -186,7 +218,15 @@
       "straight_km": 134.4,
       "note": "computed via OSRM (drive ~149min / 195km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 197,
+      "transit_hybrid_transfers": 2,
+      "transit_hybrid_modes": [
+        "BUS",
+        "HIGHSPEED_RAIL"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 137
     },
     {
       "a": "AMS",
@@ -206,7 +246,7 @@
         "HIGHSPEED_RAIL",
         "REGIONAL_RAIL"
       ],
-      "transit_queried_at": "2026-07-12T12:38:09.550553+00:00"
+      "transit_queried_at": "2026-07-12T13:57:18.410509+00:00"
     },
     {
       "a": "ATH",
@@ -232,7 +272,16 @@
       "straight_km": 228.8,
       "note": "computed via OSRM (drive ~185min / 268km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 204,
+      "transit_hybrid_transfers": 2,
+      "transit_hybrid_modes": [
+        "BUS",
+        "HIGHSPEED_RAIL",
+        "REGIONAL_RAIL"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 139
     },
     {
       "a": "BCN",
@@ -245,7 +294,15 @@
       "straight_km": 87.9,
       "note": "computed via OSRM (drive ~88min / 110km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 128,
+      "transit_hybrid_transfers": 1,
+      "transit_hybrid_modes": [
+        "HIGHSPEED_RAIL",
+        "REGIONAL_RAIL"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 63
     },
     {
       "a": "BDS",
@@ -258,7 +315,15 @@
       "straight_km": 113.2,
       "note": "computed via OSRM (drive ~101min / 127km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 127,
+      "transit_hybrid_transfers": 1,
+      "transit_hybrid_modes": [
+        "BUS",
+        "HIGHSPEED_RAIL"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 67
     },
     {
       "a": "BGY",
@@ -284,7 +349,16 @@
       "straight_km": 168.7,
       "note": "computed via OSRM (drive ~132min / 192km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 151,
+      "transit_hybrid_transfers": 2,
+      "transit_hybrid_modes": [
+        "HIGHSPEED_RAIL",
+        "SUBWAY",
+        "TRAM"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 81
     },
     {
       "a": "BGY",
@@ -297,7 +371,16 @@
       "straight_km": 206.9,
       "note": "computed via OSRM (drive ~147min / 229km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 232,
+      "transit_hybrid_transfers": 2,
+      "transit_hybrid_modes": [
+        "BUS",
+        "HIGHSPEED_RAIL",
+        "SUBWAY"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 162
     },
     {
       "a": "BLQ",
@@ -349,7 +432,15 @@
       "straight_km": 77.9,
       "note": "computed via OSRM (drive ~139min / 132km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 275,
+      "transit_hybrid_transfers": 2,
+      "transit_hybrid_modes": [
+        "BUS",
+        "LONG_DISTANCE"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 215
     },
     {
       "a": "BRI",
@@ -362,7 +453,15 @@
       "straight_km": 209.1,
       "note": "computed via OSRM (drive ~188min / 247km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 260,
+      "transit_hybrid_transfers": 1,
+      "transit_hybrid_modes": [
+        "BUS",
+        "COACH"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 200
     },
     {
       "a": "BTS",
@@ -375,7 +474,16 @@
       "straight_km": 173.0,
       "note": "computed via OSRM (drive ~164min / 243km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 240,
+      "transit_hybrid_transfers": 3,
+      "transit_hybrid_modes": [
+        "BUS",
+        "LONG_DISTANCE",
+        "SUBWAY"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 170
     },
     {
       "a": "BTS",
@@ -388,7 +496,16 @@
       "straight_km": 48.2,
       "note": "computed via OSRM (drive ~60min / 74km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 142,
+      "transit_hybrid_transfers": 2,
+      "transit_hybrid_modes": [
+        "BUS",
+        "REGIONAL_RAIL",
+        "SUBWAY"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 77
     },
     {
       "a": "BUD",
@@ -401,7 +518,16 @@
       "straight_km": 214.2,
       "note": "computed via OSRM (drive ~173min / 261km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 260,
+      "transit_hybrid_transfers": 3,
+      "transit_hybrid_modes": [
+        "LONG_DISTANCE",
+        "SUBWAY",
+        "TRAM"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 185
     },
     {
       "a": "BVA",
@@ -414,7 +540,16 @@
       "straight_km": 201.3,
       "note": "computed via OSRM (drive ~166min / 256km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 246,
+      "transit_hybrid_transfers": 3,
+      "transit_hybrid_modes": [
+        "HIGHSPEED_RAIL",
+        "SUBWAY",
+        "TRAM"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 116
     },
     {
       "a": "CDG",
@@ -427,7 +562,16 @@
       "straight_km": 211.4,
       "note": "computed via OSRM (drive ~162min / 260km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 201,
+      "transit_hybrid_transfers": 3,
+      "transit_hybrid_modes": [
+        "HIGHSPEED_RAIL",
+        "SUBWAY",
+        "TRAM"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 116
     },
     {
       "a": "CDT",
@@ -440,7 +584,15 @@
       "straight_km": 68.8,
       "note": "computed via OSRM (drive ~60min / 82km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 123,
+      "transit_hybrid_transfers": 2,
+      "transit_hybrid_modes": [
+        "BUS",
+        "HIGHSPEED_RAIL"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 63
     },
     {
       "a": "CFU",
@@ -490,7 +642,7 @@
         "REGIONAL_RAIL",
         "SUBWAY"
       ],
-      "transit_queried_at": "2026-07-12T12:38:09.550553+00:00"
+      "transit_queried_at": "2026-07-12T13:57:18.410509+00:00"
     },
     {
       "a": "CTA",
@@ -532,7 +684,16 @@
       "straight_km": 221.7,
       "note": "computed via OSRM (drive ~207min / 283km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 308,
+      "transit_hybrid_transfers": 2,
+      "transit_hybrid_modes": [
+        "COACH",
+        "METRO",
+        "SUBWAY"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 248
     },
     {
       "a": "FCO",
@@ -545,7 +706,15 @@
       "straight_km": 199.2,
       "note": "computed via OSRM (drive ~177min / 240km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 162,
+      "transit_hybrid_transfers": 1,
+      "transit_hybrid_modes": [
+        "HIGHSPEED_RAIL",
+        "SUBWAY"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 87
     },
     {
       "a": "HER",
@@ -590,7 +759,16 @@
       "straight_km": 246.4,
       "note": "computed via OSRM (drive ~207min / 299km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 250,
+      "transit_hybrid_transfers": 3,
+      "transit_hybrid_modes": [
+        "BUS",
+        "HIGHSPEED_RAIL",
+        "TRAM"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 190
     },
     {
       "a": "LIS",
@@ -603,20 +781,16 @@
       "straight_km": 277.0,
       "note": "computed via OSRM (drive ~217min / 323km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
-    },
-    {
-      "a": "MUC",
-      "b": "PRG",
-      "ground_minutes": 328,
-      "est_cost_eur": 39,
-      "mode": "public_transit",
-      "drive_minutes": 220.8,
-      "km_road": 356.4,
-      "straight_km": 264.6,
-      "note": "computed via OSRM (drive ~221min / 356km road)",
-      "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 279,
+      "transit_hybrid_transfers": 4,
+      "transit_hybrid_modes": [
+        "BUS",
+        "REGIONAL_RAIL",
+        "SUBWAY"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 219
     },
     {
       "a": "MXP",
@@ -629,7 +803,16 @@
       "straight_km": 96.8,
       "note": "computed via OSRM (drive ~105min / 141km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 161,
+      "transit_hybrid_transfers": 2,
+      "transit_hybrid_modes": [
+        "HIGHSPEED_RAIL",
+        "SUBWAY",
+        "TRAM"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 81
     },
     {
       "a": "MXP",
@@ -642,7 +825,16 @@
       "straight_km": 282.4,
       "note": "computed via OSRM (drive ~209min / 313km road)",
       "has_ferry": false,
-      "transit": "no_coverage"
+      "transit": "no_coverage",
+      "transit_hybrid_minutes": 242,
+      "transit_hybrid_transfers": 2,
+      "transit_hybrid_modes": [
+        "BUS",
+        "HIGHSPEED_RAIL",
+        "SUBWAY"
+      ],
+      "transit_hybrid_queried_at": "2026-07-12T14:00:34.806401+00:00",
+      "linehaul_minutes": 162
     },
     {
       "a": "SPU",

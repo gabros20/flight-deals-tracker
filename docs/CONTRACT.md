@@ -200,13 +200,17 @@ Field-by-field:
   `legs`, not new data. `estimate_basis` (additive, Task 11) is `"curated"`
   for a hand-verified hop (the 6 curated open-jaw pairs, the VIE/BTS
   extended-origin legs), `"computed"` for one derived from the OSRM ground
-  matrix (`data/ground_matrix.json`), or `"scheduled"` (additive, Task 13)
+  matrix (`data/ground_matrix.json`), `"scheduled"` (additive, Task 13)
   for a computed pair whose modeled duration was refined by a real
-  Transitous/MOTIS timetable itinerary; absent when no provenance is attached.
-  A `"scheduled"` hop also carries additive `transit_transfers` (the number
-  of transfers in that itinerary); its `duration_minutes` is the real
-  scheduled length (its `why` clause drops the `~` on the duration but keeps
-  `~` on the modeled `cost_eur`).
+  Transitous/MOTIS timetable itinerary, or `"scheduled-hybrid"` (additive,
+  Task 14) for a pair whose CITY line-haul is scheduled but whose
+  airport-access pads are modeled; absent when no provenance is attached.
+  A `"scheduled"` / `"scheduled-hybrid"` hop also carries additive
+  `transit_transfers` (the number of transfers in that itinerary). A pure
+  `"scheduled"` hop's `duration_minutes` is the real scheduled length and its
+  `why` clause drops the `~` on the duration (keeping `~` on the modeled
+  `cost_eur`). A `"scheduled-hybrid"` hop KEEPS the `~` on duration (the
+  access pads are modeled) and its `why` clause says "line-haul scheduled".
   `has_ferry` (additive, Task 12) is `true` when the ground hop crosses water on
   a ferry (a curated ferry corridor or a computed `ferry+ground` matrix pair);
   the `why` string then leads the hop with ⛴ so an agent discloses the crossing.
@@ -433,6 +437,33 @@ Both fields are absent on plans without the open-jaw shape.
 ---
 
 ## Changelog
+
+- **2026-07-12 (Task 14)** — City-anchor hybrid transit refinement; additive,
+  no frozen field changed shape:
+  - `estimate_basis` gains an additive enum value `"scheduled-hybrid"` (§ 2) — a
+    computed open-jaw pair whose PURE airport-anchor query found no coverage but
+    whose CITY-CENTER→CITY-CENTER line-haul is a real Transitous scheduled
+    itinerary, with modeled airport-access pads added on each end
+    (`hybrid_minutes = pad_a + line-haul + pad_b`). Because the pads are
+    modeled, the `why` clause KEEPS `~` on the duration (unlike pure
+    `"scheduled"`) and says "line-haul scheduled" (`"~3h45m line-haul
+    scheduled, ~€25"`). Cost stays modeled (`~`). Precedence:
+    `scheduled > scheduled-hybrid > modeled`.
+  - Deal `ground` summary's additive `transit_transfers` (§ 2) now also appears
+    on a `"scheduled-hybrid"` hop (the line-haul itinerary's transfers). Absent
+    otherwise, so non-scheduled deals stay byte-identical.
+  - `data/destinations.json` airports gain additive `city_lat`/`city_lon`
+    (curated city-center anchors, shared across a multi-airport city) and, for
+    notoriously-far airports, `access_pad_minutes` (default 30). No geocoding
+    API. `schema_version` stays `2` (additive fields only).
+  - `data/ground_matrix.json` computed pairs gain additive
+    `transit_hybrid_minutes`/`transit_hybrid_transfers`/`transit_hybrid_modes`/
+    `transit_hybrid_queried_at` + raw `linehaul_minutes`, written by
+    `scripts/refresh_ground.py --transit` (the hybrid pass runs after the pure
+    pass, on its `no_coverage` pairs). Same read-path acceptance bounds
+    [0.5×, 3.0×] and 330/420 caps as the pure pass (the pads make the hybrid
+    value structurally comparable to the airport-to-airport baseline).
+    Coverage audit: `.orchestrate/task-14-report.md`.
 
 - **2026-07-12 (Task 13)** — Transitous/MOTIS scheduled-transit refinement;
   additive, no frozen field changed shape:

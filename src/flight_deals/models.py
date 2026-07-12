@@ -73,6 +73,15 @@ class Airport(BaseModel):
     tags: list[str] = Field(default_factory=list)
     is_ryanair_base: bool = False
     is_wizz_base: bool = False
+    # City-anchor hybrid transit refinement (Task 14): the CITY-CENTER lat/lon
+    # used for the hybrid line-haul query (shared across a multi-airport city so
+    # MXP and BGY both anchor on Milan), and an optional per-airport
+    # airport-access pad override (minutes; default 30 in the model) for
+    # notoriously-far airports (BVA, STN…). Nullable — older data without them
+    # simply has no city anchor (the hybrid pass skips such pairs).
+    city_lat: Optional[float] = None
+    city_lon: Optional[float] = None
+    access_pad_minutes: Optional[int] = None
 
 class FlightLeg(BaseModel):
     type: Literal["flight"] = "flight"
