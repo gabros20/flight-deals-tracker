@@ -205,14 +205,17 @@ def run_route_pass(
     ``has_ferry: null`` UNLESS the pair is island-suspect (spans different
     island regions per gm.ferry_detection_suspect) — such a pair is DROPPED
     (never a mispriced land estimate on a route we couldn't verify) and logged.
-    Also runs the island-region detection cross-check on has_ferry==False
-    results and records one ferry + one land fixture. Returns ``(out_rows,
-    stats)``."""
+    If either airport record is missing from the registry, the island-suspect
+    check can't even run (no tags to read) — that pair is unverifiable and is
+    also DROPPED and logged, rather than kept as an unverifiable
+    ``has_ferry: null``. Also runs the island-region detection cross-check on
+    has_ferry==False results and records one ferry + one land fixture. Returns
+    ``(out_rows, stats)``."""
     by_iata = {a.iata.upper(): a for a in airports}
     tags_by_iata = {a.iata.upper(): set(getattr(a, "tags", []) or []) for a in airports}
     out_rows: List[Dict[str, Any]] = []
     stats = {"ferry": 0, "land": 0, "failed": 0, "dropped_ferry_cap": 0,
-             "dropped_island_null": 0}
+             "dropped_island_null": 0, "dropped_unverifiable": 0}
     ferry_captured = land_captured = False
     logger.info("route pass: %d kept pairs, one OSRM /route each (~%.0f req/s)...",
                 len(rows), 1.0 / pace if pace else 0)
@@ -220,8 +223,14 @@ def run_route_pass(
         a, b = str(row["a"]).upper(), str(row["b"]).upper()
         apa, apb = by_iata.get(a), by_iata.get(b)
         if apa is None or apb is None:  # defensive: row IATA not in registry
-            out_rows.append(gm.apply_route_pass(row, None, route_ok=False))
-            stats["failed"] += 1
+            # No airport record means the island-suspect check can't even run
+            # (there are no tags to read) -> unverifiable. Controller ruling:
+            # drop the pair rather than keep it as an unverifiable has_ferry:
+            # null (it can resurface on the next successful refresh).
+            stats["dropped_unverifiable"] += 1
+            logger.warning(
+                "route pass: airport record missing for pair %s-%s; "
+                "excluded rather than kept unverifiable", a, b)
             continue
         if idx:
             time.sleep(pace)
@@ -289,6 +298,7 @@ def build_matrix_payload(
             "route_pass_failed": route_stats["failed"],
             "dropped_ferry_cap": route_stats["dropped_ferry_cap"],
             "dropped_island_null": route_stats.get("dropped_island_null", 0),
+            "dropped_unverifiable": route_stats.get("dropped_unverifiable", 0),
         })
     return {
         "schema_version": gm.SCHEMA_VERSION,
@@ -375,10 +385,11 @@ def _print_stats(payload: Dict[str, Any]) -> None:
         logger.info(
             "  route pass: %d ferry pairs, %d land pairs, %d route failures "
             "(has_ferry=null), %d dropped by the %dmin ferry cap, %d dropped "
-            "(island-crossing pair, route pass failed)",
+            "(island-crossing pair, route pass failed), %d dropped "
+            "(airport record missing, unverifiable)",
             st["ferry_pairs"], st["land_pairs"], st["route_pass_failed"],
             st["dropped_ferry_cap"], gm.MAX_FERRY_GROUND_MINUTES,
-            st.get("dropped_island_null", 0),
+            st.get("dropped_island_null", 0), st.get("dropped_unverifiable", 0),
         )
     pairs = payload["pairs"]
     if pairs:

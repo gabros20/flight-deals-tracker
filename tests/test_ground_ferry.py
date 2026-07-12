@@ -222,6 +222,28 @@ def test_run_route_pass_keeps_non_suspect_pair_as_land_on_route_failure(caplog):
     assert stats["failed"] == 1 and stats["dropped_island_null"] == 0
 
 
+def test_run_route_pass_drops_pair_with_missing_airport_record(caplog):
+    """Controller ruling: if either airport record is missing from the
+    registry, the island-suspect check can't even run (no tags to read from)
+    -> the pair is unverifiable and must be DROPPED, not kept as an
+    unverifiable has_ferry:null."""
+    module = _load_refresh_module()
+    module.fetch_route = lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("fetch_route should not be called for a missing-registry pair"))
+    rows = [{"a": "CTA", "b": "ZZZ", "ground_minutes": 300, "est_cost_eur": 25,
+             "mode": gm.GROUND_MODE, "drive_minutes": 200.0, "km_road": 210.0,
+             "straight_km": 186.0, "note": "land"}]
+    airports = [_AP("CTA", 37.4668, 15.0664, ["italy", "sicily", "island"])]
+    with caplog.at_level("WARNING", logger="refresh_ground"):
+        out, stats = module.run_route_pass(rows, airports, pace=0)
+    assert out == []                                    # dropped, not kept as null
+    assert stats["dropped_unverifiable"] == 1
+    assert stats["failed"] == 0 and stats["dropped_island_null"] == 0
+    assert any("airport record missing for pair CTA-ZZZ" in r.message
+               and "excluded rather than kept unverifiable" in r.message
+               for r in caplog.records)
+
+
 def test_run_route_pass_detects_ferry_from_recorded_fixture(caplog):
     module = _load_refresh_module()
     data = json.loads(FERRY_ROUTE_FIXTURE.read_text())["body"]
