@@ -82,13 +82,16 @@ KNOWN_DIRECT_ROUTES: Dict[str, Set[str]] = {
 
 
 class DestinationRegistry:
-    def __init__(self, data_path: Optional[str] = None):
+    def __init__(self, data_path: Optional[str] = None,
+                 ground_matrix_path: Optional[str] = None):
         self.data_path = resolve_path(data_path or "data/destinations.json")
+        self._ground_matrix_path = ground_matrix_path  # None -> default committed matrix
         self.airports: List[Airport] = []
         self.schema_version: int = 2
         self.multi_city: Dict[str, List[str]] = {}
         self.origin_ground: Dict[str, Dict[str, Any]] = {}
         self.open_jaw_pairs: List[Dict[str, Any]] = []
+        self._open_jaw_merged: Optional[List[Dict[str, Any]]] = None
         self._carrier_cache: Dict[str, Dict[str, Optional[bool]]] = {}
         self._load()
 
@@ -363,4 +366,17 @@ class DestinationRegistry:
         return self.origin_ground.get(iata.upper())
 
     def get_open_jaw_pairs(self) -> List[Dict[str, Any]]:
-        return list(self.open_jaw_pairs)
+        """Curated open-jaw pairs (authoritative, unchanged values,
+        ``estimate_basis="curated"``) merged with the computed ground matrix
+        (``data/ground_matrix.json`` via :mod:`registry.ground_matrix`,
+        ``estimate_basis="computed"``). A curated ``{a, b}`` combo is never
+        duplicated or overridden by a computed one. Tolerant when the matrix
+        file is absent — curated-only (Task 11 req 3). Cached after first load."""
+        if self._open_jaw_merged is None:
+            from flight_deals.registry import ground_matrix
+            computed = ground_matrix.load_ground_matrix(self._ground_matrix_path)
+            ground_matrix.check_airport_drift(self._iatas(), self._ground_matrix_path)
+            self._open_jaw_merged = ground_matrix.merge_open_jaw_pairs(
+                self.open_jaw_pairs, computed,
+            )
+        return list(self._open_jaw_merged)

@@ -74,6 +74,9 @@ schema: `docs/CONTRACT.md`.
 - **Wizz Air** via its public timetable endpoint — approximate prices (never
   used to trigger an alert directly; the estimate→confirm pipeline re-queries
   an exact date before anything crosses a threshold).
+- **OSRM** (public, out-of-band) precomputes a ground matrix
+  (`scripts/refresh_ground.py` → `data/ground_matrix.json`) so open-jaw trips
+  work for any nearby registry pair — never called from the request path.
 - No paid API is required for search, watches, or the monitoring brief. Money
   is EUR-canonical everywhere; non-EUR provider responses are converted at the
   provider boundary.

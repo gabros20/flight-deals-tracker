@@ -174,3 +174,36 @@ individual watches with `flight-deals watch rm <name>`.
 `brief` prunes past-dated snapshots, expired cache entries, stale run stamps and
 expired alert entries on every run, so the git-versioned `data/` dir stays
 bounded.
+
+## 8. Data refresh (out-of-band — never touches the request path)
+
+Two precomputed data tables are refreshed by manual/cron scripts, never from a
+live search (Global Constraint 9 / 10). Both write atomically and leave the
+existing file untouched on failure.
+
+| Script | Writes | Cadence | Source |
+|---|---|---|---|
+| `scripts/refresh_fx.py` | `data/fx_rates.json` | weekly | frankfurter.app (ECB) |
+| `scripts/refresh_ground.py` | `data/ground_matrix.json` | monthly **or after any registry change** | OSRM public `/table` |
+
+```bash
+# Preview without writing (fetches + prints stats):
+.venv/bin/python scripts/refresh_ground.py --dry-run
+
+# Refresh the computed open-jaw ground matrix in place:
+.venv/bin/python scripts/refresh_ground.py
+```
+
+`refresh_ground.py` makes **one** OSRM public `/table` request for the full
+registry coordinate set (under the 100-location public limit) and derives the
+open-jaw ground estimates (model in `SEARCH-DESIGN.md` §3). **Run it whenever
+`data/destinations.json` gains, removes, or moves an airport** — otherwise a new
+airport has no computed open-jaw pairs. If OSRM is down/refuses, the script exits
+non-zero and the committed matrix is left unchanged (the planner keeps serving
+the curated pairs plus the last good matrix).
+
+Cron example (monthly, 1st at 05:00):
+
+```cron
+0 5 1 * *  cd /path/to/flight-deals-tracker && .venv/bin/python scripts/refresh_ground.py
+```
