@@ -375,6 +375,7 @@ class DestinationRegistry:
         if self._open_jaw_merged is None:
             from flight_deals.registry import ground_matrix
             computed = ground_matrix.load_ground_matrix(self._ground_matrix_path)
+            ground_matrix.check_airport_drift(self._iatas(), self._ground_matrix_path)
             self._open_jaw_merged = ground_matrix.merge_open_jaw_pairs(
                 self.open_jaw_pairs, computed,
             )

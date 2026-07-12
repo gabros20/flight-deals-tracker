@@ -115,7 +115,7 @@ def build_matrix_payload(
         airports, table["durations"], table["distances"], prefiltered,
     )
     return {
-        "schema_version": 1,
+        "schema_version": gm.SCHEMA_VERSION,
         "computed_at": datetime.now(timezone.utc).isoformat(),
         "source": "OSRM public router.project-osrm.org /table (driving profile)",
         "model": dict(gm.MODEL_PARAMS),
@@ -124,6 +124,11 @@ def build_matrix_payload(
             "prefiltered_candidates": len(prefiltered),
             "pairs_kept": len(pairs),
         },
+        # Additive (Task 11 follow-up): the registry airports that were in the
+        # prefilter input at capture time, so a later load can warn when the
+        # registry has grown airports the matrix has never seen (drift signal
+        # in flight_deals.registry.ground_matrix.check_airport_drift).
+        "airports_seen": sorted(a.iata.upper() for a in airports),
         "note": (
             "Computed open-jaw ground hops. ground_minutes/est_cost_eur are STATED "
             "ESTIMATES from an OSRM driving route (see model); the deal envelope "

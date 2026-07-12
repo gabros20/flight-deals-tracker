@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 
 import pytest
+from freezegun import freeze_time
 
 from flight_deals.registry import ground_matrix as gm
 from flight_deals.registry.destinations import DestinationRegistry
@@ -287,3 +288,85 @@ def test_planner_surfaces_a_computed_openjaw_pair():
     assert d["ground"]["estimate_basis"] == "computed"
     assert d["price_confidence"] == "exact"
     assert d["price_eur"] == 30.0 + 25.0 + d["ground"]["cost_eur"]
+
+
+# --------------------------------------------------------------------------- #
+# staleness + schema_version signals on load (Task 11 review fix)              #
+# --------------------------------------------------------------------------- #
+def _write_matrix(tmp_path, **overrides) -> str:
+    payload = {
+        "schema_version": gm.SCHEMA_VERSION,
+        "computed_at": "2026-06-01T00:00:00+00:00",
+        "source": "test",
+        "model": dict(gm.MODEL_PARAMS),
+        "stats": {"airports": 2, "prefiltered_candidates": 1, "pairs_kept": 1},
+        "airports_seen": ["AAA", "BBB"],
+        "note": "synthetic test matrix",
+        "pairs": [{"a": "AAA", "b": "BBB", "ground_minutes": 100, "est_cost_eur": 10,
+                   "mode": "public_transit"}],
+    }
+    payload.update(overrides)
+    path = tmp_path / "synthetic_matrix.json"
+    path.write_text(json.dumps(payload))
+    return str(path)
+
+
+def test_load_ground_matrix_warns_when_stale(tmp_path, caplog, monkeypatch):
+    monkeypatch.setattr(gm, "_warned_stale", False)
+    path = _write_matrix(tmp_path, computed_at="2026-01-01T00:00:00+00:00")
+    with freeze_time("2026-07-12T12:00:00+00:00"):  # 192 days after computed_at
+        with caplog.at_level("WARNING", logger="flight_deals.registry.ground_matrix"):
+            pairs = gm.load_ground_matrix(path)
+    assert pairs is not None and len(pairs) == 1
+    assert any("days old" in r.message and "refresh_ground.py" in r.message
+              for r in caplog.records)
+
+
+def test_load_ground_matrix_no_stale_warning_when_fresh(tmp_path, caplog, monkeypatch):
+    monkeypatch.setattr(gm, "_warned_stale", False)
+    with freeze_time("2026-07-12T12:00:00+00:00"):
+        path = _write_matrix(tmp_path, computed_at="2026-07-01T00:00:00+00:00")  # 11 days old
+        with caplog.at_level("WARNING", logger="flight_deals.registry.ground_matrix"):
+            gm.load_ground_matrix(path)
+    assert not any("days old" in r.message for r in caplog.records)
+
+
+def test_load_ground_matrix_warns_and_still_loads_on_unknown_schema_version(tmp_path, caplog, monkeypatch):
+    monkeypatch.setattr(gm, "_warned_schema", False)
+    path = _write_matrix(tmp_path, schema_version=99)
+    with caplog.at_level("WARNING", logger="flight_deals.registry.ground_matrix"):
+        pairs = gm.load_ground_matrix(path)
+    assert pairs is not None and len(pairs) == 1  # forward-tolerant: still loads
+    assert any("schema_version" in r.message for r in caplog.records)
+
+
+# --------------------------------------------------------------------------- #
+# registry-airport drift vs the matrix's own recorded airports_seen census      #
+# --------------------------------------------------------------------------- #
+def test_check_airport_drift_warns_on_missing_airport(tmp_path, caplog, monkeypatch):
+    monkeypatch.setattr(gm, "_warned_drift", False)
+    path = _write_matrix(tmp_path)  # airports_seen == ["AAA", "BBB"]
+    with caplog.at_level("WARNING", logger="flight_deals.registry.ground_matrix"):
+        gm.check_airport_drift({"AAA", "BBB", "CCC"}, path)
+    warnings = [r.message for r in caplog.records if "missing from ground matrix" in r.message]
+    assert len(warnings) == 1
+    assert "1 registry airports missing" in warnings[0]
+    assert "CCC" in warnings[0]
+
+
+def test_check_airport_drift_silent_when_no_drift(tmp_path, caplog, monkeypatch):
+    monkeypatch.setattr(gm, "_warned_drift", False)
+    path = _write_matrix(tmp_path)  # airports_seen == ["AAA", "BBB"]
+    with caplog.at_level("WARNING", logger="flight_deals.registry.ground_matrix"):
+        gm.check_airport_drift({"AAA", "BBB"}, path)
+    assert not any("missing from ground matrix" in r.message for r in caplog.records)
+
+
+def test_check_airport_drift_is_once_per_process(tmp_path, caplog, monkeypatch):
+    monkeypatch.setattr(gm, "_warned_drift", False)
+    path = _write_matrix(tmp_path)
+    with caplog.at_level("WARNING", logger="flight_deals.registry.ground_matrix"):
+        gm.check_airport_drift({"AAA", "BBB", "CCC"}, path)
+        caplog.clear()
+        gm.check_airport_drift({"AAA", "BBB", "CCC", "DDD"}, path)  # second call in-process
+    assert not any("missing from ground matrix" in r.message for r in caplog.records)

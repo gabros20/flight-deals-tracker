@@ -34,13 +34,16 @@ from __future__ import annotations
 import json
 import logging
 import math
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import date, datetime, timezone
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from flight_deals.paths import resolve_path
 
 logger = logging.getLogger(__name__)
 
 GROUND_MATRIX_FILE = "data/ground_matrix.json"
+SCHEMA_VERSION = 1
+STALE_AFTER_DAYS = 45
 
 # --- model parameters (echoed into the written matrix + docstring above) ----- #
 HAVERSINE_PREFILTER_KM = 400.0
@@ -185,10 +188,54 @@ def derive_pairs(
 # --------------------------------------------------------------------------- #
 # Loader (READ path — used by the registry)                                    #
 # --------------------------------------------------------------------------- #
-def load_ground_matrix(path: Optional[str] = None) -> Optional[List[Dict[str, Any]]]:
-    """Load the committed ``data/ground_matrix.json`` and return its ``pairs``
-    list, or ``None`` when the file is absent or unreadable (the registry then
-    serves curated-only — Task 11 req 3 tolerance). Never raises."""
+# Warn-once-per-process flags (mirrors fx.py's ``_check_staleness`` pattern —
+# tests reset these via ``monkeypatch.setattr(gm, "_warned_...", False)``).
+_warned_stale = False
+_warned_schema = False
+_warned_drift = False
+
+
+def _check_staleness(computed_at: Optional[str]) -> None:
+    """Warn (once per process) when ``computed_at`` is more than
+    ``STALE_AFTER_DAYS`` old. Never raises — the matrix still loads either
+    way; this is a signal for a human to run ``scripts/refresh_ground.py``."""
+    global _warned_stale
+    if _warned_stale or not computed_at:
+        return
+    try:
+        as_of = date.fromisoformat(str(computed_at)[:10])
+    except ValueError:
+        return
+    age = (datetime.now(timezone.utc).date() - as_of).days
+    if age > STALE_AFTER_DAYS:
+        logger.warning(
+            "ground_matrix: ground matrix is %d days old (computed_at %s > %dd) "
+            "— run scripts/refresh_ground.py",
+            age, computed_at, STALE_AFTER_DAYS,
+        )
+        _warned_stale = True
+
+
+def _check_schema_version(schema_version: Any) -> None:
+    """Forward-tolerant schema check: an unknown ``schema_version`` is logged,
+    never fatal — the matrix still loads (Task 11 minor: warn-and-still-load)."""
+    global _warned_schema
+    if _warned_schema:
+        return
+    if schema_version != SCHEMA_VERSION:
+        logger.warning(
+            "ground_matrix: unknown schema_version %r (expected %d) — loading "
+            "anyway (forward-tolerant)",
+            schema_version, SCHEMA_VERSION,
+        )
+        _warned_schema = True
+
+
+def _load_raw(path: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Read + parse the committed matrix file into its raw dict, or ``None``
+    when absent/unreadable. Internal: shared by ``load_ground_matrix`` (which
+    extracts ``pairs``) and ``check_airport_drift`` (which needs
+    ``airports_seen``)."""
     p = resolve_path(path or GROUND_MATRIX_FILE)
     if not p.exists():
         logger.info("ground_matrix: %s absent; open-jaw uses curated pairs only", p)
@@ -198,11 +245,58 @@ def load_ground_matrix(path: Optional[str] = None) -> Optional[List[Dict[str, An
     except (ValueError, OSError) as e:
         logger.warning("ground_matrix: could not read %s (%s); curated pairs only", p, e)
         return None
-    pairs = data.get("pairs") if isinstance(data, dict) else None
+    if not isinstance(data, dict):
+        logger.warning("ground_matrix: %s is not a JSON object; curated pairs only", p)
+        return None
+    return data
+
+
+def load_ground_matrix(path: Optional[str] = None) -> Optional[List[Dict[str, Any]]]:
+    """Load the committed ``data/ground_matrix.json`` and return its ``pairs``
+    list, or ``None`` when the file is absent or unreadable (the registry then
+    serves curated-only — Task 11 req 3 tolerance). Never raises.
+
+    Also surfaces two signals (log only, never fail the load):
+    ``schema_version`` mismatch (forward-tolerant) and ``computed_at``
+    staleness (> ``STALE_AFTER_DAYS`` old)."""
+    data = _load_raw(path)
+    if data is None:
+        return None
+    _check_schema_version(data.get("schema_version"))
+    _check_staleness(data.get("computed_at"))
+    pairs = data.get("pairs")
     if not isinstance(pairs, list):
-        logger.warning("ground_matrix: %s has no 'pairs' list; curated pairs only", p)
+        logger.warning("ground_matrix: %s has no 'pairs' list; curated pairs only",
+                       resolve_path(path or GROUND_MATRIX_FILE))
         return None
     return pairs
+
+
+def check_airport_drift(registry_iatas: Set[str], path: Optional[str] = None) -> None:
+    """Warn (once per process) how many ``registry_iatas`` are missing from
+    the matrix's own recorded ``airports_seen`` census — i.e. registry
+    airports added since the matrix was last refreshed. ``airports_seen`` is
+    an additive matrix field (a list of IATA codes that were in the prefilter
+    input at capture time); older matrices without it are silently skipped
+    (nothing to compare against). Never raises."""
+    global _warned_drift
+    if _warned_drift:
+        return
+    _warned_drift = True
+    data = _load_raw(path)
+    if data is None:
+        return
+    seen = data.get("airports_seen")
+    if not isinstance(seen, list):
+        return
+    seen_set = {str(i).upper() for i in seen}
+    missing = sorted({str(i).upper() for i in registry_iatas} - seen_set)
+    if missing:
+        logger.warning(
+            "ground_matrix: %d registry airports missing from ground matrix "
+            "(added since last refresh?): %s",
+            len(missing), missing[:5],
+        )
 
 
 def merge_open_jaw_pairs(
