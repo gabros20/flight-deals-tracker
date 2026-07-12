@@ -201,6 +201,11 @@ Field-by-field:
   for a hand-verified hop (the 6 curated open-jaw pairs, the VIE/BTS
   extended-origin legs) or `"computed"` for one derived from the OSRM ground
   matrix (`data/ground_matrix.json`); absent when no provenance is attached.
+  `has_ferry` (additive, Task 12) is `true` when the ground hop crosses water on
+  a ferry (a curated ferry corridor or a computed `ferry+ground` matrix pair);
+  the `why` string then leads the hop with ⛴ so an agent discloses the crossing.
+  Absent (never `false`) when no ferry is involved, so non-ferry deals stay
+  byte-identical.
 - **`why`**: one sentence, always includes a number and a comparison basis
   (`"vs typical €X"`, `"N observations"`) per SEARCH-DESIGN §2. Never a bare
   adjective ("great deal!") — must be falsifiable/re-derivable from
@@ -422,6 +427,19 @@ Both fields are absent on plans without the open-jaw shape.
 ---
 
 ## Changelog
+
+- **2026-07-12 (Task 12)** — Ferry-aware ground modeling; additive, no frozen
+  field changed shape:
+  - Deal `ground` summary gains an optional `has_ferry: true` (§ 2) when the
+    ground hop crosses water; the `why` string leads the hop with ⛴. Absent
+    (never `false`) otherwise, so non-ferry deals stay byte-identical.
+  - Five ferry corridors curated into `data/destinations.json open_jaw_pairs`
+    (CTA↔MLA, HER↔JTR, KLX↔ZTH, CFU↔PVK, CTA↔SUF) with real ferry figures
+    (`mode` `"ferry"`/`"ferry+ground"`) — curated wins over the computed pair.
+  - `data/ground_matrix.json` computed pairs that the OSRM `/route` pass finds
+    to cross water carry additive `has_ferry`/`ferry_minutes`/`land_minutes`/
+    `sea_km` and `mode: "ferry+ground"` (a tiered ferry estimate, cap 420 min);
+    a failed route pass records `has_ferry: null` rather than a false land pair.
 
 - **2026-07-12 (Task 11)** — Computed ground matrix (open-jaw for any nearby
   registry pair); additive, no frozen field changed shape:

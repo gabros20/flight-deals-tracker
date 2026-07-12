@@ -114,6 +114,9 @@ driver, with a ready-to-cron `deploy/agentic-wake.sh`), see
   `PlannerRefusal: shape via-hub not yet enabled`, hint says to drop it. A
   non-direct shape only surfaces when it genuinely beats direct (S1/S2/S3 to the
   same destination dedupe cheapest-wins); S4 is a separate two-city deal.
+  Open-jaw (S4) deals may include a FERRY crossing — `ground.has_ferry: true`
+  marks them and the `why` leads the hop with ⛴ (e.g. "fly into HER, ⛴ ~4h ~€45
+  ferry, fly home from JTR"); relay the crossing to the user, it's not a train.
 - **`--max-calls` exceeded.** `run`/`brief` refuse a plan whose `estimated_calls`
   exceeds the cap: `plan needs 57 calls, over the --max-calls 40 cap`. The
   hint gives the exact fix — narrow (tighter `--where`, fewer origins) or
