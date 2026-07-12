@@ -94,15 +94,16 @@ def test_run_bad_depart_exits_2_with_hint():
     assert env["error"] and env["hint"]
 
 
-def test_run_disabled_shape_exits_2_with_hint():
-    """via-hub (S5) is still refused; extended-origin/open-jaw are enabled."""
+def test_run_via_hub_one_way_exits_2_with_nights_hint():
+    """via-hub (S5) is enabled but is a round-trip self-transfer: requesting it
+    one-way (no nights) exits 2 with a hint to add a nights range (Task 16)."""
     result = runner.invoke(app, ["run", "--spec",
-                                 '{"origins":["BUD"],"where":"seaside","depart":"2026-08",'
-                                 '"nights":"5-8","shapes":["via-hub"]}'])
+                                 '{"origins":["BUD"],"where":"seaside","depart":"2026-08-22",'
+                                 '"shapes":["via-hub"]}'])
     assert result.exit_code == 2
     env = json.loads(result.output)
     assert env["error"]
-    assert "via-hub" in env["hint"] and "not enabled" in env["hint"]
+    assert "nights" in env["hint"]
 
 
 def test_run_over_max_calls_exits_2_with_narrow_hint():

@@ -1,0 +1,8 @@
+{
+  "origins": ["BUD"],
+  "where": "portugal | spain",
+  "depart": "2026-08-22..2026-08-24",
+  "nights": "4-7",
+  "shapes": ["direct", "via-hub"],
+  "carriers": ["ryanair"]
+}

@@ -1,0 +1,149 @@
+{
+  "calls": [
+    {
+      "provider": "ryanair",
+      "endpoint": "oneWayFares",
+      "mode": "anywhere",
+      "shape": "S5",
+      "params": {
+        "origin": "BCN",
+        "base_origin": "BUD",
+        "out_from": "2026-08-22",
+        "out_to": "2026-08-24",
+        "purpose": "discover-dests"
+      }
+    },
+    {
+      "provider": "ryanair",
+      "endpoint": "oneWayFares",
+      "mode": "anywhere",
+      "shape": "S5",
+      "params": {
+        "origin": "BER",
+        "base_origin": "BUD",
+        "out_from": "2026-08-22",
+        "out_to": "2026-08-24",
+        "purpose": "discover-dests"
+      }
+    },
+    {
+      "provider": "ryanair",
+      "endpoint": "oneWayFares",
+      "mode": "anywhere",
+      "shape": "S5",
+      "params": {
+        "origin": "BGY",
+        "base_origin": "BUD",
+        "out_from": "2026-08-22",
+        "out_to": "2026-08-24",
+        "purpose": "discover-dests"
+      }
+    },
+    {
+      "provider": "ryanair",
+      "endpoint": "oneWayFares",
+      "mode": "anywhere",
+      "shape": "S5",
+      "params": {
+        "origin": "BUD",
+        "out_from": "2026-08-22",
+        "out_to": "2026-08-24",
+        "purpose": "discover-hubs"
+      }
+    },
+    {
+      "provider": "ryanair",
+      "endpoint": "oneWayFares",
+      "mode": "anywhere",
+      "shape": "S5",
+      "params": {
+        "origin": "DUB",
+        "base_origin": "BUD",
+        "out_from": "2026-08-22",
+        "out_to": "2026-08-24",
+        "purpose": "discover-dests"
+      }
+    },
+    {
+      "provider": "ryanair",
+      "endpoint": "oneWayFares",
+      "mode": "anywhere",
+      "shape": "S5",
+      "params": {
+        "origin": "MAD",
+        "base_origin": "BUD",
+        "out_from": "2026-08-22",
+        "out_to": "2026-08-24",
+        "purpose": "discover-dests"
+      }
+    },
+    {
+      "provider": "ryanair",
+      "endpoint": "oneWayFares",
+      "mode": "anywhere",
+      "shape": "S5",
+      "params": {
+        "origin": "PRG",
+        "base_origin": "BUD",
+        "out_from": "2026-08-22",
+        "out_to": "2026-08-24",
+        "purpose": "discover-dests"
+      }
+    },
+    {
+      "provider": "ryanair",
+      "endpoint": "oneWayFares",
+      "mode": "anywhere",
+      "shape": "S5",
+      "params": {
+        "origin": "STN",
+        "base_origin": "BUD",
+        "out_from": "2026-08-22",
+        "out_to": "2026-08-24",
+        "purpose": "discover-dests"
+      }
+    },
+    {
+      "provider": "ryanair",
+      "endpoint": "oneWayFares",
+      "mode": "anywhere",
+      "shape": "S5",
+      "params": {
+        "origin": "VIE",
+        "base_origin": "BUD",
+        "out_from": "2026-08-22",
+        "out_to": "2026-08-24",
+        "purpose": "discover-dests"
+      }
+    },
+    {
+      "provider": "ryanair",
+      "endpoint": "roundTripFares",
+      "mode": "anywhere",
+      "shape": "S2",
+      "params": {
+        "origin": "BUD",
+        "out_from": "2026-08-22",
+        "out_to": "2026-08-24",
+        "duration_from": 4,
+        "duration_to": 7
+      }
+    }
+  ],
+  "estimated_calls": 34,
+  "estimated_seconds": 34.0,
+  "via_hub": {
+    "hubs": [
+      "BCN",
+      "BER",
+      "BGY",
+      "DUB",
+      "MAD",
+      "PRG",
+      "STN",
+      "VIE"
+    ],
+    "shortlist": 6,
+    "verify_calls_max": 24
+  }
+}

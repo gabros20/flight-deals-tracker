@@ -46,12 +46,20 @@ def _farepair(dest, out_date, ret_date, total, carrier="ryanair", conf="exact"):
 
 
 # --- compile refusals ------------------------------------------------------ #
-def test_compile_refuses_via_hub_shape():
-    """via-hub (S5) is the only shape still refused (Task 10 enabled S3/S4)."""
+def test_compile_refuses_via_hub_without_nights():
+    """via-hub (S5) is a round-trip self-transfer — refused one-way (no nights),
+    with a hint to add a nights range (Task 16)."""
     with pytest.raises(PlannerRefusal) as ei:
-        compile_plan(_spec(shapes=["via-hub"]))
-    assert "via-hub" in ei.value.hint
-    assert "not enabled" in ei.value.hint
+        compile_plan(_spec(shapes=["via-hub"], nights=None, depart="2026-08-22"))
+    assert "nights" in ei.value.hint
+
+
+def test_compile_accepts_via_hub_with_nights():
+    """via-hub (S5) compiles with a nights range: S5 discovery descriptors + a
+    reserved verification budget (Task 16)."""
+    plan = compile_plan(_spec(shapes=["direct", "via-hub"], carriers=["ryanair"]))
+    assert any(c.shape == "S5" for c in plan.calls)
+    assert plan.via_hub_verify_max == 24
 
 
 def test_compile_accepts_extended_origin_and_open_jaw():
