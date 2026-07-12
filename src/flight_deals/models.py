@@ -21,6 +21,16 @@ class DayFare(BaseModel):
     # Enrichment present on some endpoints (nullable — day-level often has none)
     departure_time: Optional[str] = None  # "HH:MM"
     flight_number: Optional[str] = None
+    # Full airport-LOCAL naive datetimes as farfnd returns them (Task 16, S5):
+    # "2026-08-22T21:40:00". Carry the DATE as well as the time so overnight
+    # arrivals (arrival_at on the next calendar day, e.g. 21:40 -> 00:05) are
+    # represented honestly. These are what the via-hub MCT connect math runs on
+    # — a same-airport connection compares arrival_at(leg-in) with
+    # departure_at(leg-out), both in that hub's local zone, so the naive delta is
+    # timezone-correct (see engine/via_hub.py). Additive/nullable: day-level
+    # (CAL) fares often lack an arrival, so both stay None there.
+    departure_at: Optional[str] = None  # ISO "YYYY-MM-DDTHH:MM:SS" airport-local
+    arrival_at: Optional[str] = None  # ISO airport-local (may be the next day)
 
 
 class FareLeg(BaseModel):
@@ -34,6 +44,9 @@ class FareLeg(BaseModel):
     arrival_time: Optional[str] = None
     flight_number: Optional[str] = None
     duration_minutes: Optional[int] = None
+    # Full airport-local naive datetimes (Task 16, S5) — see DayFare above.
+    departure_at: Optional[str] = None  # ISO "YYYY-MM-DDTHH:MM:SS"
+    arrival_at: Optional[str] = None  # ISO (may be the next calendar day)
 
 
 class FarePair(BaseModel):

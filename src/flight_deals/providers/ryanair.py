@@ -55,6 +55,16 @@ def _hhmm(value: Optional[str]) -> Optional[str]:
     return dt.strftime("%H:%M") if dt else None
 
 
+def _iso_dt(value: Optional[str]) -> Optional[str]:
+    """Normalise a farfnd ``departureDate``/``arrivalDate`` to a full ISO
+    airport-local datetime string ("2026-08-22T21:40:00"), or ``None`` if it
+    isn't a parseable datetime. Carries the DATE (so overnight arrivals keep
+    their next-day date) — the via-hub MCT math needs the whole instant, not a
+    bare HH:MM (Task 16)."""
+    dt = _parse_dt(value)
+    return dt.isoformat() if dt else None
+
+
 def _duration_minutes(dep: Optional[str], arr: Optional[str]) -> Optional[int]:
     d, a = _parse_dt(dep), _parse_dt(arr)
     if d and a:
@@ -222,6 +232,8 @@ class RyanairProvider:
             arrival_time=_hhmm(node.get("arrivalDate")),
             flight_number=node.get("flightNumber"),
             duration_minutes=_duration_minutes(dep, node.get("arrivalDate")),
+            departure_at=_iso_dt(dep),
+            arrival_at=_iso_dt(node.get("arrivalDate")),
         )
 
     # ------------------------------------------------------------------ #
@@ -281,6 +293,8 @@ class RyanairProvider:
                     source_endpoint="farfnd/oneWayFares",
                     departure_time=leg.departure_time,
                     flight_number=leg.flight_number,
+                    departure_at=leg.departure_at,
+                    arrival_at=leg.arrival_at,
                 )
             )
         return out
