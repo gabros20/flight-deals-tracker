@@ -287,7 +287,10 @@ not crossing time). The fix, in authority order:
 1. **Detection**: a second OSRM `/route` pass (steps=true) per kept pair splits
    each route into `land_minutes` / `ferry_minutes` / `sea_km` via `mode=="ferry"`
    steps; island-region tags cross-check detection. Route-pass failure degrades
-   to `has_ferry: null` + warning — never a silent false negative.
+   to `has_ferry: null` + warning — never a silent false negative — UNLESS the
+   pair is island-suspect, in which case it is dropped from the matrix
+   entirely (a null land estimate for an unverified island crossing would be
+   mispriced, not merely uncertain).
 2. **Curated corridors win** (existing mechanism): routes that matter get
    hand-curated real figures (CTA↔MLA Virtu Ferries, HER↔JTR SeaJets/Blue Star).
 3. **Ferry model for the rest** (REVISED to a TIERED model 2026-07-12 — a sea
@@ -309,7 +312,11 @@ not crossing time). The fix, in authority order:
    A failed `/route` pass degrades to `has_ferry: null` — never a fabricated
    land pair. Tier constants live in `registry.ground_matrix.FERRY_TIERS`; the
    default constants over-shot the long-overland corridors, hence the tuning
-   (recorded in `.orchestrate/task-12-report.md`).
+   (recorded in `.orchestrate/task-12-report.md`). Because tiers select by a
+   `sea_km` threshold rather than a continuous function, the estimate is a
+   step function at each boundary (~+45min crossing 15km, ~+€30 base /
+   ~+80min wait crossing 60km) — acceptable for a STATED ESTIMATE and
+   documented deliberately, not tuned away.
 4. **Transitous/MOTIS** (Task 13, deferred until explicitly activated):
    `--transit` refresh flag replaces modeled durations with real scheduled
    itineraries where coverage exists (`estimate_basis: "scheduled"`);
