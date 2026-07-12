@@ -262,6 +262,20 @@ def test_via_auto_lists_reachable_hubs():
     assert "BUD" not in hubs
 
 
+def test_via_auto_azores_spec_includes_lis_and_opo_hubs():
+    """Task 18: a where=azores via-hub spec must compile self-transfer descriptors
+    through the Iberian gateways — LIS and OPO join the auto hub set for BUD.
+    (Whether Ryanair actually flies the onward LIS->PDL leg is a live/execute-time
+    question — proven false in the Task 18 live smoke — but the planner's hub
+    fan-out honestly offers them.)"""
+    spec = parse_spec({"origins": ["BUD"], "where": "azores",
+                       "depart": "2026-08-22..2026-08-24", "nights": "5-8",
+                       "shapes": ["via-hub"], "carriers": ["ryanair"]})
+    hubs = resolve_hubs(spec, Planner().registry, "BUD")
+    assert "LIS" in hubs and "OPO" in hubs
+    assert "BUD" not in hubs
+
+
 def test_via_explicit_list_restricts_to_named_hubs():
     spec = _spec(via=["VIE", "BGY"])
     assert resolve_hubs(spec, Planner().registry, "BUD") == ["BGY", "VIE"]
@@ -374,6 +388,39 @@ def test_multi_month_return_window_queries_two_months_and_selects_across_them():
     # both the Aug and Sept calendars are queried for each return direction.
     months = {m for _o, _d, m in p.ryanair.cal_calls}
     assert months == {"2026-08", "2026-09"}
+
+
+def test_multi_candidate_shared_hub_dedupes_hub_origin_cal_to_one_call():
+    """Task 18 (folded-in review item): 6 shortlisted candidates through the SAME
+    hub each need the return-window CAL for their own dest->hub leg (leg3) AND the
+    SHARED hub->origin leg (leg4). leg4's (hub, origin, month) key is identical for
+    all 6, so the return-sweep dedupe (planner ``cal_cache`` keyed by
+    (origin,dest,month)) must fetch it EXACTLY ONCE — not once per candidate.
+    The reviewer verified this empirically; this pins it so a regression that
+    drops the dedupe (6x the hub->origin CAL) is caught."""
+    dests = ["BCN", "ALC", "VLC", "AGP", "PMI", "IBZ"]  # 6 Spanish dests, all match `spain`
+    # BUD->VIE outbound (one leg1) + VIE->each dest (leg2), all same-day MCT-plausible
+    # (connect 09:30->13:00 = 210 min). matched=spain, hub restricted to VIE -> 6 candidates.
+    anywhere = {"BUD": [_df("BUD", "VIE", "2026-08-22", 30, dep="08:00", arr="09:30")],
+                "VIE": [_df("VIE", d, "2026-08-22", 40, dep="13:00", arr="16:00") for d in dests]}
+    cal, exact = {}, {}
+    for d in dests:  # each candidate: leg3 (d->VIE) distinct; leg4 (VIE->BUD) shared
+        cal[(d, "VIE", "2026-08")] = [_cal(d, "VIE", "2026-08-27", 45)]
+        exact[(d, "VIE", "2026-08-27")] = _df(d, "VIE", "2026-08-27", 45, dep="10:00", arr="13:00")
+    cal[("VIE", "BUD", "2026-08")] = [_cal("VIE", "BUD", "2026-08-27", 25)]
+    exact[("VIE", "BUD", "2026-08-27")] = _df("VIE", "BUD", "2026-08-27", 25, dep="17:00", arr="18:30")
+
+    spec = parse_spec({"origins": ["BUD"], "where": "spain",
+                       "depart": "2026-08-22..2026-08-24", "nights": "5-8",
+                       "shapes": ["via-hub"], "carriers": ["ryanair"], "via": ["VIE"]})
+    p = _planner(anywhere, exact, cal, via=["VIE"])
+    _run(spec, p)
+    # The shared hub->origin CAL is fetched ONCE despite 6 candidates through VIE.
+    leg4_calls = [c for c in p.ryanair.cal_calls if c[:2] == ("VIE", "BUD")]
+    assert leg4_calls == [("VIE", "BUD", "2026-08")]
+    # Each candidate's distinct dest->hub CAL is fetched once per dest (6 total).
+    leg3_calls = sorted(c for c in p.ryanair.cal_calls if c[0] in dests)
+    assert leg3_calls == sorted((d, "VIE", "2026-08") for d in dests)
 
 
 # --------------------------------------------------------------------------- #
