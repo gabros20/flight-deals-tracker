@@ -1,0 +1,249 @@
+{
+  "_captured_live": true,
+  "_pair": "AHO-CAG",
+  "_kind": "hybrid",
+  "_slot": "2026-07-28T10:00:00Z",
+  "_url": "https://api.transitous.org/api/v1/plan",
+  "_params": "fromPlace=40.5589,8.3181&toPlace=39.2238,9.1217&time=2026-07-28T10:00:00Z&numItineraries=3&transitModes=RAIL,HIGHSPEED_RAIL,LONG_DISTANCE,NIGHT_RAIL,REGIONAL_FAST_RAIL,REGIONAL_RAIL,BUS,COACH,TRAM,SUBWAY,METRO,FERRY",
+  "_geometry_stripped": true,
+  "_note": "legGeometry+steps stripped; itineraries kept",
+  "body": {
+    "direct": [],
+    "itineraries": [
+      {
+        "duration": 14880,
+        "startTime": "2026-07-28T11:54:00Z",
+        "endTime": "2026-07-28T16:02:00Z",
+        "transfers": 2,
+        "legs": [
+          {
+            "mode": "WALK",
+            "duration": 360,
+            "from": {
+              "name": "START"
+            },
+            "to": {
+              "name": "ALGHERO VIA CATALOGNA"
+            }
+          },
+          {
+            "mode": "BUS",
+            "duration": 6420,
+            "from": {
+              "name": "ALGHERO VIA CATALOGNA"
+            },
+            "to": {
+              "name": "MACOMER AUTOSTAZIONE"
+            }
+          },
+          {
+            "mode": "WALK",
+            "duration": 120,
+            "from": {
+              "name": "MACOMER AUTOSTAZIONE"
+            },
+            "to": {
+              "name": "MACOMER"
+            }
+          },
+          {
+            "mode": "REGIONAL_RAIL",
+            "duration": 5940,
+            "from": {
+              "name": "MACOMER"
+            },
+            "to": {
+              "name": "CAGLIARI"
+            }
+          },
+          {
+            "mode": "WALK",
+            "duration": 120,
+            "from": {
+              "name": "CAGLIARI"
+            },
+            "to": {
+              "name": "Matteotti (fronte Stazione FS)"
+            }
+          },
+          {
+            "mode": "BUS",
+            "duration": 600,
+            "from": {
+              "name": "Matteotti (fronte Stazione FS)"
+            },
+            "to": {
+              "name": "Bacaredda (Mercato Civico)"
+            }
+          },
+          {
+            "mode": "WALK",
+            "duration": 240,
+            "from": {
+              "name": "Bacaredda (Mercato Civico)"
+            },
+            "to": {
+              "name": "END"
+            }
+          }
+        ]
+      },
+      {
+        "duration": 17580,
+        "startTime": "2026-07-28T13:04:00Z",
+        "endTime": "2026-07-28T17:57:00Z",
+        "transfers": 1,
+        "legs": [
+          {
+            "mode": "WALK",
+            "duration": 360,
+            "from": {
+              "name": "START"
+            },
+            "to": {
+              "name": "Alghero (Via Catalogna)"
+            }
+          },
+          {
+            "mode": "COACH",
+            "duration": 15900,
+            "from": {
+              "name": "Alghero (Via Catalogna)"
+            },
+            "to": {
+              "name": "Cagliari (Via Roma)"
+            }
+          },
+          {
+            "mode": "WALK",
+            "duration": 120,
+            "from": {
+              "name": "Cagliari (Via Roma)"
+            },
+            "to": {
+              "name": "Matteotti (fronte Stazione FS)"
+            }
+          },
+          {
+            "mode": "BUS",
+            "duration": 600,
+            "from": {
+              "name": "Matteotti (fronte Stazione FS)"
+            },
+            "to": {
+              "name": "Bacaredda (Mercato Civico)"
+            }
+          },
+          {
+            "mode": "WALK",
+            "duration": 240,
+            "from": {
+              "name": "Bacaredda (Mercato Civico)"
+            },
+            "to": {
+              "name": "END"
+            }
+          }
+        ]
+      },
+      {
+        "duration": 17040,
+        "startTime": "2026-07-28T13:13:00Z",
+        "endTime": "2026-07-28T17:57:00Z",
+        "transfers": 3,
+        "legs": [
+          {
+            "mode": "WALK",
+            "duration": 240,
+            "from": {
+              "name": "START"
+            },
+            "to": {
+              "name": "ALGHERO VIA CAGLIARI PIAZZA DEI MERCATI"
+            }
+          },
+          {
+            "mode": "BUS",
+            "duration": 540,
+            "from": {
+              "name": "ALGHERO VIA CAGLIARI PIAZZA DEI MERCATI"
+            },
+            "to": {
+              "name": "ALGHERO STAZIONE"
+            }
+          },
+          {
+            "mode": "WALK",
+            "duration": 120,
+            "from": {
+              "name": "ALGHERO STAZIONE"
+            },
+            "to": {
+              "name": "ALGHERO STAZIONE"
+            }
+          },
+          {
+            "mode": "BUS",
+            "duration": 1800,
+            "from": {
+              "name": "ALGHERO STAZIONE"
+            },
+            "to": {
+              "name": "SASSARI VIA PADRE ZIRANO"
+            }
+          },
+          {
+            "mode": "WALK",
+            "duration": 120,
+            "from": {
+              "name": "SASSARI VIA PADRE ZIRANO"
+            },
+            "to": {
+              "name": "Sassari (Via Padre Zirano)"
+            }
+          },
+          {
+            "mode": "COACH",
+            "duration": 12000,
+            "from": {
+              "name": "Sassari (Via Padre Zirano)"
+            },
+            "to": {
+              "name": "Cagliari (Via Roma)"
+            }
+          },
+          {
+            "mode": "WALK",
+            "duration": 120,
+            "from": {
+              "name": "Cagliari (Via Roma)"
+            },
+            "to": {
+              "name": "Matteotti (fronte Stazione FS)"
+            }
+          },
+          {
+            "mode": "BUS",
+            "duration": 600,
+            "from": {
+              "name": "Matteotti (fronte Stazione FS)"
+            },
+            "to": {
+              "name": "Bacaredda (Mercato Civico)"
+            }
+          },
+          {
+            "mode": "WALK",
+            "duration": 240,
+            "from": {
+              "name": "Bacaredda (Mercato Civico)"
+            },
+            "to": {
+              "name": "END"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
