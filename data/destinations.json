@@ -1361,6 +1361,7 @@
       "name": "Halki",
       "country": "Greece",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "hiking"
@@ -1395,6 +1396,7 @@
       "name": "Symi",
       "country": "Greece",
       "tags": [
+        "island",
         "seaside",
         "culture",
         "quiet",
@@ -1430,6 +1432,7 @@
       "name": "Tilos",
       "country": "Greece",
       "tags": [
+        "island",
         "quiet",
         "hiking",
         "hidden-gem",
@@ -1465,6 +1468,7 @@
       "name": "Kastellorizo",
       "country": "Greece",
       "tags": [
+        "island",
         "quiet",
         "culture",
         "hidden-gem"
@@ -1499,6 +1503,7 @@
       "name": "Kalymnos",
       "country": "Greece",
       "tags": [
+        "island",
         "hiking",
         "culture",
         "family",
@@ -1534,6 +1539,7 @@
       "name": "Nisyros",
       "country": "Greece",
       "tags": [
+        "island",
         "hiking",
         "culture",
         "hidden-gem"
@@ -1568,6 +1574,7 @@
       "name": "Lipsi",
       "country": "Greece",
       "tags": [
+        "island",
         "quiet",
         "seaside",
         "hidden-gem",
@@ -1603,6 +1610,7 @@
       "name": "Leros",
       "country": "Greece",
       "tags": [
+        "island",
         "culture",
         "quiet",
         "family",
@@ -1638,6 +1646,7 @@
       "name": "Patmos",
       "country": "Greece",
       "tags": [
+        "island",
         "culture",
         "quiet",
         "hidden-gem",
@@ -1673,6 +1682,7 @@
       "name": "Pserimos",
       "country": "Greece",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "seaside"
@@ -1715,6 +1725,7 @@
       "name": "Folegandros",
       "country": "Greece",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "hiking"
@@ -1749,6 +1760,7 @@
       "name": "Ios",
       "country": "Greece",
       "tags": [
+        "island",
         "seaside",
         "party",
         "family"
@@ -1783,6 +1795,7 @@
       "name": "Sikinos",
       "country": "Greece",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "hiking"
@@ -1817,6 +1830,7 @@
       "name": "Anafi",
       "country": "Greece",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "hiking"
@@ -1851,6 +1865,7 @@
       "name": "Amorgos",
       "country": "Greece",
       "tags": [
+        "island",
         "hiking",
         "quiet",
         "hidden-gem",
@@ -1888,6 +1903,7 @@
       "name": "Tinos",
       "country": "Greece",
       "tags": [
+        "island",
         "culture",
         "quiet",
         "seaside",
@@ -1923,6 +1939,7 @@
       "name": "Syros",
       "country": "Greece",
       "tags": [
+        "island",
         "culture",
         "quiet",
         "hidden-gem"
@@ -1957,6 +1974,7 @@
       "name": "Naxos",
       "country": "Greece",
       "tags": [
+        "island",
         "seaside",
         "family",
         "hiking",
@@ -1992,6 +2010,7 @@
       "name": "Paros",
       "country": "Greece",
       "tags": [
+        "island",
         "seaside",
         "party",
         "family"
@@ -2026,6 +2045,7 @@
       "name": "Antiparos",
       "country": "Greece",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "seaside"
@@ -2067,6 +2087,7 @@
       "name": "Koufonisia",
       "country": "Greece",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "seaside",
@@ -2111,6 +2132,7 @@
       "name": "Aegina",
       "country": "Greece",
       "tags": [
+        "island",
         "seaside",
         "family",
         "culture"
@@ -2145,6 +2167,7 @@
       "name": "Agistri",
       "country": "Greece",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "seaside"
@@ -2179,6 +2202,7 @@
       "name": "Poros",
       "country": "Greece",
       "tags": [
+        "island",
         "seaside",
         "quiet",
         "family"
@@ -2213,6 +2237,7 @@
       "name": "Hydra",
       "country": "Greece",
       "tags": [
+        "island",
         "culture",
         "hidden-gem",
         "quiet"
@@ -2247,6 +2272,7 @@
       "name": "Spetses",
       "country": "Greece",
       "tags": [
+        "island",
         "seaside",
         "culture",
         "quiet"
@@ -2281,6 +2307,7 @@
       "name": "Serifos",
       "country": "Greece",
       "tags": [
+        "island",
         "quiet",
         "seaside",
         "hidden-gem"
@@ -2315,6 +2342,7 @@
       "name": "Sifnos",
       "country": "Greece",
       "tags": [
+        "island",
         "seaside",
         "culture",
         "hidden-gem",
@@ -2350,6 +2378,7 @@
       "name": "Milos",
       "country": "Greece",
       "tags": [
+        "island",
         "seaside",
         "hidden-gem",
         "culture",
@@ -2408,6 +2437,7 @@
       "name": "Kythnos",
       "country": "Greece",
       "tags": [
+        "island",
         "quiet",
         "seaside",
         "winter-sun"
@@ -2442,6 +2472,7 @@
       "name": "Andros",
       "country": "Greece",
       "tags": [
+        "island",
         "hiking",
         "quiet",
         "hidden-gem",
@@ -2477,6 +2508,7 @@
       "name": "Kea",
       "country": "Greece",
       "tags": [
+        "island",
         "quiet",
         "seaside",
         "family",
@@ -2512,6 +2544,7 @@
       "name": "Kimolos",
       "country": "Greece",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "seaside"
@@ -2547,6 +2580,7 @@
       "name": "Thassos",
       "country": "Greece",
       "tags": [
+        "island",
         "seaside",
         "family",
         "hiking",
@@ -2589,6 +2623,7 @@
       "name": "Skopelos",
       "country": "Greece",
       "tags": [
+        "island",
         "seaside",
         "hiking",
         "quiet",
@@ -2625,6 +2660,7 @@
       "name": "Paxos",
       "country": "Greece",
       "tags": [
+        "island",
         "seaside",
         "hidden-gem",
         "quiet",
@@ -2660,6 +2696,7 @@
       "name": "Antipaxos",
       "country": "Greece",
       "tags": [
+        "island",
         "seaside",
         "hidden-gem",
         "quiet"
@@ -2702,6 +2739,7 @@
       "name": "Meganisi",
       "country": "Greece",
       "tags": [
+        "island",
         "seaside",
         "hidden-gem",
         "quiet",
@@ -2737,6 +2775,7 @@
       "name": "Kalamos",
       "country": "Greece",
       "tags": [
+        "island",
         "hidden-gem",
         "quiet",
         "hiking"
@@ -2772,6 +2811,7 @@
       "name": "Ithaca",
       "country": "Greece",
       "tags": [
+        "island",
         "culture",
         "hiking",
         "hidden-gem",
@@ -2807,6 +2847,7 @@
       "name": "Kythira",
       "country": "Greece",
       "tags": [
+        "island",
         "hidden-gem",
         "quiet",
         "culture",
@@ -2843,6 +2884,7 @@
       "name": "Elafonisos",
       "country": "Greece",
       "tags": [
+        "island",
         "seaside",
         "family",
         "hidden-gem",
@@ -2914,6 +2956,7 @@
       "name": "Vulcano",
       "country": "Italy",
       "tags": [
+        "island",
         "seaside",
         "quiet",
         "hiking"
@@ -2948,6 +2991,7 @@
       "name": "Salina",
       "country": "Italy",
       "tags": [
+        "island",
         "seaside",
         "quiet",
         "hiking",
@@ -2984,6 +3028,7 @@
       "name": "Stromboli",
       "country": "Italy",
       "tags": [
+        "island",
         "hiking",
         "hidden-gem",
         "seaside"
@@ -3020,6 +3065,7 @@
       "name": "Panarea",
       "country": "Italy",
       "tags": [
+        "island",
         "seaside",
         "party",
         "hidden-gem"
@@ -3055,6 +3101,7 @@
       "name": "Favignana",
       "country": "Italy",
       "tags": [
+        "island",
         "seaside",
         "family",
         "hiking",
@@ -3090,6 +3137,7 @@
       "name": "Levanzo",
       "country": "Italy",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "hiking",
@@ -3125,6 +3173,7 @@
       "name": "Marettimo",
       "country": "Italy",
       "tags": [
+        "island",
         "hidden-gem",
         "hiking",
         "quiet"
@@ -3159,6 +3208,7 @@
       "name": "Ustica",
       "country": "Italy",
       "tags": [
+        "island",
         "quiet",
         "hiking",
         "hidden-gem",
@@ -3194,6 +3244,7 @@
       "name": "Procida",
       "country": "Italy",
       "tags": [
+        "island",
         "seaside",
         "quiet",
         "hidden-gem",
@@ -3229,6 +3280,7 @@
       "name": "Ischia",
       "country": "Italy",
       "tags": [
+        "island",
         "seaside",
         "family",
         "hiking",
@@ -3264,6 +3316,7 @@
       "name": "Capri",
       "country": "Italy",
       "tags": [
+        "island",
         "seaside",
         "party",
         "culture",
@@ -3299,6 +3352,7 @@
       "name": "Ponza",
       "country": "Italy",
       "tags": [
+        "island",
         "seaside",
         "party",
         "hidden-gem",
@@ -3341,6 +3395,7 @@
       "name": "Ventotene",
       "country": "Italy",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "culture",
@@ -3383,6 +3438,7 @@
       "name": "Giglio",
       "country": "Italy",
       "tags": [
+        "island",
         "seaside",
         "quiet",
         "hidden-gem",
@@ -3426,6 +3482,7 @@
       "name": "Elba",
       "country": "Italy",
       "tags": [
+        "island",
         "seaside",
         "hiking",
         "family",
@@ -3461,6 +3518,7 @@
       "name": "La Maddalena",
       "country": "Italy",
       "tags": [
+        "island",
         "seaside",
         "family",
         "hiking",
@@ -3496,6 +3554,7 @@
       "name": "San Pietro",
       "country": "Italy",
       "tags": [
+        "island",
         "seaside",
         "quiet",
         "hidden-gem",
@@ -3532,6 +3591,7 @@
       "name": "Asinara",
       "country": "Italy",
       "tags": [
+        "island",
         "hidden-gem",
         "quiet",
         "hiking",
@@ -3567,6 +3627,7 @@
       "name": "Tremiti",
       "country": "Italy",
       "tags": [
+        "island",
         "seaside",
         "family",
         "hidden-gem",
@@ -3603,6 +3664,7 @@
       "name": "Gozo",
       "country": "Malta",
       "tags": [
+        "island",
         "seaside",
         "culture",
         "hiking",
@@ -3639,6 +3701,7 @@
       "name": "Comino",
       "country": "Malta",
       "tags": [
+        "island",
         "seaside",
         "hidden-gem",
         "family"
@@ -3676,6 +3739,7 @@
       "name": "Formentera",
       "country": "Spain",
       "tags": [
+        "island",
         "seaside",
         "family",
         "hidden-gem"
@@ -3710,6 +3774,7 @@
       "name": "Cabrera",
       "country": "Spain",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "hiking",
@@ -3748,6 +3813,7 @@
       "name": "Sa Dragonera",
       "country": "Spain",
       "tags": [
+        "island",
         "quiet",
         "hiking"
       ],
@@ -3784,6 +3850,7 @@
       "name": "La Gomera",
       "country": "Spain",
       "tags": [
+        "island",
         "hiking",
         "quiet",
         "culture",
@@ -3820,6 +3887,7 @@
       "name": "La Graciosa",
       "country": "Spain",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "seaside",
@@ -3855,6 +3923,7 @@
       "name": "El Hierro",
       "country": "Spain",
       "tags": [
+        "island",
         "hiking",
         "quiet",
         "hidden-gem",
@@ -3891,6 +3960,7 @@
       "name": "Lobos",
       "country": "Spain",
       "tags": [
+        "island",
         "seaside",
         "quiet",
         "family",
@@ -3927,6 +3997,7 @@
       "name": "Brac",
       "country": "Croatia",
       "tags": [
+        "island",
         "seaside",
         "family",
         "hiking"
@@ -3961,6 +4032,7 @@
       "name": "Solta",
       "country": "Croatia",
       "tags": [
+        "island",
         "seaside",
         "quiet",
         "hidden-gem",
@@ -3996,6 +4068,7 @@
       "name": "Hvar",
       "country": "Croatia",
       "tags": [
+        "island",
         "seaside",
         "party",
         "culture",
@@ -4031,6 +4104,7 @@
       "name": "Vis",
       "country": "Croatia",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "culture",
@@ -4066,6 +4140,7 @@
       "name": "Lastovo",
       "country": "Croatia",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "hiking"
@@ -4101,6 +4176,7 @@
       "name": "Zlarin",
       "country": "Croatia",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "culture"
@@ -4136,6 +4212,7 @@
       "name": "Krapanj",
       "country": "Croatia",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "culture"
@@ -4171,6 +4248,7 @@
       "name": "Mljet",
       "country": "Croatia",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "hiking",
@@ -4206,6 +4284,7 @@
       "name": "Sipan",
       "country": "Croatia",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "family",
@@ -4242,6 +4321,7 @@
       "name": "Korcula",
       "country": "Croatia",
       "tags": [
+        "island",
         "culture",
         "seaside",
         "hiking",
@@ -4301,6 +4381,7 @@
       "name": "Ugljan",
       "country": "Croatia",
       "tags": [
+        "island",
         "seaside",
         "quiet",
         "family",
@@ -4336,6 +4417,7 @@
       "name": "Pasman",
       "country": "Croatia",
       "tags": [
+        "island",
         "seaside",
         "quiet",
         "hidden-gem",
@@ -4371,6 +4453,7 @@
       "name": "Dugi Otok",
       "country": "Croatia",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "hiking",
@@ -4406,6 +4489,7 @@
       "name": "Berlengas",
       "country": "Portugal",
       "tags": [
+        "island",
         "hiking",
         "quiet",
         "hidden-gem",
@@ -4443,6 +4527,7 @@
       "name": "Culatra",
       "country": "Portugal",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "culture",
@@ -4478,6 +4563,7 @@
       "name": "Ilha Deserta",
       "country": "Portugal",
       "tags": [
+        "island",
         "seaside",
         "quiet",
         "family"
@@ -4513,6 +4599,7 @@
       "name": "Porto Santo",
       "country": "Portugal",
       "tags": [
+        "island",
         "seaside",
         "family",
         "winter-sun"
@@ -4547,6 +4634,7 @@
       "name": "St. Anastasia",
       "country": "Bulgaria",
       "tags": [
+        "island",
         "quiet",
         "hidden-gem",
         "culture",
