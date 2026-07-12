@@ -90,8 +90,9 @@ def test_plan_golden_shapes_on():
 def test_plan_golden_via_hub():
     """Compile golden for a via-hub (S5) spec: the plan is byte-stable, shows the
     hub fan-out (discovery descriptors + the ``via_hub`` block), and reserves the
-    4-leg verification ceiling in ``estimated_calls`` — honest, no silent cap
-    (Task 16)."""
+    return-window-sweep verification ceiling in ``estimated_calls`` — honest, no
+    silent cap (Task 16/17). Sweep reserve per candidate = 2 CAL/return-month
+    (1 month here) + 2 exact + 2 retry = 6; shortlist 6 -> 36."""
     spec = _load_spec("via_hub")
     plan_dict = compile_plan(spec).to_dict()
     golden = GOLDENS / "plan_via_hub.json"
@@ -101,9 +102,9 @@ def test_plan_golden_via_hub():
     assert plan_dict == expected
     s5 = [c for c in plan_dict["calls"] if c["shape"] == "S5"]
     assert s5, "expected S5 discovery descriptors"
-    assert plan_dict["via_hub"]["verify_calls_max"] == 24
+    assert plan_dict["via_hub"]["verify_calls_max"] == 36
     # estimate reserves the concrete calls PLUS the verification ceiling.
-    assert plan_dict["estimated_calls"] == len(plan_dict["calls"]) + 24
+    assert plan_dict["estimated_calls"] == len(plan_dict["calls"]) + 36
 
 
 def test_run_golden_single_dest_is_one_exact_deal():

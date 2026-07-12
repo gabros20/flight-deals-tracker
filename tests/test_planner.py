@@ -56,10 +56,12 @@ def test_compile_refuses_via_hub_without_nights():
 
 def test_compile_accepts_via_hub_with_nights():
     """via-hub (S5) compiles with a nights range: S5 discovery descriptors + a
-    reserved verification budget (Task 16)."""
+    reserved verification budget (Task 16/17). depart 08-22..08-24 + nights 5-8 ->
+    return window 08-27..09-01 spans 2 months, so the sweep reserve per candidate
+    is 2 CAL×2 months + 2 exact + 2 retry = 8; shortlist 6 -> 48."""
     plan = compile_plan(_spec(shapes=["direct", "via-hub"], carriers=["ryanair"]))
     assert any(c.shape == "S5" for c in plan.calls)
-    assert plan.via_hub_verify_max == 24
+    assert plan.via_hub_verify_max == 48
 
 
 def test_compile_accepts_extended_origin_and_open_jaw():

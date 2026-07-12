@@ -102,14 +102,17 @@ def test_shortlist_caps_and_reports_drops():
 # End-to-end funnel through the Planner (fake provider)                        #
 # --------------------------------------------------------------------------- #
 class FakeRyanair:
-    """Serves both the anywhere discovery sweeps (dest=None) and the exact-date
-    verification legs (out_from==out_to). ``exact`` maps (origin,dest,day) -> a
-    DayFare; a missing key means 'unbookable that day'."""
+    """Serves the anywhere discovery sweeps (dest=None), the return-window CAL
+    calendars (cheapest_per_day), and the exact-date verification legs
+    (out_from==out_to). ``exact`` maps (origin,dest,day) -> a DayFare (missing key
+    = 'unbookable that day'); ``cal`` maps (origin,dest,month) -> list[DayFare]."""
 
-    def __init__(self, anywhere, exact):
+    def __init__(self, anywhere, exact, cal=None):
         self.anywhere = anywhere
         self.exact = exact
+        self.cal = cal or {}
         self.exact_calls = []
+        self.cal_calls = []
 
     def oneway_fares(self, origin, dest=None, *, out_from, out_to, use_cache=True):
         if dest is None:
@@ -121,13 +124,14 @@ class FakeRyanair:
     def roundtrip_fares(self, *a, **k):
         return []
 
-    def cheapest_per_day(self, *a, **k):
-        return []
+    def cheapest_per_day(self, origin, dest, month, *, use_cache=True):
+        self.cal_calls.append((origin, dest, month))
+        return list(self.cal.get((origin, dest, month), []))
 
 
-def _planner(anywhere, exact, via=None):
+def _planner(anywhere, exact, cal=None, via=None):
     p = Planner()
-    p.ryanair = FakeRyanair(anywhere, exact)
+    p.ryanair = FakeRyanair(anywhere, exact, cal)
     p.wizz.timetable = lambda *a, **k: ([], [])
     return p
 
@@ -140,19 +144,41 @@ def _spec(shapes=("via-hub",), via=None):
     return parse_spec(d)
 
 
-# A verifiable BUD->VIE->LIS self-transfer (out 08-22, return out+lo=4 -> 08-26).
+def _cal(origin, dest, day, price):
+    """A day-level CAL DayFare (no times — cheapestPerDay carries none)."""
+    return DayFare(origin=origin, destination=dest, date=day, price_eur=price,
+                   currency_original="EUR", price_confidence="exact", carrier="ryanair",
+                   source_endpoint="farfnd/oneWayFares/cheapestPerDay")
+
+
+# A verifiable BUD->VIE->LIS self-transfer. Outbound fixed at 08-22 from
+# discovery; the return-window sweep (nights 4-7 -> return window 08-26..08-29)
+# picks the cheapest return date where BOTH legs fly: 08-26 (45+25=70), which
+# then time-verifies. The 08-26 return keeps the frozen S5 deal_id golden.
 def _good_tables():
     anywhere = {
         "BUD": [_df("BUD", "VIE", "2026-08-22", 30, dep="08:00", arr="09:30")],
         "VIE": [_df("VIE", "LIS", "2026-08-22", 40, dep="13:00", arr="16:00")],
+    }
+    cal = {
+        ("LIS", "VIE", "2026-08"): [
+            _cal("LIS", "VIE", "2026-08-26", 45),   # cheapest combined return
+            _cal("LIS", "VIE", "2026-08-28", 50),
+        ],
+        ("VIE", "BUD", "2026-08"): [
+            _cal("VIE", "BUD", "2026-08-26", 25),
+            _cal("VIE", "BUD", "2026-08-28", 28),
+        ],
     }
     exact = {
         ("BUD", "VIE", "2026-08-22"): _df("BUD", "VIE", "2026-08-22", 30, dep="08:00", arr="09:30"),
         ("VIE", "LIS", "2026-08-22"): _df("VIE", "LIS", "2026-08-22", 40, dep="13:00", arr="16:00"),
         ("LIS", "VIE", "2026-08-26"): _df("LIS", "VIE", "2026-08-26", 45, dep="10:00", arr="13:00"),
         ("VIE", "BUD", "2026-08-26"): _df("VIE", "BUD", "2026-08-26", 25, dep="17:00", arr="18:30"),
+        ("LIS", "VIE", "2026-08-28"): _df("LIS", "VIE", "2026-08-28", 50, dep="10:00", arr="13:00"),
+        ("VIE", "BUD", "2026-08-28"): _df("VIE", "BUD", "2026-08-28", 28, dep="17:00", arr="18:30"),
     }
-    return anywhere, exact
+    return anywhere, exact, cal
 
 
 def _run(spec, planner):
@@ -161,13 +187,14 @@ def _run(spec, planner):
 
 
 def test_verified_s5_surfaces_with_buffer_in_total_and_disclosure():
-    anywhere, exact = _good_tables()
-    p = _planner(anywhere, exact, via=["VIE"])
+    anywhere, exact, cal = _good_tables()
+    p = _planner(anywhere, exact, cal, via=["VIE"])
     results = _run(_spec(via=["VIE"]), p)
     s5 = [d for d in results if d["shape"] == "S5"]
     assert len(s5) == 1
     d = s5[0]
     assert d["origin"] == "BUD" and d["destination"] == "LIS"
+    assert d["return_date"] == "2026-08-26"  # cheapest valid return from the sweep
     # 30+40+45+25 = 140 fares + 25 buffer = 165
     assert d["price_eur"] == 165.0
     assert d["price_confidence"] == "exact"
@@ -181,33 +208,41 @@ def test_verified_s5_surfaces_with_buffer_in_total_and_disclosure():
     assert "SEPARATE tickets" in d["why"] and "self-transfer buffer" in d["why"]
     # no misleading single combined booking link.
     assert d["links"] == {}
-    # exactly 4 exact-date verification calls for the one shortlisted candidate.
-    assert len(p.ryanair.exact_calls) == 4
+    # return-window sweep budget: 2 CAL/direction (1 month) + 2 exact return legs
+    # for the one shortlisted candidate; the outbound is reused from discovery.
+    assert len(p.ryanair.exact_calls) == 2
+    assert sorted(p.ryanair.cal_calls) == [
+        ("LIS", "VIE", "2026-08"), ("VIE", "BUD", "2026-08")]
 
 
 def test_s5_deal_id_golden_vector():
     # Frozen S5 golden (CONTRACT §5 changelog 2026-07-12).
     assert deal_id("BUD", "LIS", "2026-08-22", "2026-08-26", "S5", ["ryanair"]) == "ace1d456ef"
-    anywhere, exact = _good_tables()
-    p = _planner(anywhere, exact, via=["VIE"])
+    anywhere, exact, cal = _good_tables()
+    p = _planner(anywhere, exact, cal, via=["VIE"])
     d = [x for x in _run(_spec(via=["VIE"]), p) if x["shape"] == "S5"][0]
     assert d["deal_id"] == "ace1d456ef"
 
 
 def test_unverified_never_shown_when_a_leg_is_unbookable():
-    anywhere, exact = _good_tables()
-    del exact[("VIE", "BUD", "2026-08-26")]  # return leg 4 vanishes -> unverifiable
-    p = _planner(anywhere, exact, via=["VIE"])
+    anywhere, exact, cal = _good_tables()
+    # Both candidate return dates lose leg4 -> no date verifies -> dropped.
+    del exact[("VIE", "BUD", "2026-08-26")]
+    del exact[("VIE", "BUD", "2026-08-28")]
+    p = _planner(anywhere, exact, cal, via=["VIE"])
     results = _run(_spec(via=["VIE"]), p)
     assert [d for d in results if d["shape"] == "S5"] == []  # dropped, never shown
 
 
 def test_unverified_never_shown_when_verified_times_fail_mct():
-    anywhere, exact = _good_tables()
-    # Return connection becomes 17:00 depart vs 16:55 arrival = 5 min -> below MCT.
+    anywhere, exact, cal = _good_tables()
+    # Both swept return dates' connections become 17:00 depart vs 16:55 arrival
+    # = 5 min -> below MCT, so neither the cheapest nor the retry verifies.
     exact[("LIS", "VIE", "2026-08-26")] = _df("LIS", "VIE", "2026-08-26", 45,
                                               dep="10:00", arr="16:55")
-    p = _planner(anywhere, exact, via=["VIE"])
+    exact[("LIS", "VIE", "2026-08-28")] = _df("LIS", "VIE", "2026-08-28", 50,
+                                              dep="10:00", arr="16:55")
+    p = _planner(anywhere, exact, cal, via=["VIE"])
     results = _run(_spec(via=["VIE"]), p)
     assert [d for d in results if d["shape"] == "S5"] == []
 
@@ -241,13 +276,104 @@ def test_via_hub_one_way_refused():
 
 
 def test_plan_reserves_verify_calls_in_estimate():
-    spec = _spec(via=["VIE"])
+    spec = _spec(via=["VIE"])  # depart 08-22..08-24, nights 4-7 -> 1 return month
     plan = compile_plan(spec, Planner().registry)
     concrete = len(plan.calls)
-    # estimate reserves shortlist×4 verify calls beyond the concrete descriptors.
-    assert plan.estimated_calls == concrete + 24
+    # Return-window sweep reserves per candidate: 2 CAL (1 month) + 2 exact + 2
+    # retry = 6; shortlist 6 -> 36 reserved beyond the concrete descriptors.
+    assert plan.estimated_calls == concrete + 36
     assert plan.via_hub_hubs == ["VIE"]
-    assert plan.to_dict()["via_hub"] == {"hubs": ["VIE"], "shortlist": 6, "verify_calls_max": 24}
+    assert plan.to_dict()["via_hub"] == {"hubs": ["VIE"], "shortlist": 6, "verify_calls_max": 36}
+
+
+# --------------------------------------------------------------------------- #
+# PURE: return-window date selection (Task 17)                                 #
+# --------------------------------------------------------------------------- #
+def test_select_return_dates_picks_cheapest_valid_alignment():
+    # nights 4-7 off out 08-22 -> return window 08-26..08-29.
+    dh = [_cal("LIS", "VIE", "2026-08-26", 45), _cal("LIS", "VIE", "2026-08-27", 20),
+          _cal("LIS", "VIE", "2026-08-28", 50)]
+    hb = [_cal("VIE", "BUD", "2026-08-26", 25), _cal("VIE", "BUD", "2026-08-27", 90),
+          _cal("VIE", "BUD", "2026-08-28", 28)]
+    opts = vh.select_return_dates("2026-08-22", dh, hb, nights_lo=4, nights_hi=7)
+    # 08-26=70, 08-27=110, 08-28=78 -> cheapest first.
+    assert [(o.ret_date, o.ret_price_eur) for o in opts] == [
+        ("2026-08-26", 70.0), ("2026-08-28", 78.0), ("2026-08-27", 110.0)]
+
+
+def test_select_return_dates_filters_outside_nights_window():
+    # 08-25 is out+3 (below min 4 nights); 08-30 is out+8 (above max 7) -> excluded.
+    dh = [_cal("LIS", "VIE", "2026-08-25", 5), _cal("LIS", "VIE", "2026-08-26", 45),
+          _cal("LIS", "VIE", "2026-08-30", 5)]
+    hb = [_cal("VIE", "BUD", "2026-08-25", 5), _cal("VIE", "BUD", "2026-08-26", 25),
+          _cal("VIE", "BUD", "2026-08-30", 5)]
+    opts = vh.select_return_dates("2026-08-22", dh, hb, nights_lo=4, nights_hi=7)
+    assert [o.ret_date for o in opts] == ["2026-08-26"]
+
+
+def test_select_return_dates_requires_both_legs_on_the_date():
+    # 08-27 has only leg3 (no leg4) -> not a valid alignment.
+    dh = [_cal("LIS", "VIE", "2026-08-26", 45), _cal("LIS", "VIE", "2026-08-27", 10)]
+    hb = [_cal("VIE", "BUD", "2026-08-26", 25)]
+    opts = vh.select_return_dates("2026-08-22", dh, hb, nights_lo=4, nights_hi=7)
+    assert [o.ret_date for o in opts] == ["2026-08-26"]
+
+
+# --------------------------------------------------------------------------- #
+# Sweep orchestration: retry on next-best date, exact replaces CAL, multi-month#
+# --------------------------------------------------------------------------- #
+def test_mct_fail_on_cheapest_retries_next_best_date_and_succeeds():
+    anywhere, exact, cal = _good_tables()
+    # Cheapest return (08-26) fails MCT; the next-best (08-28) verifies.
+    exact[("LIS", "VIE", "2026-08-26")] = _df("LIS", "VIE", "2026-08-26", 45,
+                                              dep="10:00", arr="16:55")  # 5 min gap
+    p = _planner(anywhere, exact, cal, via=["VIE"])
+    d = [x for x in _run(_spec(via=["VIE"]), p) if x["shape"] == "S5"][0]
+    assert d["return_date"] == "2026-08-28"
+    # 30+40 outbound + 50+28 return exact + 25 buffer = 173.
+    assert d["price_eur"] == 173.0
+    # 4 exact calls: 2 on the failed cheapest date + 2 on the retry date.
+    assert len(p.ryanair.exact_calls) == 4
+
+
+def test_exact_prices_replace_cal_selection_in_total():
+    anywhere, exact, cal = _good_tables()
+    # CAL advertises leg3 at 45 but the EXACT fare on 08-26 is 60 -> the total
+    # must use the exact 60, never the 45 selection minimum (no estimate leak).
+    exact[("LIS", "VIE", "2026-08-26")] = _df("LIS", "VIE", "2026-08-26", 60,
+                                              dep="10:00", arr="13:00")
+    p = _planner(anywhere, exact, cal, via=["VIE"])
+    d = [x for x in _run(_spec(via=["VIE"]), p) if x["shape"] == "S5"][0]
+    # 30+40 + 60(exact leg3) + 25(exact leg4) + 25 buffer = 180, NOT 165.
+    assert d["price_eur"] == 180.0
+    assert d["price_confidence"] == "exact"
+
+
+def test_multi_month_return_window_queries_two_months_and_selects_across_them():
+    # Outbound 08-27, nights 4-7 -> return window 08-31..09-03 (spans Aug + Sept).
+    anywhere = {
+        "BUD": [_df("BUD", "VIE", "2026-08-27", 30, dep="08:00", arr="09:30")],
+        "VIE": [_df("VIE", "LIS", "2026-08-27", 40, dep="13:00", arr="16:00")],
+    }
+    cal = {
+        ("LIS", "VIE", "2026-08"): [_cal("LIS", "VIE", "2026-08-31", 45)],
+        ("VIE", "BUD", "2026-08"): [_cal("VIE", "BUD", "2026-08-31", 25)],
+        ("LIS", "VIE", "2026-09"): [_cal("LIS", "VIE", "2026-09-02", 100)],
+        ("VIE", "BUD", "2026-09"): [_cal("VIE", "BUD", "2026-09-02", 100)],
+    }
+    exact = {
+        ("LIS", "VIE", "2026-08-31"): _df("LIS", "VIE", "2026-08-31", 45, dep="10:00", arr="13:00"),
+        ("VIE", "BUD", "2026-08-31"): _df("VIE", "BUD", "2026-08-31", 25, dep="17:00", arr="18:30"),
+    }
+    spec = parse_spec({"origins": ["BUD"], "where": "portugal | spain",
+                       "depart": "2026-08-27..2026-08-29", "nights": "4-7",
+                       "shapes": ["via-hub"], "carriers": ["ryanair"], "via": ["VIE"]})
+    p = _planner(anywhere, exact, cal, via=["VIE"])
+    d = [x for x in _run(spec, p) if x["shape"] == "S5"][0]
+    assert d["return_date"] == "2026-08-31"  # cheapest across both months
+    # both the Aug and Sept calendars are queried for each return direction.
+    months = {m for _o, _d, m in p.ryanair.cal_calls}
+    assert months == {"2026-08", "2026-09"}
 
 
 # --------------------------------------------------------------------------- #
