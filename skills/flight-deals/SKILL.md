@@ -34,7 +34,9 @@ tracked, not today's prices).
   explicitly says one-way / single leg.
 - `--where` is a tag expression, not free text — translate the user's words:
   "seaside or italian or spanish" → `"seaside | italy | spain"`; "greek islands"
-  → `"island & greece"`; "islands but not the Canaries" → `"island & !canaries"`.
+  → `"island & greece"`; "islands but not the Canaries" → `"island & !canaries"`;
+  "the Azores" → `"azores"` (Ponta Delgada/Terceira — note: no Ryanair service, so
+  a via-hub self-transfer there won't surface; the tag still lists the airports).
   Unsure a word is a real tag? Run `flight-deals where list` first — never guess.
 - A watch with no `--nights` is a one-way watch: getaway watches need `--nights`.
 - **Gems** (small islands reached by gateway airport + ferry/bus) are places,

@@ -182,3 +182,24 @@ DROPs are recorded here only. Seasonal windows noted per entry → `season` fiel
 3. **Day-trip-only islets** (Cabrera, Dragonera, Lobos, Comino, Ilha Deserta): MARGINAL flag → excluded from default matching, reachable by explicit `--to`.
 4. **Disqualified by own Ryanair/Wizz service**: Skiathos (JSI), Lampedusa (LMP) — they're direct destinations, not gems.
 5. All prices/frequencies are 2026-season approximations from operator/aggregator pages — the Task 15 implementer should NOT re-verify all ~90 (this document is the curated source); spot-fix only if a chain is obviously broken at implementation time.
+
+---
+
+## Addendum (2026-07-13, Task 18) — Azores gem candidates (FUTURE, NOT implemented)
+
+The Task 18 Azores unlock added PDL (Ponta Delgada/São Miguel) and TER
+(Lajes/Terceira) as **airports** with an `azores` region tag, but registered **no
+gems**. Recorded here as future GEM-CATALOG candidates once an Azores gateway is
+actually flyable (Ryanair does not serve the Azores as of 2026-07-13 — see
+SEARCH-DESIGN §2c; TAP/SATA only):
+
+| Gem candidate | Gateway + onward chain | Notes | Verdict |
+|---|---|---|---|
+| **Pico** | TER: SATA Azores inter-island ferry (Praia da Vitória / Angra ↔ Madalena) OR the São Roque–Terceira line; multi-hour Atlantic crossing, seasonal | Volcano/wine island; ferry frequency thin and weather-dependent | FUTURE (needs flyable TER gateway + verified inter-island schedule) |
+| **Faial** | TER: inter-island ferry to Horta; longer crossing than Pico | Horta marina/Capelinhos; same schedule caveats | FUTURE (same blocker) |
+
+Both are blocked on the **gateway**, not the chain: with no Ryanair (or other
+registry-carrier) service into TER, there is no fare deal to extend. When a
+carrier lights up TER, transcribe these with real SATA Azores ferry
+minutes/cost/season into the `gems` array (curated, `estimate_basis:"curated"`,
+`has_ferry:true`). Not implemented in v1.
