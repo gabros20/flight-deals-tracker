@@ -213,7 +213,13 @@ class SearchSpec(BaseModel):
     depart: str
     nights: Optional[str] = None
     shapes: List[Shape] = Field(default_factory=lambda: ["direct"])
-    via: object = "none"  # "auto" | ["VIE", ...] | "none" (only used by via-hub, Task 10)
+    # via-hub hub selection (Task 16), used ONLY by the via-hub shape:
+    #   "auto"        -> registry hub-tagged airports reachable from the origin
+    #   ["VIE","BGY"] -> an explicit hub list (validated to known IATAs)
+    #   "none"        -> disable the hub fan-out (S5 yields nothing)
+    # Defaults to "auto" so requesting shapes:["via-hub"] without naming hubs
+    # does the sensible thing; ignored entirely by every other shape.
+    via: object = "auto"
     budget: Optional[float] = None  # EUR, total per person
     carriers: List[Carrier] = Field(default_factory=lambda: ["ryanair", "wizzair"])
     max_results: int = Field(default=10, ge=1)
@@ -275,6 +281,23 @@ class SearchSpec(BaseModel):
     @classmethod
     def _stringify(cls, v):
         return None if v is None else str(v)
+
+    @field_validator("via", mode="before")
+    @classmethod
+    def _norm_via(cls, v):
+        """Normalise ``via`` to ``"auto"``, ``"none"``, or a sorted upper-case
+        IATA list. ``None`` -> ``"auto"``; a bare hub string (e.g. ``"VIE"``) ->
+        the one-element list ``["VIE"]``."""
+        if v is None:
+            return "auto"
+        if isinstance(v, str):
+            s = v.strip().lower()
+            if s in ("auto", "none"):
+                return s
+            return [v.strip().upper()]
+        if isinstance(v, (list, tuple, set)):
+            return sorted({str(x).strip().upper() for x in v if str(x).strip()})
+        return v
 
     @field_validator("budget")
     @classmethod

@@ -34,6 +34,12 @@ class FlightDealsConfig(BaseModel):
     history_window_days: int = Field(default=365, ge=7, description="Default window for historical comparisons and best-this-month")
     price_drop_threshold: float = Field(default=0.15, ge=0.0, le=0.5, description="Alert if price is this fraction below historical avg")
     realert_drop_pct: float = Field(default=15.0, ge=0.0, le=100.0, description="While a watch is suppressed, re-alert only on a further drop of at least this percent below the last alerted price (chosen above Wizz's ~10% noise floor)")
+    # via-hub self-transfer (S5, Task 16). MCT = minimum connection time between
+    # the two separate same-airport tickets; a gap below the minimum is unsafe
+    # and a gap above the maximum is a stopover (not a connection) — both drop.
+    min_connect_minutes: int = Field(default=180, ge=0, description="S5: minimum same-airport connection gap (missed-connection risk floor, 3h)")
+    max_connect_minutes: int = Field(default=480, ge=0, description="S5: maximum connection gap before it's a stopover not a transfer (8h)")
+    self_transfer_buffer_eur: float = Field(default=25.0, ge=0.0, description="S5: fixed risk buffer added to (and DISPLAYED in) the self-transfer total")
     data_dir: str = Field(default="data")
 
     @property
