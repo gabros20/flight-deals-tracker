@@ -109,5 +109,7 @@
     }
   ],
   "estimated_calls": 9,
-  "estimated_seconds": 9.0
+  "estimated_seconds": 9.0,
+  "openjaw_pairs_considered": 1,
+  "openjaw_pairs_dropped": 0
 }

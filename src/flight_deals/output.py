@@ -121,14 +121,23 @@ def ground_leg(
     }
 
 
-def ground_summary(duration_minutes: int, cost_eur: Optional[float], mode: str) -> Dict[str, Any]:
+def ground_summary(duration_minutes: int, cost_eur: Optional[float], mode: str,
+                   estimate_basis: Optional[str] = None) -> Dict[str, Any]:
     """The Deal-level ``ground`` convenience mirror (CONTRACT §2): total ground
-    duration + total cost across all ground legs of the trip, plus the mode."""
-    return {
+    duration + total cost across all ground legs of the trip, plus the mode.
+
+    ``estimate_basis`` (Task 11, additive): ``"curated"`` for a hand-verified
+    ground hop (the 6 curated open-jaw pairs, the VIE/BTS extended-origin legs)
+    or ``"computed"`` for one derived from the OSRM ground matrix. Only attached
+    when set, so deals with no ground-provenance info stay byte-identical."""
+    out: Dict[str, Any] = {
         "duration_minutes": duration_minutes,
         "cost_eur": None if cost_eur is None else round(float(cost_eur), 2),
         "mode": mode,
     }
+    if estimate_basis is not None:
+        out["estimate_basis"] = estimate_basis
+    return out
 
 
 def _fmt_hm(minutes: Optional[int]) -> str:

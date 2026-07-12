@@ -39,6 +39,30 @@ NOMINAL_RATE = 1.0
 
 DEFAULT_MAX_CALLS = 40
 
+# S4 open-jaw pair cap (Task 11 req 4): with the computed ground matrix a large
+# where-expression can match many open-jaw pairs. We consider only the 40
+# SHORTEST-ground pairs among the where-matched airports per run, and the plan
+# output reports how many were dropped (no silent truncation). CAL descriptors
+# are still deduped by (origin, destination, month), so the actual call count
+# stays well under 2×matched airports + the direct-shape calls.
+S4_PAIR_CAP = 40
+
+
+def _capped_openjaw_pairs(registry, matched_set, cap: int = S4_PAIR_CAP):
+    """The where-matched open-jaw pairs (both airports in ``matched_set``),
+    sorted shortest-ground first and capped at ``cap``. Returns
+    ``(kept_pairs, dropped_count)``. Shared by ``compile_plan`` (which builds
+    CAL descriptors) and ``execute``'s ``_build_openjaw`` (which pairs the CAL
+    minima) so the two can never disagree on which pairs are in play."""
+    pairs = [
+        p for p in registry.get_open_jaw_pairs()
+        if str(p["a"]).upper() in matched_set and str(p["b"]).upper() in matched_set
+    ]
+    pairs.sort(key=lambda p: (int(p.get("ground_minutes") or 0),
+                              str(p["a"]).upper(), str(p["b"]).upper()))
+    kept = pairs[:cap]
+    return kept, len(pairs) - len(kept)
+
 # Estimate->confirm margin band (Task 7 quality fix): budget/top-N truncation
 # below is computed on *estimates*, so a deal confirm() could rescue (or that
 # could back-fill a truncated slot) must survive past that cut in order to be
@@ -116,13 +140,23 @@ class CallPlan:
     calls: List[CallDescriptor] = field(default_factory=list)
     estimated_calls: int = 0
     estimated_seconds: float = 0.0
+    # S4 open-jaw pair accounting (Task 11) — only set when the open-jaw shape
+    # is compiled, so non-open-jaw plans stay byte-identical.
+    openjaw_pairs_considered: Optional[int] = None
+    openjaw_pairs_dropped: Optional[int] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        d: Dict[str, Any] = {
             "calls": [c.to_dict() for c in self.calls],
             "estimated_calls": self.estimated_calls,
             "estimated_seconds": self.estimated_seconds,
         }
+        # Additive, present only for open-jaw plans (no silent truncation: a
+        # capped run reports exactly how many matched pairs it dropped).
+        if self.openjaw_pairs_considered is not None:
+            d["openjaw_pairs_considered"] = self.openjaw_pairs_considered
+            d["openjaw_pairs_dropped"] = self.openjaw_pairs_dropped
+        return d
 
 
 # --------------------------------------------------------------------------- #
@@ -334,8 +368,12 @@ def compile_plan(spec, registry: Optional[DestinationRegistry] = None, *, rate: 
     # we need CAL(O->D1), CAL(O->D2) (outbound months) and CAL(D1->O),    #
     # CAL(D2->O) (return months). Descriptors deduped by (origin,dest,month).#
     # ------------------------------------------------------------------ #
+    openjaw_considered: Optional[int] = None
+    openjaw_dropped: Optional[int] = None
     if "open-jaw" in shapes and round_trip and want_ryanair:
         matched_set = set(matched)
+        kept_pairs, openjaw_dropped = _capped_openjaw_pairs(registry, matched_set)
+        openjaw_considered = len(kept_pairs)
         out_months = _months_spanning(depart.out_from, depart.out_to)
         ret_months = _months_spanning(
             (date.fromisoformat(depart.out_from) + timedelta(days=lo)).isoformat(),
@@ -343,10 +381,8 @@ def compile_plan(spec, registry: Optional[DestinationRegistry] = None, *, rate: 
         )
         cal_needed: set = set()
         for base in origins:
-            for pair in registry.get_open_jaw_pairs():
+            for pair in kept_pairs:
                 a, b = str(pair["a"]).upper(), str(pair["b"]).upper()
-                if a not in matched_set or b not in matched_set:
-                    continue
                 for d1, d2 in ((a, b), (b, a)):
                     for m in out_months:
                         cal_needed.add((base, d1, m))   # outbound O -> D1
@@ -360,7 +396,11 @@ def compile_plan(spec, registry: Optional[DestinationRegistry] = None, *, rate: 
 
     calls.sort(key=lambda c: c.sort_key())
     n = len(calls)
-    return CallPlan(calls=calls, estimated_calls=n, estimated_seconds=round(n / rate, 1))
+    return CallPlan(
+        calls=calls, estimated_calls=n, estimated_seconds=round(n / rate, 1),
+        openjaw_pairs_considered=openjaw_considered,
+        openjaw_pairs_dropped=openjaw_dropped,
+    )
 
 
 def _months_spanning(start_iso: str, end_iso: str) -> List[str]:
@@ -528,13 +568,16 @@ def _extended_origin_candidate(fp: FarePair, base_origin: str, ground: Dict[str,
         carriers=["ryanair"],
         shape="S3",
         legs=legs,
-        ground=output.ground_summary(2 * g_min, round(2 * g_cost, 2), g_mode),
+        # Extended-origin ground (VIE/BTS) is hand-curated registry data.
+        ground=output.ground_summary(2 * g_min, round(2 * g_cost, 2), g_mode,
+                                     estimate_basis="curated"),
     )
 
 
 def _openjaw_candidate(
     base: str, d1: str, d2: str, out_fare: DayFare, ret_fare: DayFare, nights: int,
     ground_minutes: int, ground_cost: float, ground_mode: str,
+    estimate_basis: Optional[str] = None,
 ) -> _Candidate:
     """S4 open-jaw: fly ``base->d1``, ground ``d1->d2``, fly ``d2->base``. Two
     exact one-way Ryanair legs (CAL) + one ground hop. The trip's ``destination``
@@ -559,7 +602,8 @@ def _openjaw_candidate(
         carriers=["ryanair"],
         shape="S4",
         legs=legs,
-        ground=output.ground_summary(ground_minutes, ground_cost, ground_mode),
+        ground=output.ground_summary(ground_minutes, ground_cost, ground_mode,
+                                     estimate_basis=estimate_basis),
         dedup=("openjaw", base, frozenset({d1, d2})),
     )
 
@@ -742,15 +786,17 @@ class Planner:
         o_from = date.fromisoformat(depart.out_from)
         o_to = date.fromisoformat(depart.out_to)
         allowed_dates = set(depart.dates) if depart.kind == "dates" else None
+        # Same capped pair set the plan compiled CAL calls for (Task 11) — so we
+        # never pair a dropped pair (which has no fetched fares anyway).
+        kept_pairs, _dropped = _capped_openjaw_pairs(self.registry, matched)
         out: List[_Candidate] = []
         for base in sorted({o.upper() for o in spec.origins}):
-            for pair in self.registry.get_open_jaw_pairs():
+            for pair in kept_pairs:
                 a, b = str(pair["a"]).upper(), str(pair["b"]).upper()
-                if a not in matched or b not in matched:
-                    continue
                 g_min = int(pair.get("ground_minutes") or 0)
                 g_cost = float(pair.get("est_cost_eur") or 0.0)
                 g_mode = pair.get("mode", "train")
+                g_basis = pair.get("estimate_basis")
                 best = None  # (total, d1, d2, out_fare, ret_fare, nights)
                 for d1, d2 in ((a, b), (b, a)):
                     outs = [f for f in cal_fares.get((base, d1), [])
@@ -769,7 +815,8 @@ class Planner:
                 if best is None:
                     continue
                 _t, d1, d2, of, rf, n = best
-                out.append(_openjaw_candidate(base, d1, d2, of, rf, n, g_min, g_cost, g_mode))
+                out.append(_openjaw_candidate(base, d1, d2, of, rf, n, g_min, g_cost, g_mode,
+                                              estimate_basis=g_basis))
         return out
 
     def execute(self, plan: CallPlan, spec, *, fresh: bool = False) -> Dict[str, Any]:
