@@ -15,6 +15,8 @@ spec:
   origins: [BUD]                 # list of 3-letter IATA; default [BUD]
   where: "seaside & (italy | spain | greece)"   # tag expression; omit for a single-route watch
   destinations: [CFU]            # optional: pin to specific IATA(s) (a route watch)
+  gem: halki                      # optional: set by --to <gem> alongside destinations; persists
+                                  # the gem so a saved watch replays the onward extension on brief
   depart: 2026-08-22..2026-08-24 # date | window A..B | month YYYY-MM | comma list
   nights: 5-8                    # "lo-hi"; omit entirely for one-way (S1)
   shapes: [direct]                # direct (S2)|extended-origin (S3)|open-jaw (S4); via-hub still refused
@@ -86,7 +88,9 @@ The Deal for a gem carries additive `onward` `{name, legs, cost_eur, minutes,
 note, has_ferry}` and `destination_display` ("Halki (via RHO)"); its `deal_id`
 gains a `|gem:<slug>` component so it never collides with the plain gateway deal.
 Gems are a terminal extension, not a shape — `--shapes` is unrelated. S4 open-jaw
-deals are not gem-extended.
+deals are not gem-extended. `watch add --to <gem> ...` persists the gem on the
+saved spec's `gem` field, so a scheduled `brief` run replays the gem-only
+extension (and alerts on the extended total) exactly like the interactive command.
 
 **5. A saved search with an `agent_prompt`, then wake it for review:**
 ```bash

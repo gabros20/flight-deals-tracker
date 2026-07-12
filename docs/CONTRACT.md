@@ -438,6 +438,16 @@ Both fields are absent on plans without the open-jaw shape.
 
 ## Changelog
 
+- **2026-07-12 (Task 15b fix wave)** — `SearchSpec` (not part of the frozen
+  envelope, but a declarative artifact agents/saved searches produce — SEARCH-
+  DESIGN §4) gains an optional `gem: str|None`. Additive: absent by default,
+  every existing spec round-trips unchanged. Set by `--to <gem>` alongside the
+  existing gateway-airport `destinations` restriction, and validated against
+  the registry's gem slugs at spec-build time (unknown -> exit 2 + did-you-
+  mean, known -> normalised to the canonical slug). Persisting the gem itself
+  — not just its gateway airports — on the spec is what lets a saved
+  `watch add --to <gem> ...` replay the gem-only onward extension (and alert
+  on the extended total) from `brief`, which only ever has the loaded spec.
 - **2026-07-12 (Task 15)** — Gem onward-extension; additive, no frozen field
   changed shape:
   - **`deal_id` (§ 5)** gains an APPEND-ONLY `"|gem:<slug>"` component when a
