@@ -184,7 +184,7 @@ existing file untouched on failure.
 | Script | Writes | Cadence | Source |
 |---|---|---|---|
 | `scripts/refresh_fx.py` | `data/fx_rates.json` | weekly | frankfurter.app (ECB) |
-| `scripts/refresh_ground.py` | `data/ground_matrix.json` | monthly **or after any registry change** | OSRM public `/table` |
+| `scripts/refresh_ground.py` | `data/ground_matrix.json` | monthly **or after any registry change** | OSRM public `/table` + `/route` |
 
 ```bash
 # Preview without writing (fetches + prints stats):
@@ -196,11 +196,15 @@ existing file untouched on failure.
 
 `refresh_ground.py` makes **one** OSRM public `/table` request for the full
 registry coordinate set (under the 100-location public limit) and derives the
-open-jaw ground estimates (model in `SEARCH-DESIGN.md` §3). **Run it whenever
-`data/destinations.json` gains, removes, or moves an airport** — otherwise a new
-airport has no computed open-jaw pairs. If OSRM is down/refuses, the script exits
-non-zero and the committed matrix is left unchanged (the planner keeps serving
-the curated pairs plus the last good matrix).
+open-jaw ground estimates (model in `SEARCH-DESIGN.md` §3), then a second pass
+of **one `/route` request per kept pair** (~39 pairs) to detect ferry crossings
+(§7b). Paced at the house-rule ~1 req/s, the `/route` pass alone takes ~N
+seconds for N kept pairs (~39s today) — call it **~1 minute** end to end
+including the `/table` request. **Run it whenever `data/destinations.json`
+gains, removes, or moves an airport** — otherwise a new airport has no computed
+open-jaw pairs. If OSRM is down/refuses, the script exits non-zero and the
+committed matrix is left unchanged (the planner keeps serving the curated
+pairs plus the last good matrix).
 
 Cron example (monthly, 1st at 05:00):
 

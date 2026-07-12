@@ -287,14 +287,36 @@ not crossing time). The fix, in authority order:
 1. **Detection**: a second OSRM `/route` pass (steps=true) per kept pair splits
    each route into `land_minutes` / `ferry_minutes` / `sea_km` via `mode=="ferry"`
    steps; island-region tags cross-check detection. Route-pass failure degrades
-   to `has_ferry: null` + warning — never a silent false negative.
+   to `has_ferry: null` + warning — never a silent false negative — UNLESS the
+   pair is island-suspect, in which case it is dropped from the matrix
+   entirely (a null land estimate for an unverified island crossing would be
+   mispriced, not merely uncertain).
 2. **Curated corridors win** (existing mechanism): routes that matter get
    hand-curated real figures (CTA↔MLA Virtu Ferries, HER↔JTR SeaJets/Blue Star).
-3. **Ferry model for the rest**: time = land×1.35 + ferry×1.15 + 30 access +
-   **120 sailing-wait pad**; cost = land_km×0.11 + €35 base + sea_km×0.15;
-   cap 420min (land keeps 330); calibrated ±40% against the curated corridors.
-   mode `ferry+ground`, ⛴ in why-strings, additive `has_ferry` in the envelope
-   so agents disclose the crossing before the user gets attached to a price.
+3. **Ferry model for the rest** (REVISED to a TIERED model 2026-07-12 — a sea
+   crossing is not a road: real fares ≫ €0.11/km and sparse sailings mean the
+   WAIT dominates, so the pads scale with `sea_km` as a sailing-frequency
+   proxy). Time = `land×1.35 + ferry×1.15 + port_access + sailing_wait`; cost =
+   `max(8, land_km×0.11) + base + sea_km×rate`. Tiers by `sea_km`
+   (wait / base / rate / port), CALIBRATED against the five curated corridors:
+   - **strait** (`<15 km`, turn-up-and-go): 5 / €5 / 0.15 / 10
+   - **domestic** (`15–60 km`, a few/day): 30 / €5 / 0.15 / 30
+   - **long** (`≥60 km`, 2–3/day): 110 / €35 / 0.15 / 45
+
+   Cap 420 min (land keeps 330); mode `ferry+ground`; ⛴ in why-strings; additive
+   `has_ferry` in the envelope so agents disclose the crossing before the user
+   gets attached to a price. Calibration: modeled DURATION is within ±40% of all
+   five curated corridors and COST within ±40% of four — CTA↔SUF cost is a
+   documented outlier (a genuine ~228 km road leg at the shared €0.11/km land
+   proxy ≈ €25 vs an atypically cheap curated €15; curated wins, so unseen).
+   A failed `/route` pass degrades to `has_ferry: null` — never a fabricated
+   land pair. Tier constants live in `registry.ground_matrix.FERRY_TIERS`; the
+   default constants over-shot the long-overland corridors, hence the tuning
+   (recorded in `.orchestrate/task-12-report.md`). Because tiers select by a
+   `sea_km` threshold rather than a continuous function, the estimate is a
+   step function at each boundary (~+45min crossing 15km, ~+€30 base /
+   ~+80min wait crossing 60km) — acceptable for a STATED ESTIMATE and
+   documented deliberately, not tuned away.
 4. **Transitous/MOTIS** (Task 13, deferred until explicitly activated):
    `--transit` refresh flag replaces modeled durations with real scheduled
    itineraries where coverage exists (`estimate_basis: "scheduled"`);

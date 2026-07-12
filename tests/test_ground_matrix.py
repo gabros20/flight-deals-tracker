@@ -143,7 +143,9 @@ def test_committed_matrix_schema():
     for p in pairs:
         assert p["a"] in registry_iatas and p["b"] in registry_iatas
         assert p["a"] != p["b"]
-        assert 0 < p["ground_minutes"] <= gm.MAX_GROUND_MINUTES
+        # Ferry pairs (Task 12) keep the looser 420-min cap; land pairs 330.
+        cap = gm.MAX_FERRY_GROUND_MINUTES if p.get("has_ferry") else gm.MAX_GROUND_MINUTES
+        assert 0 < p["ground_minutes"] <= cap
         assert p["est_cost_eur"] >= gm.COST_FLOOR_EUR
 
 
@@ -188,7 +190,7 @@ def test_registry_merges_committed_matrix():
     bases = {p["estimate_basis"] for p in pairs}
     assert bases == {"curated", "computed"}
     curated = [p for p in pairs if p["estimate_basis"] == "curated"]
-    assert len(curated) == 6  # the 6 hand-curated pairs, untouched
+    assert len(curated) == 11  # 6 land + 5 ferry corridors (Task 12), untouched
 
 
 # --------------------------------------------------------------------------- #

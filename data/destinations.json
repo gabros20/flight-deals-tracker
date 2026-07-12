@@ -1132,6 +1132,51 @@
       "est_cost_eur": 15,
       "mode": "bus",
       "note": "Split<->Zadar bus ~3h (static curation)"
+    },
+    {
+      "a": "CTA",
+      "b": "MLA",
+      "ground_minutes": 350,
+      "est_cost_eur": 55,
+      "mode": "ferry+ground",
+      "has_ferry": true,
+      "note": "Virtu Ferries via Pozzallo (~90min drive CTA->Pozzallo!), 105min crossing, 2-3/day summer, foot EUR37-111 (researched 2026-07-12, Virtu Ferries). Sources: virtuferries.com; ferryhopper.com/en/ferry-routes/direct/malta-sicily"
+    },
+    {
+      "a": "HER",
+      "b": "JTR",
+      "ground_minutes": 240,
+      "est_cost_eur": 45,
+      "mode": "ferry",
+      "has_ferry": true,
+      "note": "SeaJets fast ~95min ~3/day summer + Blue Star conventional ~285min EUR15; fast economy EUR50-70 (researched 2026-07-12, SeaJets/Blue Star). Sources: ferryhopper.com/en/ferry-routes/direct/heraklion-to-santorini; directferries.com"
+    },
+    {
+      "a": "KLX",
+      "b": "ZTH",
+      "ground_minutes": 335,
+      "est_cost_eur": 25,
+      "mode": "ferry+ground",
+      "has_ferry": true,
+      "note": "drive ~140min to Kyllini + Levante 75min, 6/day summer, foot ~EUR10-15; marginal corridor, long overland leg (researched 2026-07-12, Levante Ferries). Sources: levanteferries.com/en/routes/kyllini-zakynthos"
+    },
+    {
+      "a": "CFU",
+      "b": "PVK",
+      "ground_minutes": 236,
+      "est_cost_eur": 20,
+      "mode": "ferry+ground",
+      "has_ferry": true,
+      "note": "CFU->Igoumenitsa 80min ferry, 20+/day, foot EUR7-15, then ~76min drive to PVK (researched live 2026-07-12). Sources: directferries.com/corfu_igoumenitsa_ferry.htm"
+    },
+    {
+      "a": "CTA",
+      "b": "SUF",
+      "ground_minutes": 215,
+      "est_cost_eur": 15,
+      "mode": "ferry+ground",
+      "has_ferry": true,
+      "note": "Messina Strait shuttle 20min every 20-30min (~52/day), foot EUR3-8; drive legs ~80min each side (researched live 2026-07-12). Sources: directferries.com/villa_san_giovanni_messina_ferry.htm"
     }
   ]
 }

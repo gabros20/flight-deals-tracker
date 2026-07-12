@@ -122,14 +122,20 @@ def ground_leg(
 
 
 def ground_summary(duration_minutes: int, cost_eur: Optional[float], mode: str,
-                   estimate_basis: Optional[str] = None) -> Dict[str, Any]:
+                   estimate_basis: Optional[str] = None,
+                   has_ferry: Optional[bool] = None) -> Dict[str, Any]:
     """The Deal-level ``ground`` convenience mirror (CONTRACT §2): total ground
     duration + total cost across all ground legs of the trip, plus the mode.
 
     ``estimate_basis`` (Task 11, additive): ``"curated"`` for a hand-verified
     ground hop (the 6 curated open-jaw pairs, the VIE/BTS extended-origin legs)
     or ``"computed"`` for one derived from the OSRM ground matrix. Only attached
-    when set, so deals with no ground-provenance info stay byte-identical."""
+    when set, so deals with no ground-provenance info stay byte-identical.
+
+    ``has_ferry`` (Task 12, additive): ``True`` when the ground hop crosses water
+    on a ferry (a curated ferry corridor or a computed ``ferry+ground`` matrix
+    pair). Only attached when ``True`` so non-ferry deals stay byte-identical —
+    agents disclose the crossing (⛴ in the why-string) before the user commits."""
     out: Dict[str, Any] = {
         "duration_minutes": duration_minutes,
         "cost_eur": None if cost_eur is None else round(float(cost_eur), 2),
@@ -137,6 +143,8 @@ def ground_summary(duration_minutes: int, cost_eur: Optional[float], mode: str,
     }
     if estimate_basis is not None:
         out["estimate_basis"] = estimate_basis
+    if has_ferry:
+        out["has_ferry"] = True
     return out
 
 
@@ -178,7 +186,14 @@ def ground_why_suffix(deal: Dict[str, Any]) -> str:
         d1 = deal["destination"]
         d2 = flight_legs[-1]["origin"] if flight_legs else "?"
         dur = _fmt_hm(g.get("duration_minutes"))
-        hop = " ".join(p for p in (mode, f"~{dur}" if dur else "", f"~{cost_str}" if cost_str else "") if p)
+        if g.get("has_ferry"):
+            # Ferry hop: lead with ⛴ so an agent discloses the sea crossing
+            # before the user gets attached to a price (Task 12).
+            hop = " ".join(p for p in ("⛴", f"~{dur}" if dur else "",
+                                       f"~{cost_str}" if cost_str else "", "ferry") if p)
+        else:
+            hop = " ".join(p for p in (mode, f"~{dur}" if dur else "",
+                                       f"~{cost_str}" if cost_str else "") if p)
         return f" (fly into {d1}, {hop}, fly home from {d2})"
     return ""
 

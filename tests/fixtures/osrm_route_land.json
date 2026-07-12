@@ -1,0 +1,289 @@
+{
+  "_captured_live": true,
+  "_pair": "AHO-CAG",
+  "_kind": "land",
+  "_url": "https://router.project-osrm.org/route/v1/driving/8.2908,40.6321;9.0544,39.2517",
+  "_params": "steps=true&overview=false",
+  "_geometry_stripped": true,
+  "body": {
+    "code": "Ok",
+    "routes": [
+      {
+        "duration": 13100,
+        "distance": 241648.7,
+        "legs": [
+          {
+            "duration": 13100,
+            "distance": 241648.7,
+            "steps": [
+              {
+                "mode": "driving",
+                "duration": 15.1,
+                "distance": 60.2,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 7.1,
+                "distance": 20.9,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 24.5,
+                "distance": 78.3,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 13.4,
+                "distance": 45.9,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 19.7,
+                "distance": 77.6,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 6.3,
+                "distance": 33.2,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 18.1,
+                "distance": 88.5,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 13.7,
+                "distance": 208.6,
+                "name": "Strada Provinciale 44 dell'Aeroporto di Fertilia"
+              },
+              {
+                "mode": "driving",
+                "duration": 208.8,
+                "distance": 2963.5,
+                "name": "Strada Provinciale 5M"
+              },
+              {
+                "mode": "driving",
+                "duration": 247.4,
+                "distance": 4286.2,
+                "name": "Strada Provinciale 42 dei Due Mari"
+              },
+              {
+                "mode": "driving",
+                "duration": 4.4,
+                "distance": 38.9,
+                "name": "Strada Statale 291 della Nurra"
+              },
+              {
+                "mode": "driving",
+                "duration": 463.1,
+                "distance": 6252.8,
+                "name": "Strada Statale 291 della Nurra"
+              },
+              {
+                "mode": "driving",
+                "duration": 66.2,
+                "distance": 441.5,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 30.8,
+                "distance": 273.8,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 347.8,
+                "distance": 8500.7,
+                "name": "Strada Statale 291 var della Nurra"
+              },
+              {
+                "mode": "driving",
+                "duration": 33.5,
+                "distance": 297.3,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 2159.2,
+                "distance": 42332.3,
+                "name": "Strada Statale 131 Carlo Felice"
+              },
+              {
+                "mode": "driving",
+                "duration": 11.2,
+                "distance": 71.1,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 140.3,
+                "distance": 932.9,
+                "name": "Strada Provinciale 128 Torralba - Bonnanaro - Bivio Siligo"
+              },
+              {
+                "mode": "driving",
+                "duration": 8.4,
+                "distance": 53.1,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 55.5,
+                "distance": 369.8,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 6740.8,
+                "distance": 145253.8,
+                "name": "Strada Statale 131 Carlo Felice"
+              },
+              {
+                "mode": "driving",
+                "duration": 20.1,
+                "distance": 361.8,
+                "name": "Complanare R2"
+              },
+              {
+                "mode": "driving",
+                "duration": 22.2,
+                "distance": 400.2,
+                "name": "Complanare R1"
+              },
+              {
+                "mode": "driving",
+                "duration": 1036,
+                "distance": 19077.8,
+                "name": "Strada Statale 131 Carlo Felice"
+              },
+              {
+                "mode": "driving",
+                "duration": 34.7,
+                "distance": 309.6,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 7,
+                "distance": 63,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 118.2,
+                "distance": 1314.2,
+                "name": "Strada Provinciale 8 bis"
+              },
+              {
+                "mode": "driving",
+                "duration": 53.2,
+                "distance": 929.7,
+                "name": "Strada Statale 130 Iglesiente"
+              },
+              {
+                "mode": "driving",
+                "duration": 14.6,
+                "distance": 133.7,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 6,
+                "distance": 72.6,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 32.7,
+                "distance": 480.3,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 12.2,
+                "distance": 145.9,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 17.7,
+                "distance": 239.7,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 0.4,
+                "distance": 6.3,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 16,
+                "distance": 110.2,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 1.1,
+                "distance": 8.6,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 2.8,
+                "distance": 19.3,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 637.2,
+                "distance": 4228.8,
+                "name": "Via Caduti di Nassiriya"
+              },
+              {
+                "mode": "driving",
+                "duration": 16.5,
+                "distance": 45.2,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 49,
+                "distance": 179.8,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 347,
+                "distance": 757.3,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 20.1,
+                "distance": 84,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 0,
+                "distance": 0,
+                "name": ""
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

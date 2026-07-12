@@ -1,0 +1,289 @@
+{
+  "_captured_live": true,
+  "_pair": "CFU-PVK",
+  "_kind": "ferry",
+  "_url": "https://router.project-osrm.org/route/v1/driving/19.9117,39.6019;20.7653,38.9255",
+  "_params": "steps=true&overview=false",
+  "_geometry_stripped": true,
+  "body": {
+    "code": "Ok",
+    "routes": [
+      {
+        "duration": 12305.6,
+        "distance": 151417.7,
+        "legs": [
+          {
+            "duration": 12305.6,
+            "distance": 151417.7,
+            "steps": [
+              {
+                "mode": "driving",
+                "duration": 4.1,
+                "distance": 11.9,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 44.7,
+                "distance": 186.6,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 53.7,
+                "distance": 598.4,
+                "name": "\u0391\u03b5\u03c1\u03bf\u03b4\u03c1\u03cc\u03bc\u03b9\u03bf"
+              },
+              {
+                "mode": "driving",
+                "duration": 74.9,
+                "distance": 915.4,
+                "name": "\u0393\u03b5\u03c9\u03c1\u03b3\u03ac\u03ba\u03b7 \u039a\u03ce\u03c3\u03c4\u03b1"
+              },
+              {
+                "mode": "driving",
+                "duration": 308.5,
+                "distance": 5088,
+                "name": "\u039a\u03ad\u03c1\u03ba\u03c5\u03c1\u03b1 - \u0391\u03c7\u03af\u03bb\u03bb\u03b5\u03b9\u03bf"
+              },
+              {
+                "mode": "driving",
+                "duration": 58.1,
+                "distance": 885.4,
+                "name": "\u03a0\u03bf\u03bd\u03c4\u03ae - \u0386\u03b3\u03b9\u03bf\u03b9 \u0394\u03ad\u03ba\u03b1 - \u039c\u03b5\u03c3\u03bf\u03b3\u03b3\u03ae"
+              },
+              {
+                "mode": "driving",
+                "duration": 381.1,
+                "distance": 5766.8,
+                "name": "\u03a0\u03bf\u03bd\u03c4\u03ae - \u0386\u03b3\u03b9\u03bf\u03b9 \u0394\u03ad\u03ba\u03b1 - \u039c\u03b5\u03c3\u03bf\u03b3\u03b3\u03ae"
+              },
+              {
+                "mode": "driving",
+                "duration": 520.8,
+                "distance": 7964.8,
+                "name": "\u03a0\u03bf\u03bd\u03c4\u03ae - \u0386\u03b3\u03b9\u03bf\u03b9 \u0394\u03ad\u03ba\u03b1 - \u039c\u03b5\u03c3\u03bf\u03b3\u03b3\u03ae"
+              },
+              {
+                "mode": "driving",
+                "duration": 935,
+                "distance": 16249.3,
+                "name": "\u039a\u03ad\u03c1\u03ba\u03c5\u03c1\u03b1 - \u039b\u03b5\u03c5\u03ba\u03af\u03bc\u03bc\u03b7"
+              },
+              {
+                "mode": "driving",
+                "duration": 243.9,
+                "distance": 4776.8,
+                "name": "\u03a0\u03b1\u03c1\u03ac\u03ba\u03b1\u03bc\u03c8\u03b7 \u039b\u03b5\u03c5\u03ba\u03af\u03bc\u03bc\u03b7\u03c2"
+              },
+              {
+                "mode": "ferry",
+                "duration": 4500.6,
+                "distance": 18139.8,
+                "name": "\u039a\u03ad\u03c1\u03ba\u03c5\u03c1\u03b1 (\u039b\u03b5\u03c5\u03ba\u03af\u03bc\u03bc\u03b7) - \u0397\u03b3\u03bf\u03c5\u03bc\u03b5\u03bd\u03af\u03c4\u03c3\u03b1"
+              },
+              {
+                "mode": "driving",
+                "duration": 11.9,
+                "distance": 65.4,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 15.6,
+                "distance": 170,
+                "name": "\u0391\u03b3\u03af\u03c9\u03bd \u0391\u03c0\u03bf\u03c3\u03c4\u03cc\u03bb\u03c9\u03bd"
+              },
+              {
+                "mode": "driving",
+                "duration": 4.7,
+                "distance": 52.1,
+                "name": "\u0391\u03b3\u03af\u03c9\u03bd \u0391\u03c0\u03bf\u03c3\u03c4\u03cc\u03bb\u03c9\u03bd"
+              },
+              {
+                "mode": "driving",
+                "duration": 37.8,
+                "distance": 432.4,
+                "name": "\u0391\u03b3\u03af\u03c9\u03bd \u0391\u03c0\u03bf\u03c3\u03c4\u03cc\u03bb\u03c9\u03bd"
+              },
+              {
+                "mode": "driving",
+                "duration": 11.9,
+                "distance": 216.1,
+                "name": "\u0399\u03bf\u03bd\u03af\u03bf\u03c5 \u03a0\u03b5\u03bb\u03ac\u03b3\u03bf\u03c5\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 2.2,
+                "distance": 38.5,
+                "name": "\u0399\u03bf\u03bd\u03af\u03bf\u03c5 \u03a0\u03b5\u03bb\u03ac\u03b3\u03bf\u03c5\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 30.2,
+                "distance": 508.7,
+                "name": "\u0399\u03bf\u03bd\u03af\u03bf\u03c5 \u03a0\u03b5\u03bb\u03ac\u03b3\u03bf\u03c5\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 12.3,
+                "distance": 72.3,
+                "name": "\u0397\u03b3\u03bf\u03c5\u03bc\u03b5\u03bd\u03af\u03c4\u03c3\u03b1\u03c2 - \u03a0\u03c1\u03ad\u03b2\u03b5\u03b6\u03b1\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 37.6,
+                "distance": 343.6,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 386.7,
+                "distance": 10106.6,
+                "name": "\u0395\u03b3\u03bd\u03b1\u03c4\u03af\u03b1 \u039f\u03b4\u03cc\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 19,
+                "distance": 167.9,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 423.8,
+                "distance": 7439,
+                "name": "\u0392\u03b1\u03c3\u03b9\u03bb\u03b9\u03ba\u03cc\u03c2 - \u039a\u03b1\u03c1\u03c4\u03ad\u03c1\u03b9"
+              },
+              {
+                "mode": "driving",
+                "duration": 1510.3,
+                "distance": 26228.6,
+                "name": "\u0397\u03b3\u03bf\u03c5\u03bc\u03b5\u03bd\u03af\u03c4\u03c3\u03b1\u03c2 - \u03a0\u03c1\u03ad\u03b2\u03b5\u03b6\u03b1\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 1.4,
+                "distance": 34.9,
+                "name": "\u0397\u03b3\u03bf\u03c5\u03bc\u03b5\u03bd\u03af\u03c4\u03c3\u03b1\u03c2 - \u03a0\u03c1\u03ad\u03b2\u03b5\u03b6\u03b1\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 184.7,
+                "distance": 3422.2,
+                "name": "\u0397\u03b3\u03bf\u03c5\u03bc\u03b5\u03bd\u03af\u03c4\u03c3\u03b1\u03c2 - \u03a0\u03c1\u03ad\u03b2\u03b5\u03b6\u03b1\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 3.8,
+                "distance": 41.2,
+                "name": "\u0397\u03b3\u03bf\u03c5\u03bc\u03b5\u03bd\u03af\u03c4\u03c3\u03b1\u03c2 - \u03a0\u03c1\u03ad\u03b2\u03b5\u03b6\u03b1\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 519.1,
+                "distance": 10199,
+                "name": "\u0397\u03b3\u03bf\u03c5\u03bc\u03b5\u03bd\u03af\u03c4\u03c3\u03b1\u03c2 - \u03a0\u03c1\u03ad\u03b2\u03b5\u03b6\u03b1\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 3.9,
+                "distance": 43.8,
+                "name": "\u0397\u03b3\u03bf\u03c5\u03bc\u03b5\u03bd\u03af\u03c4\u03c3\u03b1\u03c2 - \u03a0\u03c1\u03ad\u03b2\u03b5\u03b6\u03b1\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 696.3,
+                "distance": 16349.2,
+                "name": "\u0397\u03b3\u03bf\u03c5\u03bc\u03b5\u03bd\u03af\u03c4\u03c3\u03b1\u03c2 - \u03a0\u03c1\u03ad\u03b2\u03b5\u03b6\u03b1\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 1.9,
+                "distance": 41.6,
+                "name": "\u0397\u03b3\u03bf\u03c5\u03bc\u03b5\u03bd\u03af\u03c4\u03c3\u03b1\u03c2 - \u03a0\u03c1\u03ad\u03b2\u03b5\u03b6\u03b1\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 144.7,
+                "distance": 3410.9,
+                "name": "\u0397\u03b3\u03bf\u03c5\u03bc\u03b5\u03bd\u03af\u03c4\u03c3\u03b1\u03c2 - \u03a0\u03c1\u03ad\u03b2\u03b5\u03b6\u03b1\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 2.2,
+                "distance": 49.3,
+                "name": "\u0397\u03b3\u03bf\u03c5\u03bc\u03b5\u03bd\u03af\u03c4\u03c3\u03b1\u03c2 - \u03a0\u03c1\u03ad\u03b2\u03b5\u03b6\u03b1\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 98,
+                "distance": 2321,
+                "name": "\u0397\u03b3\u03bf\u03c5\u03bc\u03b5\u03bd\u03af\u03c4\u03c3\u03b1\u03c2 - \u03a0\u03c1\u03ad\u03b2\u03b5\u03b6\u03b1\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 1.3,
+                "distance": 24.4,
+                "name": "\u0397\u03b3\u03bf\u03c5\u03bc\u03b5\u03bd\u03af\u03c4\u03c3\u03b1\u03c2 - \u03a0\u03c1\u03ad\u03b2\u03b5\u03b6\u03b1\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 179,
+                "distance": 4127.1,
+                "name": "\u0397\u03b3\u03bf\u03c5\u03bc\u03b5\u03bd\u03af\u03c4\u03c3\u03b1\u03c2 - \u03a0\u03c1\u03ad\u03b2\u03b5\u03b6\u03b1\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 130.9,
+                "distance": 1743.5,
+                "name": "\u03a5\u03c0\u03bf\u03b8\u03b1\u03bb\u03ac\u03c3\u03c3\u03b9\u03b1 \u03a3\u03ae\u03c1\u03b1\u03b3\u03b3\u03b1 \u03a0\u03c1\u03ad\u03b2\u03b5\u03b6\u03b1\u03c2-\u0391\u03ba\u03c4\u03af\u03bf\u03c5"
+              },
+              {
+                "mode": "driving",
+                "duration": 90.9,
+                "distance": 1202.2,
+                "name": "\u0392\u03cc\u03bd\u03b9\u03c4\u03c3\u03b1\u03c2 - \u03a0\u03c1\u03ad\u03b2\u03b5\u03b6\u03b1\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 0.6,
+                "distance": 5.8,
+                "name": "\u03a3\u03c5\u03bd\u03b4\u03b5\u03c4\u03ae\u03c1\u03b9\u03b1 \u039f\u03b4\u03cc\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 41.8,
+                "distance": 218.6,
+                "name": "\u03a3\u03c5\u03bd\u03b4\u03b5\u03c4\u03ae\u03c1\u03b9\u03b1 \u039f\u03b4\u03cc\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 26.6,
+                "distance": 261.8,
+                "name": "\u03a0\u03b1\u03bb\u03b1\u03b9\u03ac \u0395\u03b8\u03bd\u03b9\u03ba\u03ae \u039f\u03b4\u03cc\u03c2"
+              },
+              {
+                "mode": "driving",
+                "duration": 140.9,
+                "distance": 929.8,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 408.2,
+                "distance": 566.9,
+                "name": ""
+              },
+              {
+                "mode": "driving",
+                "duration": 0,
+                "distance": 0,
+                "name": ""
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
