@@ -70,6 +70,24 @@ flight-deals searches add --spec '{"origins":["BUD"],"where":"seaside & italy","
 flight-deals watch add BUD-CFU --months 2026-08,2026-09 --nights 4-7 --max-price 150
 ```
 
+**4b. Gem destinations (island reached via gateway airport + onward ferry/bus):**
+```bash
+# By name/slug — ONLY gem-extended options (fly to the gateway, then the onward
+# chain); the extended total (fare + onward, ×2 for a round-trip) is what --budget
+# and any watch compares. Marginal/day-trip gems are reachable ONLY this way.
+flight-deals getaway --to Halki --depart 2026-06-01..2026-06-07 --nights 4-7
+# By category — a --where that matches a gem's tags shows BOTH the plain gateway
+# deal AND the gem variant; out-of-season gems drop out for a window outside season.
+flight-deals getaway --where "hidden-gem & greece" --depart 2026-06-01..2026-06-07 --nights 4-7
+# See which gems a category reaches (marginal ones flagged) before a big sweep:
+flight-deals where show "hidden-gem & greece"   # -> {airports:[...], gems:[{name, gateways, marginal, season}]}
+```
+The Deal for a gem carries additive `onward` `{name, legs, cost_eur, minutes,
+note, has_ferry}` and `destination_display` ("Halki (via RHO)"); its `deal_id`
+gains a `|gem:<slug>` component so it never collides with the plain gateway deal.
+Gems are a terminal extension, not a shape — `--shapes` is unrelated. S4 open-jaw
+deals are not gem-extended.
+
 **5. A saved search with an `agent_prompt`, then wake it for review:**
 ```bash
 flight-deals searches add --spec august-seaside.yaml --name august-seaside \
