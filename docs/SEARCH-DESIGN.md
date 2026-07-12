@@ -120,6 +120,58 @@ matched gems distinctly (marginal flagged).
 **Out of scope (v1):** Azores (S5-dependent), pseudo-airports, live schedule
 APIs, and any S5 self-transfer onward.
 
+## 2c. Via-hub self-transfer (as-built 2026-07-12; Task 16)
+
+S5 is the final shape: two SEPARATE same-day Ryanair tickets through a hub,
+`O→H→D` out and `D→H→O` back. A missed connection is the traveller's own risk,
+so it is held to the strictest honesty bar in the project.
+
+**Key finding (our own fixtures):** farfnd legs carry BOTH `departureDate` AND
+`arrivalDate` (incl. overnight, e.g. `21:40→00:05` next day). So the whole shape
+runs on farfnd exact-date one-way queries — the hostile `booking/v4/availability`
+endpoint is **not used at all**. The provider models gained additive
+`departure_at`/`arrival_at` ISO strings (`DayFare`, `FareLeg`) carrying the full
+airport-local datetime.
+
+**Settled rulings, as built:**
+- **FR×FR only** (Wizz timetable has no times). **Same-airport connections
+  only** (no BGY→MXP metro hop) — which is exactly what makes the connect math
+  correct on farfnd's airport-local naive datetimes: both instants are in hub
+  H's local zone, so their delta is timezone-correct with no tz database, and an
+  overnight arrival is handled because the delta is computed on full datetimes,
+  never date arithmetic.
+- **MCT**: `min_connect_minutes` ≤ gap ≤ `max_connect_minutes` (config, default
+  180/480). Below the floor is unsafe; above the ceiling is a stopover. Both
+  drop.
+- **Two-stage funnel.** (1) DISCOVER: one OW-ANYWHERE sweep from the origin
+  (filtered to hubs) + one per hub (filtered to where-matched destinations);
+  compose same-day, MCT-plausible outbound pairs straight from that data.
+  (2) VERIFY the cheapest 6 by composite price: fresh exact-date `oneWayFares`
+  for ALL FOUR legs (O→H, H→D on the out date; D→H, H→O on the return date =
+  out + min-nights). A candidate becomes a deal ONLY after all four legs book
+  and both verified connections pass MCT. **Unverified candidates are NEVER
+  displayed or alerted** (hard rule) — an unbookable leg or a sub-MCT verified
+  gap drops the candidate silently from the results (logged, not shown).
+- **Pricing**: `price_eur` = 4 leg fares + `self_transfer_buffer_eur` (default
+  €25, DISPLAYED: "incl. ~€25 self-transfer buffer"). Ranked/budgeted on that
+  total; `price_confidence: exact` once verified. Additive `connection`
+  `{hub, connect_out_minutes, connect_ret_minutes, verified, separate_tickets,
+  buffer_eur}`; `why`/`summary` carry the separate-tickets disclosure ALWAYS.
+  A verified S5 may alert on its buffer-inclusive total.
+- **Planner**: `compile` stays pure — hubs for `via:auto` are the registry
+  `hub`-tagged airports statically pre-filtered by `KNOWN_DIRECT_ROUTES` (the
+  true ryanair-served intersection is enforced by the discovery data at execute
+  time). The plan reserves the verification ceiling (shortlist × 4) in
+  `estimated_calls` so `--max-calls` budgets honestly; the funnel's execution
+  lives in `planner._run_via_hub` (discovery + verification via the shared
+  executor/token bucket), the pure MCT/composition half in `engine/via_hub.py`.
+- **Scope note (bounded verification):** v1 verifies each shortlisted candidate
+  at a single return date = out + `min(nights)`, keeping it to exactly 4
+  exact-date calls per candidate. A return-window sweep (trying every night in
+  the range) is a documented follow-up.
+- **Azores/PDL** (S5 follow-up, NOT in v1): needs registry additions +
+  LIS/OPO-hub validation. Recorded here; not implemented.
+
 ## 3. Category algebra (the `--where` language)
 
 Categories are not a flat enum — the user thinks in combinations ("seaside, or
@@ -440,9 +492,18 @@ not crossing time). The fix, in authority order:
   without; add if a saved search wants it.
 - Hub auto-selection: static curated list (VIE, BTS, BER, MXP/BGY, FCO/CIA,
   BCN) vs computed from route-network connectivity × category coverage. Start
-  static, compute later.
+  static, compute later. **RESOLVED (Task 16):** `via:auto` uses the registry
+  `hub`-tagged set (`HUB_IATAS`), pre-filtered per origin by the static
+  `KNOWN_DIRECT_ROUTES` so `compile` stays pure; the real ryanair-served
+  intersection is then enforced by the discovery sweep data at execute time (a
+  hub with no live O→H fare yields no candidate). `via:["VIE",…]` overrides with
+  an explicit list; `via:none` disables the fan-out. Route-network-derived
+  connectivity remains the compute-later refinement.
 - Wizz via-hub legs: allow in S5 candidates but require both legs
   exact-confirmed before display, or restrict S5 to FR×FR initially? Start
-  FR×FR + FR×W6-with-confirmation.
+  FR×W6-with-confirmation. **RESOLVED (Task 16):** v1 is **FR×FR only** — the
+  Wizz timetable carries no flight times, so it can't feed the MCT gate. A
+  Wizz-leg S5 (times sourced elsewhere, both legs exact-confirmed) is the
+  documented follow-up.
 - Should `getaway` auto-include S3 (extended origins) by default once built?
   Probably yes with ground cost shown; flag `--from BUD-only` to disable.

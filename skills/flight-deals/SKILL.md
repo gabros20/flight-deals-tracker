@@ -43,10 +43,12 @@ tracked, not today's prices).
   for a round-trip); `--where` matching a gem's tags shows both the plain gateway
   deal AND the gem variant. The extended total (fare + onward) is what budget and
   watches compare. `where show "<expr>"` lists which gems a category reaches.
-- Cheaper trip shapes are opt-in: add `--shapes direct,extended-origin,open-jaw`
+- Cheaper trip shapes are opt-in: add `--shapes direct,extended-origin,open-jaw,via-hub`
   to `getaway` to also consider nearby-airport departures (VIE/BTS, ground cost
-  shown) and open-jaw city pairs (fly into one city, home from another). Default
-  is `direct` only; a non-direct shape appears only when it genuinely beats direct.
+  shown), open-jaw city pairs (fly into one city, home from another), and via-hub
+  self-transfers (two separate tickets through a hub). Default is `direct` only;
+  a non-direct shape appears only when it genuinely beats direct. `via-hub` needs
+  a `--nights` range (it's a round-trip through a hub).
 
 # Rules
 
@@ -83,6 +85,13 @@ Read `summary` (paste-ready), skim `results` for the ones worth naming, and if
   hidden from `--where` matching and reachable ONLY via explicit `--to`; their
   variant carries the caveat in its `why`. Out-of-season gems drop out of
   `--where` automatically for a window outside their season.
+- **Self-transfer = separate tickets, the risk is the traveller's.** A via-hub
+  (`shape: "S5"`) deal is TWO separate bookings through a hub — if the first
+  flight is late you miss the second and no one refunds you. The tool enforces a
+  3h minimum connection and only ever shows time-VERIFIED self-transfers, but you
+  MUST relay the `connection.separate_tickets` risk (it's in the `why` and
+  `summary` already) — never present an S5 as if it were one protected ticket.
+  The price already includes the displayed ~€25 self-transfer buffer.
 - Holidays aren't dates: translate "christmas" to a `--depart 2026-12-19..2026-12-27`
   style window yourself; the CLI only takes dates.
 - Never invent category names — run `flight-deals where list`; `where show

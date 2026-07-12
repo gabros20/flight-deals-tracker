@@ -19,9 +19,9 @@ spec:
                                   # the gem so a saved watch replays the onward extension on brief
   depart: 2026-08-22..2026-08-24 # date | window A..B | month YYYY-MM | comma list
   nights: 5-8                    # "lo-hi"; omit entirely for one-way (S1)
-  shapes: [direct]                # direct (S2)|extended-origin (S3)|open-jaw (S4); via-hub still refused
-                                  # getaway: --shapes direct,extended-origin,open-jaw (default direct)
-  via: none                       # via-hub only; unused until shapes:[via-hub] ships
+  shapes: [direct]                # direct (S2)|extended-origin (S3)|open-jaw (S4)|via-hub (S5)
+                                  # getaway: --shapes direct,extended-origin,open-jaw,via-hub (default direct)
+  via: auto                       # via-hub hub selection: auto | [VIE, BGY] | none (ignored by other shapes)
   budget: 180                     # EUR, total per person; omit for no cap
   carriers: [ryanair, wizzair]     # default both
   max_results: 10
@@ -130,15 +130,24 @@ driver, with a ready-to-cron `deploy/agentic-wake.sh`), see
 
 - **Shapes.** `direct` (S2), `extended-origin` (S3, adds nearby-airport
   round-trip sweeps such as VIE/BTS with ground cost folded into `price_eur`),
-  and `open-jaw` (S4, fly into D1 / ground to D2 / fly home from D2) are all
-  enabled. On `getaway`: `--shapes direct,extended-origin,open-jaw` (default
-  `direct`). Only `via-hub` (S5 self-transfer) is still refused —
-  `PlannerRefusal: shape via-hub not yet enabled`, hint says to drop it. A
-  non-direct shape only surfaces when it genuinely beats direct (S1/S2/S3 to the
-  same destination dedupe cheapest-wins); S4 is a separate two-city deal.
-  Open-jaw (S4) deals may include a FERRY crossing — `ground.has_ferry: true`
-  marks them and the `why` leads the hop with ⛴ (e.g. "fly into HER, ⛴ ~4h ~€45
-  ferry, fly home from JTR"); relay the crossing to the user, it's not a train.
+  `open-jaw` (S4, fly into D1 / ground to D2 / fly home from D2), and `via-hub`
+  (S5 self-transfer, two separate tickets through a hub) are all enabled. On
+  `getaway`: `--shapes direct,extended-origin,open-jaw,via-hub` (default
+  `direct`). A non-direct shape only surfaces when it genuinely beats direct
+  (S1/S2/S3/S5 to the same destination dedupe cheapest-wins); S4 is a separate
+  two-city deal. Open-jaw (S4) deals may include a FERRY crossing —
+  `ground.has_ferry: true` marks them and the `why` leads the hop with ⛴ (e.g.
+  "fly into HER, ⛴ ~4h ~€45 ferry, fly home from JTR"); relay the crossing to
+  the user, it's not a train.
+- **Via-hub (S5) is a self-transfer.** It needs a `nights` range (a round-trip
+  through a hub) — requesting it one-way exits 2 with a hint to add `nights`.
+  Only time-VERIFIED self-transfers (≥3h same-airport connection, both
+  directions) ever surface; the price includes a displayed ~€25 self-transfer
+  buffer, and the deal carries a `connection` object + a `separate_tickets`
+  disclosure in its `why`/`summary`. ALWAYS relay that risk — a missed
+  connection is the traveller's own (two separate bookings, no protected
+  connection). `via` picks the hubs: `auto` (default), an explicit `[VIE, BGY]`,
+  or `none`. `check` on an S5 declines (re-run the getaway to re-verify).
 - **`--max-calls` exceeded.** `run`/`brief` refuse a plan whose `estimated_calls`
   exceeds the cap: `plan needs 57 calls, over the --max-calls 40 cap`. The
   hint gives the exact fix — narrow (tighter `--where`, fewer origins) or

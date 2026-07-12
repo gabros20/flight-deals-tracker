@@ -189,9 +189,10 @@ Field-by-field:
     field was renamed `estimated_cost_eur` -> `cost_eur` in Task 10 (§ 7 open
     item RESOLVED); the model still accepts the legacy key on input via a
     validation alias.
-- **`ground`**: `null` for `S1`/`S2`. For `S3`/`S4`/`S5`, a **summary**
-  object so a consumer doesn't have to walk `legs` to answer "how much
-  ground transfer is involved":
+- **`ground`**: `null` for `S1`/`S2` **and `S5`** (a via-hub self-transfer is
+  all flights — no ground leg; it carries a `connection` object instead, see
+  below). For `S3`/`S4`, a **summary** object so a consumer doesn't have to walk
+  `legs` to answer "how much ground transfer is involved":
   ```jsonc
   { "duration_minutes": 150, "cost_eur": 12.0, "mode": "public_transit",
     "estimate_basis": "computed" }
@@ -223,9 +224,24 @@ Field-by-field:
   degrades to a factual, non-comparative sentence (e.g. `"only Ryanair
   fare found for this route/window"`) rather than fabricating a percentile.
 - **`links`**: map of carrier id -> booking URL. Only carriers actually
-  present in `carriers` get an entry. Absent (not `null`) if a booking deep
+  present in `carriers` get an entry. Empty `{}` when a booking deep
   link can't be constructed confidently for a shape (e.g. S5 self-transfer
-  is two separate bookings — both keyed by leg, not one combined link).
+  is two separate bookings — there is no single combined link; the four
+  segments live in `legs`).
+- **`connection`** (additive, Task 16): present ONLY on an `S5` deal (absent —
+  not `null` — on every other shape, so they stay byte-identical). The verified
+  self-transfer metadata:
+  ```jsonc
+  { "hub": "VIE", "connect_out_minutes": 210, "connect_ret_minutes": 240,
+    "verified": true, "separate_tickets": true, "buffer_eur": 25.0 }
+  ```
+  `verified: true` is load-bearing — a displayed S5 is ALWAYS time-verified
+  (unverified candidates are never displayed or alerted). `separate_tickets:
+  true` states the honest risk (a missed connection is the traveller's own,
+  there is no protected connection). `connect_out_minutes`/`connect_ret_minutes`
+  are the VERIFIED same-airport gaps (≥ `min_connect_minutes`, default 180, and
+  ≤ `max_connect_minutes`, default 480). `buffer_eur` is the displayed
+  self-transfer risk buffer already included in `price_eur`.
 
 ### 2a. Shaped deals — S3 extended-origin, S4 open-jaw (Task 10)
 
@@ -268,6 +284,43 @@ Ranking is across shapes by total `price_eur` (fares + ground). S1/S2/S3 to the
 same destination are deduplicated (cheapest wins, so an extended origin only
 surfaces when it genuinely beats direct); S4 is a distinct product keyed by the
 unordered airport pair and is never deduped against a direct deal.
+
+### 2b. Shaped deals — S5 via-hub self-transfer (Task 16)
+
+Additive: reuses the exact Deal shape; only `shape`, `legs`, `connection`, and
+the endpoint semantics differ. Enabled on `getaway`/`run` via `--shapes via-hub`
+(NOT default) and on a spec via `shapes:[…,"via-hub"]` + the `via` selector.
+
+- **S5 self-transfer** (`shape: "S5"`): two SEPARATE Ryanair tickets, fly
+  `origin→hub→destination` on the out date and `destination→hub→origin` on the
+  return date — one bookable trip, but the missed connection is the traveller's
+  own risk. It is **round-trip only** (needs a `nights` range).
+  - `origin` = base origin (BUD). `destination` = the final destination D. The
+    hub H appears only inside `legs` and `connection`.
+  - `legs` (chronological): `flight O→H`, `flight H→D` (out date), `flight D→H`,
+    `flight H→O` (return date) — **four flight legs, no ground leg**.
+  - `connection` (see § 2) carries the hub, both VERIFIED same-airport
+    connection gaps, `verified: true`, `separate_tickets: true`, and the
+    displayed `buffer_eur`.
+  - `price_eur` = the four one-way fares **+ the self-transfer buffer**
+    (`self_transfer_buffer_eur`, default €25, DISPLAYED not hidden — the `why`
+    and `summary` say "incl. ~€25 self-transfer buffer"). `price_confidence:
+    exact` (all four fares exact AND both connections time-verified).
+    `carriers: ["ryanair"]` (FR×FR only in v1). `ground: null`, `links: {}`.
+  - **Two-stage funnel**: candidates are discovered day-level from the anywhere
+    sweep, then the cheapest 6 are VERIFIED with fresh exact-date one-way
+    queries for all four legs (times + fares). A candidate becomes a deal ONLY
+    after verification — **unverified candidates are never displayed or
+    alerted** (the hard rule). `check` on an S5 declines honestly (a 4-leg
+    re-verify — re-run the getaway).
+  - `deal_id` (§ 5) is unchanged: `shape` already distinguishes S5 from an S2
+    to the same D. When two hubs reach the same D only the cheapest survives
+    dedup, so a displayed set has no S5 id collision.
+
+Ranking: S5 competes point-to-point (cheapest wins) with S1/S2/S3 to the same
+destination on its buffer-inclusive total, so a self-transfer surfaces only when
+it genuinely beats direct. A verified S5 may alert (its buffer-inclusive total
+vs the watch threshold).
 
 ---
 
@@ -398,12 +451,25 @@ the open-jaw pairs are capped at the 40 shortest-ground among the where-matched
 airports, and the drop count makes any truncation visible rather than silent.
 Both fields are absent on plans without the open-jaw shape.
 
+When the `via-hub` shape is compiled, the plan additionally carries a `via_hub`
+block `{ "hubs": [...], "shortlist": 6, "verify_calls_max": 24 }` (additive, Task
+16): `hubs` is the discovery fan-out (one OW-ANYWHERE sweep per hub, plus one
+from the origin), `shortlist` is how many cheapest discovery candidates earn a
+full 4-leg exact-date verification, and `verify_calls_max` (= `shortlist × 4`) is
+the verification ceiling. Unlike the other shapes, `estimated_calls` for a
+via-hub plan is **`len(calls)` PLUS `verify_calls_max`** — the dynamic
+verification (its exact count can't be known until discovery runs) is honestly
+RESERVED in the estimate so `--max-calls` budgets for it; the actual verification
+never exceeds that ceiling (dropped discovery candidates are logged, never
+silently capped). The block is absent on plans without the via-hub shape.
+
 - `calls`: ordered list of planned HTTP calls; each entry names the
   provider, endpoint, mode, the trip shape it serves, and the resolved
   params (post `--where` expansion — e.g. a category sweep is already
   flattened to concrete origins/destinations here, not left symbolic).
-- `estimated_calls`: `len(calls)` — kept as an explicit field (not
-  re-derived by the caller) so a `plan` diff (schema change, added
+- `estimated_calls`: `len(calls)` (**plus the via-hub `verify_calls_max`
+  reservation when the via-hub shape is compiled**) — kept as an explicit field
+  (not re-derived by the caller) so a `plan` diff (schema change, added
   confirmation calls) is visible without counting.
 - `estimated_seconds`: wall-clock estimate assuming the shared rate
   limiter's configured rate (Global Constraint 9, default ~1 req/s) and
@@ -438,6 +504,27 @@ Both fields are absent on plans without the open-jaw shape.
 
 ## Changelog
 
+- **2026-07-12 (Task 16)** — S5 via-hub self-transfer; additive, no frozen field
+  changed shape:
+  - **`shape` enum** gains `"S5"` (self-transfer via hub, two separate tickets)
+    — already reserved in § 2's shape list; now emitted.
+  - **Deal object (§ 2)** gains one additive, optional field present ONLY on an
+    S5 deal (absent — not `null` — elsewhere, so non-S5 deals stay
+    byte-identical): `connection` `{ hub, connect_out_minutes,
+    connect_ret_minutes, verified:true, separate_tickets:true, buffer_eur }`
+    (§ 2 / § 2b). For an S5 deal, `ground` is `null` and `links` is `{}` (no
+    single combined booking — two separate tickets). `price_eur` includes the
+    displayed self-transfer buffer.
+  - **`deal_id` (§ 5)** derivation is UNCHANGED — `shape` already separates an
+    S5 from an S2 to the same destination. Golden vector: `deal_id("BUD","LIS",
+    "2026-08-22","2026-08-26","S5",["ryanair"]) == "ace1d456ef"`.
+  - **`plan` output (§ 6)** gains an additive `via_hub` block
+    `{ hubs[], shortlist, verify_calls_max }` present only when the via-hub
+    shape is compiled; `estimated_calls` reserves the verification ceiling
+    (`shortlist × 4`) beyond the concrete discovery descriptors (honest budget,
+    no silent cap). `SearchSpec.via` (`"auto"` | `["VIE",…]` | `"none"`) selects
+    the hub fan-out; its default changed from `"none"` to `"auto"` (used only by
+    the via-hub shape, ignored by every other).
 - **2026-07-12 (Task 15b fix wave)** — `SearchSpec` (not part of the frozen
   envelope, but a declarative artifact agents/saved searches produce — SEARCH-
   DESIGN §4) gains an optional `gem: str|None`. Additive: absent by default,
@@ -559,7 +646,8 @@ Both fields are absent on plans without the open-jaw shape.
     RESOLVED); legacy key still accepted on input via a validation alias.
     Ground `legs[].distance_km` is now nullable (a static curated hop has none).
   - `getaway` gains `--shapes` (comma list; default `direct`, NOT
-    default-enabled). `via-hub` (S5) is still refused by the planner with a hint.
+    default-enabled). `via-hub` (S5) was refused by the planner at Task 10
+    (enabled in Task 16 — see the 2026-07-12 entry above).
 
 - **2026-07-11 (Task 8 fix wave 2)** — Reliability-backbone hardening; additive
   only, no frozen field changed shape:
