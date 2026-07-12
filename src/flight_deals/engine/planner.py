@@ -28,6 +28,7 @@ from flight_deals.config import get_config
 from flight_deals.models import DayFare, FareLeg, FarePair
 from flight_deals.orchestrator import aggregate_status, status_for_exception
 from flight_deals.registry.destinations import DestinationRegistry
+from flight_deals.registry.ground_matrix import GROUND_MODE
 
 logger = logging.getLogger(__name__)
 
@@ -577,17 +578,21 @@ def _extended_origin_candidate(fp: FarePair, base_origin: str, ground: Dict[str,
 def _openjaw_candidate(
     base: str, d1: str, d2: str, out_fare: DayFare, ret_fare: DayFare, nights: int,
     ground_minutes: int, ground_cost: float, ground_mode: str,
-    estimate_basis: Optional[str] = None,
+    estimate_basis: Optional[str] = None, ground_distance_km: Optional[float] = None,
 ) -> _Candidate:
     """S4 open-jaw: fly ``base->d1``, ground ``d1->d2``, fly ``d2->base``. Two
     exact one-way Ryanair legs (CAL) + one ground hop. The trip's ``destination``
     is the fly-in airport ``d1``; the fly-home airport ``d2`` and the hop live in
-    ``legs``. Total = leg1 + leg2 + ground cost (one hop, not doubled)."""
+    ``legs``. Total = leg1 + leg2 + ground cost (one hop, not doubled).
+    ``ground_distance_km`` is the pair's routed road distance (``km_road``) when
+    the hop is a computed matrix pair; curated pairs carry no ``km_road`` and
+    stay ``None`` (the field is nullable — CONTRACT §2a)."""
     total = round(out_fare.price_eur + ret_fare.price_eur + ground_cost, 2)
     legs = [
         output.flight_leg(base, d1, "ryanair", out_fare.date, out_fare.price_eur,
                           departure_time=out_fare.departure_time),
-        output.ground_leg(d1, d2, ground_mode, ground_minutes, cost_eur=ground_cost),
+        output.ground_leg(d1, d2, ground_mode, ground_minutes, cost_eur=ground_cost,
+                          distance_km=ground_distance_km),
         output.flight_leg(d2, base, "ryanair", ret_fare.date, ret_fare.price_eur,
                           departure_time=ret_fare.departure_time),
     ]
@@ -795,8 +800,9 @@ class Planner:
                 a, b = str(pair["a"]).upper(), str(pair["b"]).upper()
                 g_min = int(pair.get("ground_minutes") or 0)
                 g_cost = float(pair.get("est_cost_eur") or 0.0)
-                g_mode = pair.get("mode", "train")
+                g_mode = pair.get("mode") or GROUND_MODE
                 g_basis = pair.get("estimate_basis")
+                g_km = pair.get("km_road")
                 best = None  # (total, d1, d2, out_fare, ret_fare, nights)
                 for d1, d2 in ((a, b), (b, a)):
                     outs = [f for f in cal_fares.get((base, d1), [])
@@ -816,7 +822,7 @@ class Planner:
                     continue
                 _t, d1, d2, of, rf, n = best
                 out.append(_openjaw_candidate(base, d1, d2, of, rf, n, g_min, g_cost, g_mode,
-                                              estimate_basis=g_basis))
+                                              estimate_basis=g_basis, ground_distance_km=g_km))
         return out
 
     def execute(self, plan: CallPlan, spec, *, fresh: bool = False) -> Dict[str, Any]:

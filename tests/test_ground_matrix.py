@@ -288,6 +288,13 @@ def test_planner_surfaces_a_computed_openjaw_pair():
     assert d["ground"]["estimate_basis"] == "computed"
     assert d["price_confidence"] == "exact"
     assert d["price_eur"] == 30.0 + 25.0 + d["ground"]["cost_eur"]
+    # Task 11 minor: a computed pair's routed road distance (km_road) must be
+    # plumbed into the leg's distance_km, not left None (the field is nullable
+    # so curated pairs, with no km_road, stay None — see test_ground.py).
+    ground_leg = [leg for leg in d["legs"] if leg["type"] == "ground"][0]
+    matrix_pair = next(p for p in reg.get_open_jaw_pairs()
+                       if frozenset({p["a"], p["b"]}) == frozenset({"AHO", "OLB"}))
+    assert ground_leg["distance_km"] == matrix_pair["km_road"] == pytest.approx(129.8)
 
 
 # --------------------------------------------------------------------------- #
@@ -370,3 +377,45 @@ def test_check_airport_drift_is_once_per_process(tmp_path, caplog, monkeypatch):
         caplog.clear()
         gm.check_airport_drift({"AAA", "BBB", "CCC", "DDD"}, path)  # second call in-process
     assert not any("missing from ground matrix" in r.message for r in caplog.records)
+
+
+# --------------------------------------------------------------------------- #
+# mode fallback constant (Task 11 review minor)                                #
+# --------------------------------------------------------------------------- #
+def test_openjaw_pair_missing_mode_falls_back_to_ground_mode_constant():
+    """A pair dict with no 'mode' key (malformed/legacy data) must default to
+    the module's GROUND_MODE constant ('public_transit'), not a hardcoded
+    'train' literal — planner.py previously had ``pair.get("mode", "train")``."""
+    reg = DestinationRegistry()
+    matched_iatas = {a.iata for a in reg.matching("italy & seaside")}
+    no_mode_pair = next(
+        (a, b) for a in sorted(matched_iatas) for b in sorted(matched_iatas) if a < b
+    )
+    pairs = [{"a": no_mode_pair[0], "b": no_mode_pair[1], "ground_minutes": 90, "est_cost_eur": 12}]
+
+    spec = parse_spec({
+        "origins": ["BUD"], "where": "italy & seaside", "depart": "2026-08-22..2026-08-24",
+        "nights": "5-8", "shapes": ["direct", "open-jaw"], "carriers": ["ryanair"],
+    })
+    a, b = no_mode_pair
+    cal = {
+        ("BUD", a): [("2026-08-22", 30.0)], (b, "BUD"): [("2026-08-28", 25.0)],
+        ("BUD", b): [("2026-08-22", 90.0)], (a, "BUD"): [("2026-08-28", 90.0)],
+    }
+    p = Planner(registry=reg)
+    p.ryanair.roundtrip_fares = lambda origin, dest=None, **k: []
+    p.ryanair.cheapest_per_day = lambda origin, dest, month, **k: [
+        _df(origin, dest, d, pr) for d, pr in cal.get((origin, dest), [])]
+    p.wizz.timetable = lambda *a, **k: ([], [])
+    monkeypatch_target = reg
+    orig = monkeypatch_target.get_open_jaw_pairs
+    monkeypatch_target.get_open_jaw_pairs = lambda: pairs
+    try:
+        results = p.execute(compile_plan(spec, reg), spec)["results"]
+    finally:
+        monkeypatch_target.get_open_jaw_pairs = orig
+
+    oj = [d for d in results if d["shape"] == "S4"
+          and {d["destination"], d["legs"][-1]["origin"]} == {a, b}]
+    assert oj, "expected the mode-less open-jaw pair to still surface"
+    assert oj[0]["ground"]["mode"] == gm.GROUND_MODE == "public_transit"
