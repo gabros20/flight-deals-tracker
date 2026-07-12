@@ -255,7 +255,8 @@
         "culture"
       ],
       "city_lat": 37.9838,
-      "city_lon": 23.7275
+      "city_lon": 23.7275,
+      "access_pad_minutes": 45
     },
     {
       "iata": "CTA",
@@ -416,7 +417,8 @@
         "seaside"
       ],
       "city_lat": 45.4408,
-      "city_lon": 12.3155
+      "city_lon": 12.3155,
+      "access_pad_minutes": 45
     },
     {
       "iata": "PSA",
@@ -706,7 +708,8 @@
         "family"
       ],
       "city_lat": 28.4636,
-      "city_lon": -16.2518
+      "city_lon": -16.2518,
+      "access_pad_minutes": 60
     },
     {
       "iata": "LPA",
@@ -977,7 +980,8 @@
         "shopping"
       ],
       "city_lat": 51.5074,
-      "city_lon": -0.1278
+      "city_lon": -0.1278,
+      "access_pad_minutes": 40
     },
     {
       "iata": "EDI",
@@ -991,7 +995,8 @@
         "culture"
       ],
       "city_lat": 55.9533,
-      "city_lon": -3.1883
+      "city_lon": -3.1883,
+      "access_pad_minutes": 40
     },
     {
       "iata": "DUB",
@@ -1006,7 +1011,8 @@
         "party"
       ],
       "city_lat": 53.3498,
-      "city_lon": -6.2603
+      "city_lon": -6.2603,
+      "access_pad_minutes": 45
     },
     {
       "iata": "CDG",
@@ -1021,7 +1027,8 @@
         "shopping"
       ],
       "city_lat": 48.8566,
-      "city_lon": 2.3522
+      "city_lon": 2.3522,
+      "access_pad_minutes": 45
     },
     {
       "iata": "BVA",
@@ -1100,7 +1107,8 @@
         "mountains"
       ],
       "city_lat": 48.1351,
-      "city_lon": 11.582
+      "city_lon": 11.582,
+      "access_pad_minutes": 45
     },
     {
       "iata": "FRA",
@@ -1173,7 +1181,8 @@
         "culture"
       ],
       "city_lat": 52.2297,
-      "city_lon": 21.0122
+      "city_lon": 21.0122,
+      "access_pad_minutes": 50
     },
     {
       "iata": "IST",
@@ -1188,7 +1197,8 @@
         "shopping"
       ],
       "city_lat": 41.0082,
-      "city_lon": 28.9784
+      "city_lon": 28.9784,
+      "access_pad_minutes": 60
     },
     {
       "iata": "SAW",
@@ -1203,7 +1213,8 @@
         "shopping"
       ],
       "city_lat": 41.0082,
-      "city_lon": 28.9784
+      "city_lon": 28.9784,
+      "access_pad_minutes": 70
     }
   ],
   "multi_city": {
