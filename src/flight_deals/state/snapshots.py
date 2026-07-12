@@ -47,7 +47,7 @@ def path_for(deal_id: str) -> Path:
 
 
 def _record_from_deal(deal: Dict[str, Any], now: datetime) -> Dict[str, Any]:
-    return {
+    record = {
         "schema_version": SCHEMA_VERSION,
         "deal_id": deal["deal_id"],
         "seen_at": now.isoformat(),
@@ -66,6 +66,7 @@ def _record_from_deal(deal: Dict[str, Any], now: datetime) -> Dict[str, Any]:
     onward = deal.get("onward")
     if onward:
         record["gem"] = onward.get("gem")
+    return record
 
 
 def _same_utc_day(prior_seen_at: str, now: datetime) -> bool:
