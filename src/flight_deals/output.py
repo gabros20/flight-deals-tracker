@@ -129,9 +129,12 @@ def ground_summary(duration_minutes: int, cost_eur: Optional[float], mode: str,
     duration + total cost across all ground legs of the trip, plus the mode.
 
     ``estimate_basis`` (Task 11, additive): ``"curated"`` for a hand-verified
-    ground hop (the 6 curated open-jaw pairs, the VIE/BTS extended-origin legs)
-    or ``"computed"`` for one derived from the OSRM ground matrix. Only attached
-    when set, so deals with no ground-provenance info stay byte-identical.
+    ground hop (the 6 curated open-jaw pairs, the VIE/BTS extended-origin legs),
+    ``"computed"`` for one derived from the OSRM ground matrix, ``"scheduled"``
+    (Task 13) for a pure Transitous-refined hop, or ``"scheduled-hybrid"`` (Task
+    14) for a hop whose city line-haul is scheduled but whose airport-access pads
+    are modeled. Only attached when set, so deals with no ground-provenance info
+    stay byte-identical.
 
     ``has_ferry`` (Task 12, additive): ``True`` when the ground hop crosses water
     on a ferry (a curated ferry corridor or a computed ``ferry+ground`` matrix
@@ -139,9 +142,9 @@ def ground_summary(duration_minutes: int, cost_eur: Optional[float], mode: str,
     agents disclose the crossing (⛴ in the why-string) before the user commits.
 
     ``transit_transfers`` (Task 13, additive): the number of transfers in the
-    real Transitous scheduled itinerary backing a ``estimate_basis="scheduled"``
-    hop. Only attached when set (scheduled pairs), so non-scheduled deals stay
-    byte-identical."""
+    real Transitous scheduled itinerary backing a ``"scheduled"`` (or Task 14
+    ``"scheduled-hybrid"``) hop. Only attached when set (scheduled/hybrid pairs),
+    so other deals stay byte-identical."""
     out: Dict[str, Any] = {
         "duration_minutes": duration_minutes,
         "cost_eur": None if cost_eur is None else round(float(cost_eur), 2),
@@ -194,15 +197,21 @@ def ground_why_suffix(deal: Dict[str, Any]) -> str:
         d1 = deal["destination"]
         d2 = flight_legs[-1]["origin"] if flight_legs else "?"
         dur = _fmt_hm(g.get("duration_minutes"))
-        # A "scheduled" hop (Task 13) is backed by a real Transitous timetable:
-        # DROP the '~' on DURATION (a booked itinerary length, not a stated
-        # estimate) and add the word "scheduled"; KEEP '~' on COST (fares stay
-        # modeled — Transitous has no fares). Modeled/curated hops keep '~' on
-        # both. The ~ markers are thus split per field, not shared.
-        scheduled = g.get("estimate_basis") == "scheduled"
-        dur_piece = dur if (scheduled and dur) else (f"~{dur}" if dur else "")
+        # A "scheduled" hop (Task 13) is backed end-to-end by a real Transitous
+        # timetable: DROP the '~' on DURATION (a booked itinerary length, not a
+        # stated estimate) and add the word "scheduled". A "scheduled-hybrid" hop
+        # (Task 14) has a real scheduled CITY line-haul but MODELED airport-access
+        # pads, so it KEEPS '~' on duration (the pads are estimates) and says
+        # "line-haul scheduled" for honest disclosure. Both KEEP '~' on COST
+        # (fares stay modeled — Transitous has no fares). Modeled/curated hops keep
+        # '~' on both. The ~ markers are thus split per field AND per basis.
+        basis = g.get("estimate_basis")
+        drop_tilde = basis == "scheduled"  # only a pure-scheduled hop drops the ~
+        dur_piece = dur if (drop_tilde and dur) else (f"~{dur}" if dur else "")
         cost_piece = f"~{cost_str}" if cost_str else ""
-        sched_word = "scheduled" if scheduled else ""
+        sched_word = ("scheduled" if basis == "scheduled"
+                      else "line-haul scheduled" if basis == "scheduled-hybrid"
+                      else "")
         if g.get("has_ferry"):
             # Ferry hop: lead with ⛴ so an agent discloses the sea crossing
             # before the user gets attached to a price (Task 12).

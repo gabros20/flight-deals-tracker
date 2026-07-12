@@ -812,11 +812,16 @@ class Planner:
                 g_ferry = pair.get("has_ferry")
                 if g_ferry is None and "ferry" in str(g_mode).lower():
                     g_ferry = True
-                # Transit transfers surface only for a scheduled hop (Task 13):
-                # the merged pair carries transit_transfers when Transitous
-                # refinement was accepted (estimate_basis == "scheduled").
-                g_transfers = (pair.get("transit_transfers")
-                               if g_basis == "scheduled" else None)
+                # Transit transfers surface for a scheduled (Task 13) or hybrid
+                # (Task 14) hop: the merged pair carries transit_transfers (pure)
+                # or transit_hybrid_transfers (hybrid) when Transitous refinement
+                # was accepted.
+                if g_basis == "scheduled":
+                    g_transfers = pair.get("transit_transfers")
+                elif g_basis == "scheduled-hybrid":
+                    g_transfers = pair.get("transit_hybrid_transfers")
+                else:
+                    g_transfers = None
                 best = None  # (total, d1, d2, out_fare, ret_fare, nights)
                 for d1, d2 in ((a, b), (b, a)):
                     outs = [f for f in cal_fares.get((base, d1), [])

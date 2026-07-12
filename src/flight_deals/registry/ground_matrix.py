@@ -137,6 +137,21 @@ TRANSIT_SUSPECT_LOW = 0.5
 TRANSIT_SUSPECT_HIGH = 3.0
 TRANSIT_BASIS = "scheduled"
 
+# --- city-anchor hybrid refinement parameters (Task 14) --------------------- #
+# Where the PURE airport-anchor transit pass found no_coverage (most airports
+# have no on-site rail/bus stop in Transitous's feeds), a second HYBRID query
+# routes CITY-CENTER anchor -> CITY-CENTER anchor for the intercity line-haul and
+# adds modeled airport-access pads on each end:
+#     transit_hybrid_minutes = pad_a + best_city_linehaul_minutes + pad_b
+# The pads are included DELIBERATELY: the OSRM airport-to-airport baseline embeds
+# airport-side travel, so the hybrid must too for structural comparability with
+# the modeled ground_minutes (hence the SAME [0.5x, 3.0x] acceptance bounds and
+# 330/420 caps apply). This is an HONEST HYBRID basis — the line-haul is real
+# scheduled data but the access/egress is modeled — so estimate_basis becomes
+# ``"scheduled-hybrid"`` (NOT ``"scheduled"``) and the duration KEEPS its ``~``.
+# Precedence: scheduled (pure) > scheduled-hybrid > modeled (computed).
+HYBRID_BASIS = "scheduled-hybrid"
+
 MODEL_PARAMS: Dict[str, Any] = {
     "haversine_prefilter_km": HAVERSINE_PREFILTER_KM,
     "ground_minutes_formula": "round(drive_minutes * 1.35 + 30)",
@@ -279,43 +294,72 @@ def ground_cap_for(pair: Dict[str, Any]) -> int:
     return MAX_FERRY_GROUND_MINUTES if pair.get("has_ferry") else MAX_GROUND_MINUTES
 
 
-def apply_transit_refinement(pair: Dict[str, Any]) -> Dict[str, Any]:
-    """READ-path scheduled-transit acceptance (Task 13). Given a computed matrix
-    ``pair`` that may carry additive ``transit_minutes`` (written by
-    ``scripts/refresh_ground.py --transit``), decide the EFFECTIVE
-    ``ground_minutes`` surfaced to the planner:
+def _accept_transit_value(
+    out: Dict[str, Any], value: Any, modeled: float, cap: int, basis: str,
+    *, kind: str, a: Any, b: Any,
+) -> bool:
+    """Shared acceptance gate for a scheduled/hybrid candidate ``value`` against
+    the modeled minutes. On accept: surface it as ``ground_minutes``, stash
+    ``modeled_minutes``, flag ``_transit_basis`` (merge reads it), return True.
+    On out-of-bounds: log ``transit_suspect`` once and return False. A non-numeric
+    or absent value returns False without logging (nothing to accept)."""
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return False
+    lo, hi = TRANSIT_SUSPECT_LOW * modeled, TRANSIT_SUSPECT_HIGH * modeled
+    if lo <= value <= hi and value <= cap:
+        out["modeled_minutes"] = int(modeled)
+        out["ground_minutes"] = int(round(value))
+        out["_transit_basis"] = basis
+        return True
+    logger.warning(
+        "ground_matrix: transit_suspect %s-%s — %s %smin outside "
+        "[%.0f, %.0f] (0.5x-3.0x) of modeled %smin or over %dmin cap; "
+        "keeping modeled estimate",
+        a, b, kind, value, lo, hi, modeled, cap,
+    )
+    return False
 
-    * ``transit_minutes`` present AND within ``[0.5x, 3.0x]`` of the modeled
-      ``ground_minutes`` AND not over the land/ferry cap -> surface
-      ``transit_minutes`` as ``ground_minutes`` (no wait pad — travellers plan
-      around timetables), stash the modeled value in ``modeled_minutes``, and
-      flag ``_transit_accepted`` (merge then sets ``estimate_basis="scheduled"``).
-    * ``transit_minutes`` present but out of bounds -> log ``transit_suspect``
-      once and keep the modeled value (``estimate_basis`` stays ``"computed"``).
-    * ``no_coverage`` / absent -> keep the modeled value untouched.
+
+def apply_transit_refinement(pair: Dict[str, Any]) -> Dict[str, Any]:
+    """READ-path scheduled-transit acceptance (Task 13 + Task 14 hybrid). Given a
+    computed matrix ``pair`` that may carry additive ``transit_minutes`` (pure
+    airport-anchor pass) and/or ``transit_hybrid_minutes`` (city-anchor hybrid
+    pass), decide the EFFECTIVE ``ground_minutes`` surfaced to the planner, by
+    PRECEDENCE ``scheduled > scheduled-hybrid > modeled``:
+
+    * pure ``transit_minutes`` present AND within ``[0.5x, 3.0x]`` of the modeled
+      ``ground_minutes`` AND not over the land/ferry cap → surface it as
+      ``ground_minutes`` (no wait pad — travellers plan around timetables), stash
+      the modeled value in ``modeled_minutes``, flag ``_transit_basis="scheduled"``
+      (merge then sets ``estimate_basis="scheduled"``).
+    * else, ``transit_hybrid_minutes`` present AND within the same bounds/cap →
+      surface it, flag ``_transit_basis="scheduled-hybrid"``. The hybrid value
+      already embeds the modeled airport-access pads, so the SAME bounds hold
+      structurally (the pads make it comparable to the airport-to-airport
+      baseline — the acceptance and the model share the same access assumption).
+    * a present-but-out-of-bounds value → log ``transit_suspect`` once and fall
+      through (``estimate_basis`` stays ``"computed"``).
+    * ``no_coverage`` / absent → keep the modeled value untouched.
 
     Returns a NEW dict; never mutates the input. Fares are never touched —
-    ``est_cost_eur`` stays the modeled ``~`` estimate on both branches."""
+    ``est_cost_eur`` stays the modeled ``~`` estimate on every branch."""
     out = dict(pair)
-    tm = pair.get("transit_minutes")
     modeled = pair.get("ground_minutes")
-    if not isinstance(tm, (int, float)) or isinstance(tm, bool):
+    if not isinstance(modeled, (int, float)) or isinstance(modeled, bool) or modeled <= 0:
         return out
-    if not isinstance(modeled, (int, float)) or modeled <= 0:
-        return out
-    lo, hi = TRANSIT_SUSPECT_LOW * modeled, TRANSIT_SUSPECT_HIGH * modeled
     cap = ground_cap_for(pair)
-    if lo <= tm <= hi and tm <= cap:
-        out["modeled_minutes"] = int(modeled)
-        out["ground_minutes"] = int(round(tm))
-        out["_transit_accepted"] = True
-    else:
-        logger.warning(
-            "ground_matrix: transit_suspect %s-%s — scheduled %smin outside "
-            "[%.0f, %.0f] (0.5x-3.0x) of modeled %smin or over %dmin cap; "
-            "keeping modeled estimate",
-            pair.get("a"), pair.get("b"), tm, lo, hi, modeled, cap,
-        )
+    a, b = pair.get("a"), pair.get("b")
+    # Precedence 1: pure scheduled (airport-anchor). If present but suspect, we do
+    # NOT fall through to hybrid — a pure query was possible for this pair, so its
+    # verdict stands (the hybrid pass only runs on no_coverage pairs anyway).
+    tm = pair.get("transit_minutes")
+    if isinstance(tm, (int, float)) and not isinstance(tm, bool):
+        _accept_transit_value(out, tm, modeled, cap, TRANSIT_BASIS,
+                              kind="scheduled", a=a, b=b)
+        return out
+    # Precedence 2: city-anchor hybrid.
+    _accept_transit_value(out, pair.get("transit_hybrid_minutes"), modeled, cap,
+                          HYBRID_BASIS, kind="hybrid", a=a, b=b)
     return out
 
 
@@ -548,10 +592,12 @@ def merge_open_jaw_pairs(
     keep their exact values and win — a computed pair for the same unordered
     ``{a, b}`` airport combo is dropped, never overriding curation. Every pair
     is tagged with ``estimate_basis`` (``curated`` | ``computed`` |
-    ``scheduled``). A computed pair carrying an accepted Transitous scheduled
-    duration (Task 13) surfaces the scheduled minutes and is tagged
-    ``"scheduled"`` (see :func:`apply_transit_refinement`); curated pairs are
-    never touched by transit refinement (curated wins as ever)."""
+    ``scheduled`` | ``scheduled-hybrid``). A computed pair carrying an accepted
+    Transitous scheduled duration (Task 13 pure airport-anchor, or Task 14
+    city-anchor hybrid) surfaces the scheduled minutes and is tagged
+    ``"scheduled"`` / ``"scheduled-hybrid"`` respectively (see
+    :func:`apply_transit_refinement`); curated pairs are never touched by transit
+    refinement (curated wins as ever)."""
     out: List[Dict[str, Any]] = []
     seen: set = set()
     for p in curated:
@@ -564,8 +610,7 @@ def merge_open_jaw_pairs(
         if key in seen:
             continue
         q = apply_transit_refinement(p)
-        accepted = q.pop("_transit_accepted", False)
-        q["estimate_basis"] = TRANSIT_BASIS if accepted else "computed"
+        q["estimate_basis"] = q.pop("_transit_basis", None) or "computed"
         out.append(q)
         seen.add(key)
     return out

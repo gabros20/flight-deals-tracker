@@ -45,6 +45,13 @@ Pipeline:
      pair (honest "too far"); no coverage keeps the modeled value. AIRPLANE legs
      are excluded (the recipe queries GROUND modes only). Manual-script-only, out
      of the request path exactly like the OSRM passes.
+  6b. Fourth pass (Task 14, ``--transit`` only, after the pure pass): for each
+     pair the pure pass left at ``no_coverage``, re-query CITY-CENTER anchor ->
+     CITY-CENTER anchor for the intercity line-haul and add modeled
+     airport-access pads (transit_hybrid_minutes = pad_a + line-haul + pad_b).
+     Stores additive ``transit_hybrid_*`` + ``linehaul_minutes``; an HONEST
+     HYBRID basis (``scheduled-hybrid``) since the access pads are modeled.
+     ~72 extra requests (~36 no_coverage pairs x 2 slots) ~2min.
   7. Atomic write (tmp + os.replace) with schema_version, computed_at, and the
      model params echoed. On a /table failure: clean non-zero exit, the existing
      matrix is left UNTOUCHED (never half-written, never faked). A Transitous
@@ -130,6 +137,27 @@ TRANSIT_PASS_PACE_SECONDS = 1.1
 # precision (explicitly out of scope). Best itinerary = min duration across both.
 TRANSIT_MIN_LEAD_DAYS = 14
 TRANSIT_SLOTS_UTC = ("10:00:00", "15:00:00")
+
+# --- City-anchor hybrid pass (Task 14) -------------------------------------- #
+# After the PURE airport-anchor transit pass, most pairs are still no_coverage
+# (airports rarely have an on-site rail/bus stop in Transitous's feeds). The
+# HYBRID pass re-queries CITY-CENTER anchor -> CITY-CENTER anchor (the intercity
+# line-haul, which the feeds DO cover) and adds modeled airport-access pads on
+# each end for comparability with the OSRM airport-to-airport baseline:
+#     transit_hybrid_minutes = pad_a + best_city_linehaul_minutes + pad_b
+# Same recipe as the pure pass (same two slots, AIRPLANE excluded, ~1s pacing);
+# stores additive transit_hybrid_* fields. The read-path acceptance rule
+# (registry.ground_matrix.apply_transit_refinement) decides the effective value.
+
+
+def access_pad_for(airport: Any) -> int:
+    """The airport-access pad (minutes) for one end of a hybrid hop: the curated
+    per-airport ``access_pad_minutes`` override when set, else the model default
+    (``gm.ACCESS_PAD_MINUTES`` = 30)."""
+    pad = getattr(airport, "access_pad_minutes", None)
+    if isinstance(pad, int) and not isinstance(pad, bool) and pad > 0:
+        return pad
+    return gm.ACCESS_PAD_MINUTES
 
 
 class OsrmError(RuntimeError):
@@ -555,10 +583,132 @@ def run_transit_pass(
     return out_rows, stats
 
 
+def run_hybrid_pass(
+    rows: List[Dict[str, Any]], airports: List[Any],
+    slots: Optional[List[str]] = None, pace: float = TRANSIT_PASS_PACE_SECONDS,
+    now: Optional[datetime] = None,
+    capture_hybrid: Optional[str] = None,
+) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    """Fourth pass (Task 14): for each row the PURE transit pass left at
+    ``transit == "no_coverage"``, query CITY-CENTER anchor -> CITY-CENTER anchor
+    (same two slots, same recipe incl. AIRPLANE exclusion, ~1s pacing) for the
+    intercity line-haul and add modeled airport-access pads:
+
+        transit_hybrid_minutes = pad_a + best_city_linehaul_minutes + pad_b
+
+    Stores ADDITIVE per-pair fields ``transit_hybrid_minutes``/
+    ``transit_hybrid_transfers``/``transit_hybrid_modes``/
+    ``transit_hybrid_queried_at`` and the raw ``linehaul_minutes`` (the modeled
+    ``ground_minutes``/``est_cost_eur`` and the pure ``transit:"no_coverage"``
+    marker stay put — the read-path acceptance rule decides the effective value).
+    Rows already refined by the pure pass (``transit_minutes`` present), or
+    without city anchors, pass through untouched. Rules mirror the pure pass:
+
+    * no ground line-haul itinerary / per-pair failure → stays ``no_coverage``.
+    * hybrid minutes over the land/ferry cap (330/420) → pair DROPPED at refresh
+      time with a logged reason (an honest "too far", resurfaces if a later
+      refresh finds it in-cap).
+    * whole-pass failure (NO slot for ANY candidate returned a body) is signalled
+      via ``stats['http_ok'] == 0`` so the caller can warn + exit nonzero WITHOUT
+      annotating the matrix (table+route+pure-transit results stay valid).
+
+    Returns ``(out_rows, stats)``. The first refined hybrid pair is recorded when
+    ``capture_hybrid`` is given."""
+    by_iata = {a.iata.upper(): a for a in airports}
+    slots = slots or next_tuesday_slots(now)
+    queried_at = datetime.now(timezone.utc).isoformat()
+    out_rows: List[Dict[str, Any]] = []
+    stats: Dict[str, Any] = {
+        "refined": 0, "suspect": 0, "no_coverage": 0, "errors": 0,
+        "dropped_cap": 0, "no_anchor": 0, "http_ok": 0, "candidates": 0,
+        "slots": list(slots),
+    }
+    hybrid_captured = False
+    candidates = [r for r in rows if r.get("transit") == "no_coverage"]
+    stats["candidates"] = len(candidates)
+    logger.info("hybrid pass: %d no_coverage pairs x %d slots (%s), city-anchor "
+                "Transitous /plan, ~%.0f req/s...",
+                len(candidates), len(slots), ", ".join(slots), 1.0 / pace if pace else 0)
+    first = True
+    for row in rows:
+        out = dict(row)
+        if row.get("transit") != "no_coverage":
+            out_rows.append(out)  # pure-refined or suspect — leave as-is
+            continue
+        a, b = str(row["a"]).upper(), str(row["b"]).upper()
+        apa, apb = by_iata.get(a), by_iata.get(b)
+        ca = (getattr(apa, "city_lat", None), getattr(apa, "city_lon", None)) if apa else (None, None)
+        cb = (getattr(apb, "city_lat", None), getattr(apb, "city_lon", None)) if apb else (None, None)
+        if None in ca or None in cb:  # no curated city anchor -> cannot query
+            stats["no_anchor"] += 1
+            out_rows.append(out)
+            continue
+        from_coord = f"{ca[0]},{ca[1]}"
+        to_coord = f"{cb[0]},{cb[1]}"
+        responses: List[Dict[str, Any]] = []
+        any_ok = False
+        for when in slots:
+            if not first:
+                time.sleep(pace)
+            first = False
+            try:
+                resp = fetch_plan(from_coord, to_coord, when)
+            except TransitousError as e:
+                logger.warning("hybrid pass: %s-%s slot %s failed (%s)", a, b, when, e)
+                continue
+            any_ok = True
+            responses.append(resp)
+        if not any_ok:  # per-pair whole failure (all slots errored)
+            stats["errors"] += 1
+            out_rows.append(out)
+            continue
+        stats["http_ok"] += 1
+        best = best_ground_itinerary(responses)
+        if best is None:  # HTTP ok but no ground line-haul itinerary
+            stats["no_coverage"] += 1
+            out_rows.append(out)
+            continue
+        linehaul_sec, transfers, transit_modes = best
+        linehaul_min = int(round(linehaul_sec / 60.0))
+        pad_a, pad_b = access_pad_for(apa), access_pad_for(apb)
+        hybrid_min = pad_a + linehaul_min + pad_b
+        cap = gm.ground_cap_for(out)
+        if hybrid_min > cap:  # honest exclusion: the real line-haul says too far
+            stats["dropped_cap"] += 1
+            logger.info("hybrid pass: %s-%s DROPPED (hybrid %dmin = %d+%d+%d > %dmin cap)",
+                        a, b, hybrid_min, pad_a, linehaul_min, pad_b, cap)
+            continue
+        out["transit_hybrid_minutes"] = hybrid_min
+        out["transit_hybrid_transfers"] = transfers
+        out["transit_hybrid_modes"] = transit_modes
+        out["transit_hybrid_queried_at"] = queried_at
+        out["linehaul_minutes"] = linehaul_min
+        modeled = int(out.get("ground_minutes") or 0)
+        lo, hi = gm.TRANSIT_SUSPECT_LOW * modeled, gm.TRANSIT_SUSPECT_HIGH * modeled
+        if modeled and lo <= hybrid_min <= hi:
+            stats["refined"] += 1
+            logger.info("hybrid pass: %s-%s REFINED hybrid %dmin (pads %d+%d + line-haul "
+                        "%dmin; modeled %dmin) tf=%s modes=%s", a, b, hybrid_min,
+                        pad_a, pad_b, linehaul_min, modeled, transfers, "+".join(transit_modes))
+            if capture_hybrid and not hybrid_captured:
+                write_transit_fixture(capture_hybrid, f"{a}-{b}", "hybrid",
+                                      slots[0], responses[0], from_coord, to_coord)
+                hybrid_captured = True
+        else:
+            stats["suspect"] += 1
+            logger.warning("hybrid pass: %s-%s hybrid_suspect %dmin outside [%.0f,%.0f] "
+                           "of modeled %dmin — modeled kept at read time",
+                           a, b, hybrid_min, lo, hi, modeled)
+        out_rows.append(out)
+    out_rows.sort(key=lambda r: (r["a"], r["b"]))
+    return out_rows, stats
+
+
 def build_matrix_payload(
     airports: List[Any], prefiltered: List[Tuple[int, int, float]],
     pairs: List[Dict[str, Any]], route_stats: Optional[Dict[str, int]] = None,
     transit_stats: Optional[Dict[str, Any]] = None,
+    hybrid_stats: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     stats: Dict[str, Any] = {
         "airports": len(airports),
@@ -582,6 +732,16 @@ def build_matrix_payload(
             "transit_errors": transit_stats.get("errors", 0),
             "transit_dropped_cap": transit_stats.get("dropped_cap", 0),
             "transit_slots": transit_stats.get("slots", []),
+        })
+    if hybrid_stats is not None:
+        stats.update({
+            "hybrid_candidates": hybrid_stats.get("candidates", 0),
+            "hybrid_refined": hybrid_stats.get("refined", 0),
+            "hybrid_suspect": hybrid_stats.get("suspect", 0),
+            "hybrid_no_coverage": hybrid_stats.get("no_coverage", 0),
+            "hybrid_errors": hybrid_stats.get("errors", 0),
+            "hybrid_dropped_cap": hybrid_stats.get("dropped_cap", 0),
+            "hybrid_no_anchor": hybrid_stats.get("no_anchor", 0),
         })
     return {
         "schema_version": gm.SCHEMA_VERSION,
@@ -683,6 +843,15 @@ def _print_stats(payload: Dict[str, Any]) -> None:
             st.get("transit_errors", 0), st.get("transit_dropped_cap", 0),
             st.get("transit_slots", []),
         )
+    if "hybrid_refined" in st:
+        logger.info(
+            "  hybrid pass: %d no_coverage candidates -> %d refined "
+            "(scheduled-hybrid), %d suspect (modeled kept), %d still no_coverage, "
+            "%d no city anchor, %d errors, %d dropped by cap",
+            st.get("hybrid_candidates", 0), st["hybrid_refined"], st["hybrid_suspect"],
+            st.get("hybrid_no_coverage", 0), st.get("hybrid_no_anchor", 0),
+            st.get("hybrid_errors", 0), st.get("hybrid_dropped_cap", 0),
+        )
     pairs = payload["pairs"]
     if pairs:
         shortest = min(pairs, key=lambda p: p["ground_minutes"])
@@ -716,6 +885,8 @@ def main(argv: Optional[List[str]] = None) -> int:
                     help="Record the first REFINED (rail) Transitous /plan response here.")
     ap.add_argument("--capture-transit-none", metavar="PATH", default=None,
                     help="Record the first NO-COVERAGE Transitous /plan response here.")
+    ap.add_argument("--capture-hybrid", metavar="PATH", default=None,
+                    help="Record the first REFINED city-anchor HYBRID /plan response here.")
     ap.add_argument("--registry", default=None, help="Override destinations.json path.")
     args = ap.parse_args(argv)
 
@@ -766,6 +937,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     # discard the (empty) transit annotations, write the table+route matrix, and
     # exit nonzero so a human re-runs the transit pass.
     transit_stats = None
+    hybrid_stats = None
     transit_service_failed = False
     if args.transit:
         annotated_rows, transit_stats = run_transit_pass(
@@ -781,9 +953,27 @@ def main(argv: Optional[List[str]] = None) -> int:
             transit_stats = None  # do not record misleading transit stats
         else:
             route_rows = annotated_rows
+            # Fourth pass (Task 14): city-anchor HYBRID refinement for the pairs
+            # the pure pass left at no_coverage. Whole-pass failure isolation as
+            # before — if no candidate returned a body, discard the (empty)
+            # hybrid annotations, keep the table+route+pure-transit matrix, and
+            # exit nonzero so a human re-runs the hybrid pass.
+            hybrid_rows, hybrid_stats = run_hybrid_pass(
+                route_rows, airports, capture_hybrid=args.capture_hybrid,
+            )
+            if hybrid_stats["http_ok"] == 0 and hybrid_stats["candidates"] > 0:
+                transit_service_failed = True
+                logger.warning(
+                    "hybrid pass: WHOLE-PASS FAILURE — no Transitous response for "
+                    "any city-anchor candidate; matrix written with "
+                    "table+route+pure-transit results only (unrefined)")
+                hybrid_stats = None
+            else:
+                route_rows = hybrid_rows
 
     payload = build_matrix_payload(airports, prefiltered, route_rows, route_stats,
-                                   transit_stats=transit_stats)
+                                   transit_stats=transit_stats,
+                                   hybrid_stats=hybrid_stats)
     _print_stats(payload)
 
     if args.dry_run:
