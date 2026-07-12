@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "computed_at": "2026-07-12T08:59:07.859776+00:00",
-  "source": "OSRM public router.project-osrm.org /table (driving profile)",
+  "computed_at": "2026-07-12T11:08:21.646214+00:00",
+  "source": "OSRM public router.project-osrm.org /table + /route (driving profile)",
   "model": {
     "haversine_prefilter_km": 400.0,
     "ground_minutes_formula": "round(drive_minutes * 1.35 + 30)",
@@ -10,12 +10,40 @@
     "est_cost_eur_formula": "max(8, round(km_road * 0.11))",
     "cost_per_km_eur": 0.11,
     "cost_floor_eur": 8,
-    "max_ground_minutes": 330
+    "max_ground_minutes": 330,
+    "ferry_time_formula": "round(land_minutes*1.35 + ferry_minutes*1.15 + port_access + wait)",
+    "ferry_cost_formula": "max(8, round(land_km*0.11)) + base + round(sea_km*rate)",
+    "ferry_time_factor": 1.15,
+    "ferry_tiers_by_sea_km": {
+      "strait (<15km)": {
+        "wait": 5,
+        "base": 5,
+        "rate": 0.15,
+        "port": 10
+      },
+      "domestic (15-60km)": {
+        "wait": 30,
+        "base": 5,
+        "rate": 0.15,
+        "port": 30
+      },
+      "long (>=60km)": {
+        "wait": 110,
+        "base": 35,
+        "rate": 0.15,
+        "port": 45
+      }
+    },
+    "max_ferry_ground_minutes": 420
   },
   "stats": {
     "airports": 76,
     "prefiltered_candidates": 211,
-    "pairs_kept": 39
+    "pairs_kept": 38,
+    "ferry_pairs": 4,
+    "land_pairs": 34,
+    "route_pass_failed": 0,
+    "dropped_ferry_cap": 1
   },
   "airports_seen": [
     "ACE",
@@ -95,7 +123,7 @@
     "ZAD",
     "ZTH"
   ],
-  "note": "Computed open-jaw ground hops. ground_minutes/est_cost_eur are STATED ESTIMATES from an OSRM driving route (see model); the deal envelope marks them '~' and estimate_basis='computed'. Curated pairs in data/destinations.json win on merge (estimate_basis='curated').",
+  "note": "Computed open-jaw ground hops. ground_minutes/est_cost_eur are STATED ESTIMATES from an OSRM driving route (see model); the deal envelope marks them '~' and estimate_basis='computed'. Pairs the /route pass found to cross water carry has_ferry/ferry_minutes/land_minutes/sea_km and mode 'ferry+ground' (tiered ferry model). Curated pairs in data/destinations.json win on merge (estimate_basis='curated').",
   "pairs": [
     {
       "a": "AHO",
@@ -106,7 +134,8 @@
       "drive_minutes": 217.7,
       "km_road": 242.1,
       "straight_km": 166.7,
-      "note": "computed via OSRM (drive ~218min / 242km road)"
+      "note": "computed via OSRM (drive ~218min / 242km road)",
+      "has_ferry": false
     },
     {
       "a": "AHO",
@@ -117,7 +146,8 @@
       "drive_minutes": 111.6,
       "km_road": 129.8,
       "straight_km": 107.5,
-      "note": "computed via OSRM (drive ~112min / 130km road)"
+      "note": "computed via OSRM (drive ~112min / 130km road)",
+      "has_ferry": false
     },
     {
       "a": "ALC",
@@ -128,7 +158,8 @@
       "drive_minutes": 200.9,
       "km_road": 270.1,
       "straight_km": 196.3,
-      "note": "computed via OSRM (drive ~201min / 270km road)"
+      "note": "computed via OSRM (drive ~201min / 270km road)",
+      "has_ferry": false
     },
     {
       "a": "ALC",
@@ -139,7 +170,8 @@
       "drive_minutes": 149.4,
       "km_road": 195.0,
       "straight_km": 134.4,
-      "note": "computed via OSRM (drive ~149min / 195km road)"
+      "note": "computed via OSRM (drive ~149min / 195km road)",
+      "has_ferry": false
     },
     {
       "a": "AMS",
@@ -150,7 +182,8 @@
       "drive_minutes": 191.1,
       "km_road": 262.6,
       "straight_km": 206.8,
-      "note": "computed via OSRM (drive ~191min / 263km road)"
+      "note": "computed via OSRM (drive ~191min / 263km road)",
+      "has_ferry": false
     },
     {
       "a": "ATH",
@@ -161,7 +194,8 @@
       "drive_minutes": 185.6,
       "km_road": 261.6,
       "straight_km": 194.9,
-      "note": "computed via OSRM (drive ~186min / 262km road)"
+      "note": "computed via OSRM (drive ~186min / 262km road)",
+      "has_ferry": false
     },
     {
       "a": "BCN",
@@ -172,7 +206,8 @@
       "drive_minutes": 184.8,
       "km_road": 268.1,
       "straight_km": 228.8,
-      "note": "computed via OSRM (drive ~185min / 268km road)"
+      "note": "computed via OSRM (drive ~185min / 268km road)",
+      "has_ferry": false
     },
     {
       "a": "BCN",
@@ -183,7 +218,8 @@
       "drive_minutes": 87.7,
       "km_road": 110.4,
       "straight_km": 87.9,
-      "note": "computed via OSRM (drive ~88min / 110km road)"
+      "note": "computed via OSRM (drive ~88min / 110km road)",
+      "has_ferry": false
     },
     {
       "a": "BDS",
@@ -194,7 +230,8 @@
       "drive_minutes": 100.9,
       "km_road": 127.1,
       "straight_km": 113.2,
-      "note": "computed via OSRM (drive ~101min / 127km road)"
+      "note": "computed via OSRM (drive ~101min / 127km road)",
+      "has_ferry": false
     },
     {
       "a": "BGY",
@@ -205,7 +242,8 @@
       "drive_minutes": 149.8,
       "km_road": 234.0,
       "straight_km": 177.4,
-      "note": "computed via OSRM (drive ~150min / 234km road)"
+      "note": "computed via OSRM (drive ~150min / 234km road)",
+      "has_ferry": false
     },
     {
       "a": "BGY",
@@ -216,7 +254,8 @@
       "drive_minutes": 132.1,
       "km_road": 192.2,
       "straight_km": 168.7,
-      "note": "computed via OSRM (drive ~132min / 192km road)"
+      "note": "computed via OSRM (drive ~132min / 192km road)",
+      "has_ferry": false
     },
     {
       "a": "BGY",
@@ -227,7 +266,8 @@
       "drive_minutes": 147.3,
       "km_road": 229.1,
       "straight_km": 206.9,
-      "note": "computed via OSRM (drive ~147min / 229km road)"
+      "note": "computed via OSRM (drive ~147min / 229km road)",
+      "has_ferry": false
     },
     {
       "a": "BLQ",
@@ -238,7 +278,8 @@
       "drive_minutes": 179.0,
       "km_road": 259.1,
       "straight_km": 235.0,
-      "note": "computed via OSRM (drive ~179min / 259km road)"
+      "note": "computed via OSRM (drive ~179min / 259km road)",
+      "has_ferry": false
     },
     {
       "a": "BLQ",
@@ -249,7 +290,8 @@
       "drive_minutes": 134.6,
       "km_road": 188.2,
       "straight_km": 118.7,
-      "note": "computed via OSRM (drive ~135min / 188km road)"
+      "note": "computed via OSRM (drive ~135min / 188km road)",
+      "has_ferry": false
     },
     {
       "a": "BLQ",
@@ -260,7 +302,8 @@
       "drive_minutes": 107.7,
       "km_road": 161.2,
       "straight_km": 136.4,
-      "note": "computed via OSRM (drive ~108min / 161km road)"
+      "note": "computed via OSRM (drive ~108min / 161km road)",
+      "has_ferry": false
     },
     {
       "a": "BOJ",
@@ -271,7 +314,8 @@
       "drive_minutes": 138.8,
       "km_road": 131.6,
       "straight_km": 77.9,
-      "note": "computed via OSRM (drive ~139min / 132km road)"
+      "note": "computed via OSRM (drive ~139min / 132km road)",
+      "has_ferry": false
     },
     {
       "a": "BRI",
@@ -282,7 +326,8 @@
       "drive_minutes": 187.9,
       "km_road": 246.8,
       "straight_km": 209.1,
-      "note": "computed via OSRM (drive ~188min / 247km road)"
+      "note": "computed via OSRM (drive ~188min / 247km road)",
+      "has_ferry": false
     },
     {
       "a": "BTS",
@@ -293,7 +338,8 @@
       "drive_minutes": 163.5,
       "km_road": 243.4,
       "straight_km": 173.0,
-      "note": "computed via OSRM (drive ~164min / 243km road)"
+      "note": "computed via OSRM (drive ~164min / 243km road)",
+      "has_ferry": false
     },
     {
       "a": "BTS",
@@ -304,7 +350,8 @@
       "drive_minutes": 59.9,
       "km_road": 74.5,
       "straight_km": 48.2,
-      "note": "computed via OSRM (drive ~60min / 74km road)"
+      "note": "computed via OSRM (drive ~60min / 74km road)",
+      "has_ferry": false
     },
     {
       "a": "BUD",
@@ -315,7 +362,8 @@
       "drive_minutes": 172.8,
       "km_road": 261.5,
       "straight_km": 214.2,
-      "note": "computed via OSRM (drive ~173min / 261km road)"
+      "note": "computed via OSRM (drive ~173min / 261km road)",
+      "has_ferry": false
     },
     {
       "a": "BVA",
@@ -326,7 +374,8 @@
       "drive_minutes": 166.2,
       "km_road": 256.1,
       "straight_km": 201.3,
-      "note": "computed via OSRM (drive ~166min / 256km road)"
+      "note": "computed via OSRM (drive ~166min / 256km road)",
+      "has_ferry": false
     },
     {
       "a": "CDG",
@@ -337,7 +386,8 @@
       "drive_minutes": 161.5,
       "km_road": 260.1,
       "straight_km": 211.4,
-      "note": "computed via OSRM (drive ~162min / 260km road)"
+      "note": "computed via OSRM (drive ~162min / 260km road)",
+      "has_ferry": false
     },
     {
       "a": "CDT",
@@ -348,18 +398,23 @@
       "drive_minutes": 60.3,
       "km_road": 82.1,
       "straight_km": 68.8,
-      "note": "computed via OSRM (drive ~60min / 82km road)"
+      "note": "computed via OSRM (drive ~60min / 82km road)",
+      "has_ferry": false
     },
     {
       "a": "CFU",
       "b": "PVK",
-      "ground_minutes": 307,
-      "est_cost_eur": 17,
-      "mode": "public_transit",
+      "ground_minutes": 322,
+      "est_cost_eur": 23,
+      "mode": "ferry+ground",
       "drive_minutes": 205.3,
       "km_road": 151.2,
       "straight_km": 105.2,
-      "note": "computed via OSRM (drive ~205min / 151km road)"
+      "note": "computed via OSRM (drive ~205min incl. ~75min ferry / ~18km sea crossing)",
+      "has_ferry": true,
+      "ferry_minutes": 75.0,
+      "land_minutes": 130.3,
+      "sea_km": 18.1
     },
     {
       "a": "CHQ",
@@ -370,7 +425,8 @@
       "drive_minutes": 174.9,
       "km_road": 161.9,
       "straight_km": 95.8,
-      "note": "computed via OSRM (drive ~175min / 162km road)"
+      "note": "computed via OSRM (drive ~175min / 162km road)",
+      "has_ferry": false
     },
     {
       "a": "CIA",
@@ -381,18 +437,8 @@
       "drive_minutes": 135.7,
       "km_road": 207.0,
       "straight_km": 174.2,
-      "note": "computed via OSRM (drive ~136min / 207km road)"
-    },
-    {
-      "a": "CTA",
-      "b": "MLA",
-      "ground_minutes": 329,
-      "est_cost_eur": 25,
-      "mode": "public_transit",
-      "drive_minutes": 221.4,
-      "km_road": 223.7,
-      "straight_km": 186.5,
-      "note": "computed via OSRM (drive ~221min / 224km road)"
+      "note": "computed via OSRM (drive ~136min / 207km road)",
+      "has_ferry": false
     },
     {
       "a": "CTA",
@@ -403,18 +449,23 @@
       "drive_minutes": 203.4,
       "km_road": 242.3,
       "straight_km": 190.6,
-      "note": "computed via OSRM (drive ~203min / 242km road)"
+      "note": "computed via OSRM (drive ~203min / 242km road)",
+      "has_ferry": false
     },
     {
       "a": "CTA",
       "b": "SUF",
-      "ground_minutes": 320,
-      "est_cost_eur": 26,
-      "mode": "public_transit",
+      "ground_minutes": 297,
+      "est_cost_eur": 31,
+      "mode": "ferry+ground",
       "drive_minutes": 214.6,
       "km_road": 234.6,
       "straight_km": 190.1,
-      "note": "computed via OSRM (drive ~215min / 235km road)"
+      "note": "computed via OSRM (drive ~215min incl. ~40min ferry / ~7km sea crossing)",
+      "has_ferry": true,
+      "ferry_minutes": 40.0,
+      "land_minutes": 174.6,
+      "sea_km": 6.5
     },
     {
       "a": "FAO",
@@ -425,7 +476,8 @@
       "drive_minutes": 206.7,
       "km_road": 282.8,
       "straight_km": 221.7,
-      "note": "computed via OSRM (drive ~207min / 283km road)"
+      "note": "computed via OSRM (drive ~207min / 283km road)",
+      "has_ferry": false
     },
     {
       "a": "FCO",
@@ -436,29 +488,38 @@
       "drive_minutes": 176.7,
       "km_road": 239.9,
       "straight_km": 199.2,
-      "note": "computed via OSRM (drive ~177min / 240km road)"
+      "note": "computed via OSRM (drive ~177min / 240km road)",
+      "has_ferry": false
     },
     {
       "a": "HER",
       "b": "JTR",
-      "ground_minutes": 227,
-      "est_cost_eur": 15,
-      "mode": "public_transit",
+      "ground_minutes": 327,
+      "est_cost_eur": 62,
+      "mode": "ferry+ground",
       "drive_minutes": 145.9,
       "km_road": 140.2,
       "straight_km": 120.9,
-      "note": "computed via OSRM (drive ~146min / 140km road)"
+      "note": "computed via OSRM (drive ~146min incl. ~125min ferry / ~124km sea crossing)",
+      "has_ferry": true,
+      "ferry_minutes": 125.0,
+      "land_minutes": 20.9,
+      "sea_km": 124.4
     },
     {
       "a": "KLX",
       "b": "ZTH",
-      "ground_minutes": 329,
-      "est_cost_eur": 22,
-      "mode": "public_transit",
+      "ground_minutes": 347,
+      "est_cost_eur": 28,
+      "mode": "ferry+ground",
       "drive_minutes": 221.7,
       "km_road": 195.7,
       "straight_km": 126.2,
-      "note": "computed via OSRM (drive ~222min / 196km road)"
+      "note": "computed via OSRM (drive ~222min incl. ~60min ferry / ~33km sea crossing)",
+      "has_ferry": true,
+      "ferry_minutes": 60.0,
+      "land_minutes": 161.7,
+      "sea_km": 32.9
     },
     {
       "a": "KRK",
@@ -469,7 +530,8 @@
       "drive_minutes": 206.8,
       "km_road": 298.9,
       "straight_km": 246.4,
-      "note": "computed via OSRM (drive ~207min / 299km road)"
+      "note": "computed via OSRM (drive ~207min / 299km road)",
+      "has_ferry": false
     },
     {
       "a": "LIS",
@@ -480,7 +542,8 @@
       "drive_minutes": 217.0,
       "km_road": 323.2,
       "straight_km": 277.0,
-      "note": "computed via OSRM (drive ~217min / 323km road)"
+      "note": "computed via OSRM (drive ~217min / 323km road)",
+      "has_ferry": false
     },
     {
       "a": "MUC",
@@ -491,7 +554,8 @@
       "drive_minutes": 220.8,
       "km_road": 356.4,
       "straight_km": 264.6,
-      "note": "computed via OSRM (drive ~221min / 356km road)"
+      "note": "computed via OSRM (drive ~221min / 356km road)",
+      "has_ferry": false
     },
     {
       "a": "MXP",
@@ -502,7 +566,8 @@
       "drive_minutes": 105.3,
       "km_road": 141.0,
       "straight_km": 96.8,
-      "note": "computed via OSRM (drive ~105min / 141km road)"
+      "note": "computed via OSRM (drive ~105min / 141km road)",
+      "has_ferry": false
     },
     {
       "a": "MXP",
@@ -513,7 +578,8 @@
       "drive_minutes": 208.6,
       "km_road": 313.4,
       "straight_km": 282.4,
-      "note": "computed via OSRM (drive ~209min / 313km road)"
+      "note": "computed via OSRM (drive ~209min / 313km road)",
+      "has_ferry": false
     },
     {
       "a": "SPU",
@@ -524,7 +590,8 @@
       "drive_minutes": 92.2,
       "km_road": 115.2,
       "straight_km": 99.2,
-      "note": "computed via OSRM (drive ~92min / 115km road)"
+      "note": "computed via OSRM (drive ~92min / 115km road)",
+      "has_ferry": false
     }
   ]
 }
