@@ -214,7 +214,7 @@ Field-by-field:
   access pads are modeled) and its `why` clause says "line-haul scheduled".
   `has_ferry` (additive, Task 12) is `true` when the ground hop crosses water on
   a ferry (a curated ferry corridor or a computed `ferry+ground` matrix pair);
-  the `why` string then leads the hop with ⛴ so an agent discloses the crossing.
+  the `why` string then leads the hop with ⛴️ so an agent discloses the crossing.
   Absent (never `false`) when no ferry is involved, so non-ferry deals stay
   byte-identical.
 - **`why`**: one sentence, always includes a number and a comparison basis
@@ -552,7 +552,7 @@ silently capped). The block is absent on plans without the via-hub shape.
       (§ 2, `type:"ground"`, modes incl. `taxi`/`ferry`) and are the ONE-WAY
       chain; `cost_eur`/`minutes` are the shape-adjusted totals (×2 for a
       round-trip S2/S3, ×1 for a one-way S1). `has_ferry` true when a hop
-      crosses water (the `why` then leads that hop with ⛴). All onward costs
+      crosses water (the `why` then leads that hop with ⛴️). All onward costs
       are curated estimates — the `why` marks them `~`.
     - `destination_display`: e.g. `"Halki (via RHO)"` — the human label; the
       Deal's `destination` stays the gateway IATA (`RHO`), and `shape` stays
@@ -613,7 +613,7 @@ silently capped). The block is absent on plans without the via-hub shape.
 - **2026-07-12 (Task 12)** — Ferry-aware ground modeling; additive, no frozen
   field changed shape:
   - Deal `ground` summary gains an optional `has_ferry: true` (§ 2) when the
-    ground hop crosses water; the `why` string leads the hop with ⛴. Absent
+    ground hop crosses water; the `why` string leads the hop with ⛴️. Absent
     (never `false`) otherwise, so non-ferry deals stay byte-identical.
   - Five ferry corridors curated into `data/destinations.json open_jaw_pairs`
     (CTA↔MLA, HER↔JTR, KLX↔ZTH, CFU↔PVK, CTA↔SUF) with real ferry figures

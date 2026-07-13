@@ -345,7 +345,7 @@ def test_committed_matrix_ferry_rows_are_wellformed():
 
 
 # --------------------------------------------------------------------------- #
-# envelope — has_ferry + ⛴ why-string flow through S4                          #
+# envelope — has_ferry + ⛴️ why-string flow through S4                          #
 # --------------------------------------------------------------------------- #
 def test_ground_summary_has_ferry_additive():
     assert "has_ferry" not in output.ground_summary(240, 45.0, "train")
@@ -367,7 +367,7 @@ def test_ferry_why_suffix_uses_boat_glyph():
         why="x",
     )
     suffix = output.ground_why_suffix(deal)
-    assert "⛴" in suffix and "ferry" in suffix and "HER" in suffix and "JTR" in suffix
+    assert "⛴️" in suffix and "ferry" in suffix and "HER" in suffix and "JTR" in suffix
 
 
 def _df(origin, dest, day, price):
@@ -403,13 +403,13 @@ def test_planner_surfaces_curated_ferry_openjaw_with_has_ferry():
     d = oj[0]
     assert d["ground"]["has_ferry"] is True
     assert d["ground"]["estimate_basis"] == "curated"
-    assert "⛴" in d["why"]
+    assert "⛴️" in d["why"]
 
 
 def test_planner_surfaces_null_ferry_openjaw_as_plain_land_hop():
     """Minor #5 e2e: a computed matrix pair with ``has_ferry: null`` (a
     non-suspect /route-pass failure — AHO<->OLB, both Sardinia) must surface
-    through the planner + envelope as a plain land hop: no ⛴, no ``has_ferry``
+    through the planner + envelope as a plain land hop: no ⛴️, no ``has_ferry``
     key on the deal's ``ground``."""
     reg = DestinationRegistry()
     reg.get_open_jaw_pairs = lambda: [
@@ -439,4 +439,4 @@ def test_planner_surfaces_null_ferry_openjaw_as_plain_land_hop():
     d = oj[0]
     assert "has_ferry" not in d["ground"]
     assert d["ground"]["mode"] == gm.GROUND_MODE
-    assert "⛴" not in d["why"]
+    assert "⛴️" not in d["why"]

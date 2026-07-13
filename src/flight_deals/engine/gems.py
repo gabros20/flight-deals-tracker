@@ -39,7 +39,7 @@ def build_onward(gem: Gem, gw: GemGateway, *, round_trip: bool) -> Dict[str, Any
     the ONE-WAY chain (reusing ``output.ground_leg`` dicts); ``cost_eur`` and
     ``minutes`` are the shape-adjusted totals (×2 for a round-trip). ``has_ferry``
     is set (and only set) when a leg crosses water, so the why-string leads that
-    hop with ⛴."""
+    hop with ⛴️."""
     mult = 2 if round_trip else 1
     legs = [
         output.ground_leg(l.from_place, l.to_place, l.mode, l.minutes, cost_eur=l.cost_eur)

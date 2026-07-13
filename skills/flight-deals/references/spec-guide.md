@@ -136,8 +136,8 @@ driver, with a ready-to-cron `deploy/agentic-wake.sh`), see
   `direct`). A non-direct shape only surfaces when it genuinely beats direct
   (S1/S2/S3/S5 to the same destination dedupe cheapest-wins); S4 is a separate
   two-city deal. Open-jaw (S4) deals may include a FERRY crossing —
-  `ground.has_ferry: true` marks them and the `why` leads the hop with ⛴ (e.g.
-  "fly into HER, ⛴ ~4h ~€45 ferry, fly home from JTR"); relay the crossing to
+  `ground.has_ferry: true` marks them and the `why` leads the hop with ⛴️ (e.g.
+  "fly into HER, ⛴️ ~4h ~€45 ferry, fly home from JTR"); relay the crossing to
   the user, it's not a train.
 - **Via-hub (S5) is a self-transfer.** It needs a `nights` range (a round-trip
   through a hub) — requesting it one-way exits 2 with a hint to add `nights`.

@@ -147,7 +147,7 @@ def ground_summary(duration_minutes: int, cost_eur: Optional[float], mode: str,
     ``has_ferry`` (Task 12, additive): ``True`` when the ground hop crosses water
     on a ferry (a curated ferry corridor or a computed ``ferry+ground`` matrix
     pair). Only attached when ``True`` so non-ferry deals stay byte-identical —
-    agents disclose the crossing (⛴ in the why-string) before the user commits.
+    agents disclose the crossing (⛴️ in the why-string) before the user commits.
 
     ``transit_transfers`` (Task 13, additive): the number of transfers in the
     real Transitous scheduled itinerary backing a ``"scheduled"`` (or Task 14
@@ -242,9 +242,9 @@ def ground_why_suffix(deal: Dict[str, Any]) -> str:
                       else "line-haul scheduled" if basis == "scheduled-hybrid"
                       else "")
         if g.get("has_ferry"):
-            # Ferry hop: lead with ⛴ so an agent discloses the sea crossing
+            # Ferry hop: lead with ⛴️ so an agent discloses the sea crossing
             # before the user gets attached to a price (Task 12).
-            hop = " ".join(p for p in ("⛴", dur_piece, sched_word, cost_piece, "ferry") if p)
+            hop = " ".join(p for p in ("⛴️", dur_piece, sched_word, cost_piece, "ferry") if p)
         else:
             hop = " ".join(p for p in (mode, dur_piece, sched_word, cost_piece) if p)
         return f" (fly into {d1}, {hop}, fly home from {d2})"
@@ -254,7 +254,7 @@ def ground_why_suffix(deal: Dict[str, Any]) -> str:
 def onward_why_suffix(deal: Dict[str, Any]) -> str:
     """The honest onward-chain clause appended to a gem-extended deal's ``why``
     (Task 15 / SEARCH-DESIGN §2b). Empty when the deal has no ``onward``. Names
-    each hop's mode + duration (ferry legs lead with ⛴ so an agent discloses the
+    each hop's mode + duration (ferry legs lead with ⛴️ so an agent discloses the
     sea crossing), then the gem name and the shape-adjusted round-trip/one-way
     onward cost with the ``~`` estimate marker (all onward costs are curated
     estimates). Derived from the deal's own ``onward`` so it can't drift.
@@ -268,7 +268,7 @@ def onward_why_suffix(deal: Dict[str, Any]) -> str:
     for leg in o.get("legs", []):
         hm = _fmt_hm(leg.get("duration_minutes"))
         mode = leg.get("mode", "transfer")
-        parts.append(f"⛴ {hm}".strip() if mode == "ferry" else f"{mode} {hm}".strip())
+        parts.append(f"⛴️ {hm}".strip() if mode == "ferry" else f"{mode} {hm}".strip())
     chain = " + ".join(p for p in parts if p)
     cost = o.get("cost_eur")
     cost_str = f", ~€{cost:.0f}" if cost is not None else ""

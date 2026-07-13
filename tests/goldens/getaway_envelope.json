@@ -128,7 +128,7 @@
           }
         ],
         "ground": null,
-        "why": "\u20ac64 round-trip, exact Ryanair fare, then bus 18m + \u26f4 28m to Ugljan, ~\u20ac17 rt",
+        "why": "\u20ac64 round-trip, exact Ryanair fare, then bus 18m + \u26f4\ufe0f 28m to Ugljan, ~\u20ac17 rt",
         "links": {
           "ryanair": "https://www.ryanair.com/gb/en/trip/flights/select?originIata=BUD&destinationIata=ZAD&dateOut=2026-08-23&adults=1&dateIn=2026-08-29"
         },
@@ -202,7 +202,7 @@
           }
         ],
         "ground": null,
-        "why": "\u20ac72 round-trip, exact Ryanair fare, then bus 18m + \u26f4 1h12m to Dugi Otok, ~\u20ac25 rt",
+        "why": "\u20ac72 round-trip, exact Ryanair fare, then bus 18m + \u26f4\ufe0f 1h12m to Dugi Otok, ~\u20ac25 rt",
         "links": {
           "ryanair": "https://www.ryanair.com/gb/en/trip/flights/select?originIata=BUD&destinationIata=ZAD&dateOut=2026-08-23&adults=1&dateIn=2026-08-29"
         },
@@ -276,7 +276,7 @@
           }
         ],
         "ground": null,
-        "why": "\u20ac77 round-trip, exact Ryanair fare, then taxi 35m + \u26f4 20m to Pasman, ~\u20ac30 rt",
+        "why": "\u20ac77 round-trip, exact Ryanair fare, then taxi 35m + \u26f4\ufe0f 20m to Pasman, ~\u20ac30 rt",
         "links": {
           "ryanair": "https://www.ryanair.com/gb/en/trip/flights/select?originIata=BUD&destinationIata=ZAD&dateOut=2026-08-23&adults=1&dateIn=2026-08-29"
         },
@@ -350,7 +350,7 @@
           }
         ],
         "ground": null,
-        "why": "\u20ac83 round-trip, exact Ryanair fare, then bus 38m + \u26f4 1h10m to Sipan, ~\u20ac27 rt",
+        "why": "\u20ac83 round-trip, exact Ryanair fare, then bus 38m + \u26f4\ufe0f 1h10m to Sipan, ~\u20ac27 rt",
         "links": {
           "ryanair": "https://www.ryanair.com/gb/en/trip/flights/select?originIata=BUD&destinationIata=DBV&dateOut=2026-08-23&adults=1&dateIn=2026-08-30"
         },
@@ -424,7 +424,7 @@
           }
         ],
         "ground": null,
-        "why": "\u20ac99 round-trip, exact Ryanair fare, then bus 38m + \u26f4 1h25m to Mljet, ~\u20ac43 rt",
+        "why": "\u20ac99 round-trip, exact Ryanair fare, then bus 38m + \u26f4\ufe0f 1h25m to Mljet, ~\u20ac43 rt",
         "links": {
           "ryanair": "https://www.ryanair.com/gb/en/trip/flights/select?originIata=BUD&destinationIata=DBV&dateOut=2026-08-23&adults=1&dateIn=2026-08-30"
         },
@@ -498,7 +498,7 @@
           }
         ],
         "ground": null,
-        "why": "\u20ac116 round-trip, exact Ryanair fare, then bus 38m + \u26f4 2h to Korcula, ~\u20ac60 rt",
+        "why": "\u20ac116 round-trip, exact Ryanair fare, then bus 38m + \u26f4\ufe0f 2h to Korcula, ~\u20ac60 rt",
         "links": {
           "ryanair": "https://www.ryanair.com/gb/en/trip/flights/select?originIata=BUD&destinationIata=DBV&dateOut=2026-08-23&adults=1&dateIn=2026-08-30"
         },

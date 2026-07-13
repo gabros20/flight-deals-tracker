@@ -150,7 +150,7 @@ def test_s4_open_jaw_is_not_extended():
 
 
 # --------------------------------------------------------------------------- #
-# onward envelope shape: ground_leg dicts + ⛴ + ~ markers                      #
+# onward envelope shape: ground_leg dicts + ⛴️ + ~ markers                      #
 # --------------------------------------------------------------------------- #
 def test_onward_envelope_shape_ferry_and_tilde():
     reg = _reg()
@@ -164,8 +164,8 @@ def test_onward_envelope_shape_ferry_and_tilde():
     # legs are reused output.ground_leg dicts (type=ground, has cost/minutes)
     assert all(l["type"] == "ground" for l in o["legs"])
     assert any(l["mode"] == "ferry" for l in o["legs"])
-    # why-string discloses the sea crossing (⛴) and marks the estimate (~)
-    assert "⛴" in v["why"] and "~€" in v["why"] and "to Halki" in v["why"]
+    # why-string discloses the sea crossing (⛴️) and marks the estimate (~)
+    assert "⛴️" in v["why"] and "~€" in v["why"] and "to Halki" in v["why"]
 
 
 # --------------------------------------------------------------------------- #

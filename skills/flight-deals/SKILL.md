@@ -87,11 +87,11 @@ Then up to 5 deals, each in exactly this two-line shape (omit a part only when t
 ```
 1. ✈️ BUD→CFU · Aug 22–27 (5n) · €113 [exact]
    Ryanair 06:25 · 29% below typical · id 24affe56a9
-2. ✈️ BUD→NAP→Halki ⛴ (gem) · Sep 3–9 (6n) · €207 [exact + ~€20 onward]
-   then bus 30m + ⛴ 1h15 · seasonal ferry · id 8c1d02aa41
+2. ✈️ BUD→NAP→Halki ⛴️ (gem) · Sep 3–9 (6n) · €207 [exact + ~€20 onward]
+   then bus 30m + ⛴️ 1h15 · seasonal ferry · id 8c1d02aa41
 ```
 
-- Non-direct suffixes: `via VIE 🚌` (extended origin) · `open-jaw ⛴/🚆` · `self-transfer ⚠ separate tickets` (S5) · `→ <gem> ⛴ (gem)`.
+- Non-direct suffixes: `via VIE 🚌` (extended origin) · `open-jaw ⛴️/🚆` · `self-transfer ⚠ separate tickets` (S5) · `→ <gem> ⛴️ (gem)`.
 - Copy `~` markers and `[exact|approximate]` verbatim from the JSON — never add or remove precision; totals come from `price_eur` only.
 - Include the tool's booking/maps links as plain URLs on the detail line when the channel renders them.
 - Empty results: relay `summary`, then offer the single `next` suggestion as a question ("Widen budget to €190?").

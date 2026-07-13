@@ -79,7 +79,7 @@ total_minutes, total_cost_eur, note, season?}`. A gem may carry a gem-level
 `season` (a `"may-oct"` month window; a gateway's own `season` overrides it) and
 `marginal: true` (day-trip / awkward-connection gems, curated but held back from
 category matching). All curated; `estimate_basis` is implicitly `"curated"`;
-totals are `~` estimates; ferry legs set `has_ferry`/⛴.
+totals are `~` estimates; ferry legs set `has_ferry`/⛴️.
 
 **Onward arithmetic by shape** (settled): S2/S3 round-trip = onward cost & minutes
 **×2** (out AND back through the gateway); S1 one-way = **×1**; **S4 open-jaw is
@@ -447,7 +447,7 @@ not crossing time). The fix, in authority order:
    - **domestic** (`15–60 km`, a few/day): 30 / €5 / 0.15 / 30
    - **long** (`≥60 km`, 2–3/day): 110 / €35 / 0.15 / 45
 
-   Cap 420 min (land keeps 330); mode `ferry+ground`; ⛴ in why-strings; additive
+   Cap 420 min (land keeps 330); mode `ferry+ground`; ⛴️ in why-strings; additive
    `has_ferry` in the envelope so agents disclose the crossing before the user
    gets attached to a price. Calibration: modeled DURATION is within ±40% of all
    five curated corridors and COST within ±40% of four — CTA↔SUF cost is a
