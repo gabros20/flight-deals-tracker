@@ -1,5 +1,11 @@
 # Flight Deals Tracker — Upgrade Plan v2 (2026-07)
 
+> **STATUS: COMPLETED 2026-07-13** — all phases and follow-ups shipped (18
+> gated tasks, 560 tests green). This document is now a historical planning
+> record; it is kept for the "why" behind decisions, not as current truth.
+> For as-built behavior, read `docs/SEARCH-DESIGN.md` (search model, trip
+> shapes, gems) and `docs/CONTRACT.md` (frozen output schema) instead.
+
 **Goal**: Turn the tool into a solid, agent-first deal monitor: reliable round-trip
 search, deterministic pipelines an agent (Hermes, any model tier) can drive without
 inventing strategy, and a cron-safe watch/alert loop controlled from Telegram.
