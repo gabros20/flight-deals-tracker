@@ -52,3 +52,5 @@ operate on the tool and this codebase in general.
   fabricated data, tests never hit live endpoints).
 - Small, coherent commits; run the full test suite before calling anything
   done.
+
+- **Presenting results**: always use the standard format in skills/flight-deals/SKILL.md §"Presenting results" — summary line, then ≤5 two-line deal cards built only from envelope fields, `~`/confidence markers verbatim, no tables.

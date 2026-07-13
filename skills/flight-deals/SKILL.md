@@ -79,6 +79,25 @@ Read `summary` (paste-ready), skim `results` for the ones worth naming, and if
 `next` offers one widening move and the user wants more, run it — then stop
 (rule 2).
 
+## Presenting results (the standard format — use it EVERY time)
+
+Line 1: the envelope `summary`, lightly edited; append the coverage caveat when `sources` shows a failure.
+Then up to 5 deals, each in exactly this two-line shape (omit a part only when the field is absent):
+
+```
+1. ✈️ BUD→CFU · Aug 22–27 (5n) · €113 [exact]
+   Ryanair 06:25 · 29% below typical · id 24affe56a9
+2. ✈️ BUD→NAP→Halki ⛴ (gem) · Sep 3–9 (6n) · €207 [exact + ~€20 onward]
+   then bus 30m + ⛴ 1h15 · seasonal ferry · id 8c1d02aa41
+```
+
+- Non-direct suffixes: `via VIE 🚌` (extended origin) · `open-jaw ⛴/🚆` · `self-transfer ⚠ separate tickets` (S5) · `→ <gem> ⛴ (gem)`.
+- Copy `~` markers and `[exact|approximate]` verbatim from the JSON — never add or remove precision; totals come from `price_eur` only.
+- Include the tool's booking/maps links as plain URLs on the detail line when the channel renders them.
+- Empty results: relay `summary`, then offer the single `next` suggestion as a question ("Widen budget to €190?").
+- `brief`/alert digests: relay the digest text as-is, prefixed 🔔.
+- Never tables. Never invented fields. More than 5 results: say how many more exist and offer to show them.
+
 # Gotchas (grows from real failures)
 
 - A city is not a tag: use `--to` for named places, `--where` for categories.
