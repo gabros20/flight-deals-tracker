@@ -108,8 +108,9 @@
 <div class="scroll-root">
 <main>
   <h1>✈️ flight-deals — how it works</h1>
-  <p class="sub">A deal-finding engine for Ryanair &amp; Wizz Air trips from Budapest, built to be driven by an
-  AI assistant over Telegram. The strategy lives <em>inside the tool</em>; the agent just picks a verb.</p>
+  <p class="sub">A deal-finding engine for Ryanair &amp; Wizz Air trips from Budapest, driven by an AI assistant
+  over Telegram. Five trip shapes, 89 ferry-reachable island gems, honest estimates everywhere.
+  The strategy lives <em>inside the tool</em>; the agent just picks a verb.</p>
 
   <!-- ARCHITECTURE -->
   <section>
@@ -143,9 +144,10 @@
       <div class="downarrow">↓</div>
       <div class="layer">
         <h3>🌐 Free data plane <span class="who">no paid APIs</span></h3>
-        <p><b>Ryanair farfnd</b> — true paired round-trip fares, month calendars, “anywhere” sweeps (<span class="badge b-ok">exact</span>) ·
-        <b>Wizz timetable</b> — daily minima both directions, HUF→EUR converted, API version auto-rediscovered on drift
-        (<span class="badge b-warn">approximate ±10%</span>).</p>
+        <p><b>Ryanair farfnd</b> — paired round-trip fares with flight times, month calendars, “anywhere” sweeps (<span class="badge b-ok">exact</span>) ·
+        <b>Wizz timetable</b> — daily minima both directions, HUF→EUR, version auto-rediscovery
+        (<span class="badge b-warn">approximate ±10%</span>) · <b>Ground matrix</b> — precomputed out-of-band:
+        OSRM driving + Transitous real transit schedules + curated ferry corridors; never fetched at search time.</p>
       </div>
     </div>
   </section>
@@ -199,12 +201,33 @@
         <p>Vienna &amp; Bratislava have huge low-cost bases 2–3h from Budapest. Same sweep from there, +2× bus cost (~€42 VIE). Shown only when it genuinely beats direct.</p></div>
       <div class="shape s4"><span class="tag">S4 · open-jaw</span>
         <div class="route"><span class="node">BUD</span><span class="fly">✈</span><span class="node">BRI</span><span class="grd">🚆</span><span class="node">NAP</span><span class="fly">✈</span><span class="node">BUD</span></div>
-        <p>Fly into one city, train across, fly home from another (both directions evaluated, cheaper wins). Two exact one-way fares + ground — two separate tickets, combined locally. Live find: €114.68.</p></div>
-      <div class="shape s5"><span class="tag">S5 · via-hub — not yet</span>
-        <div class="route"><span class="node">BUD</span><span class="fly">✈</span><span class="node">HUB</span><span class="fly">✈</span><span class="node">?</span></div>
-        <p>Same-day self-transfers need flight-time verification. The spec accepts it; the planner politely refuses until it’s built right.</p></div>
+        <p>Fly into one city, train across, fly home from another (both directions evaluated, cheaper wins). 45 ground pairs: curated corridors, real Transitous schedules where feeds exist, ferry-aware tiers for sea crossings. Live find: €114.68.</p></div>
+      <div class="shape s5"><span class="tag">S5 · via-hub self-transfer</span>
+        <div class="route"><span class="node">BUD</span><span class="fly">✈</span><span class="node">VIE</span><span class="fly">✈</span><span class="node">?</span></div>
+        <p>Two separate same-day tickets through a hub — every connection <b>time-verified</b> (≥3h, overnight-safe), a displayed ~€25 risk buffer in the total, and unverified candidates are never shown. Honest scarcity: cheapest-fare days rarely align, and the tool says so instead of guessing.</p></div>
     </div>
-    <pre><code>$ flight-deals getaway … --shapes direct,extended-origin,open-jaw   <span class="cmt"># opt-in</span></code></pre>
+    <pre><code>$ flight-deals getaway … --shapes direct,extended-origin,open-jaw,via-hub   <span class="cmt"># opt-in</span></code></pre>
+  </section>
+
+  <!-- GEMS -->
+  <section>
+    <span class="pill">Gem islands</span>
+    <h2>89 places the airport map can’t see</h2>
+    <p class="lead">Small islands reached through a gateway airport plus scheduled ferries and buses —
+    researched across the whole Mediterranean and Atlantic (96 assessed, chains, fares, seasons, sources).
+    A gem rides any deal to its gateway: the onward chain is appended, doubled for the return, and priced into the ranked total.</p>
+    <div class="shapes">
+      <div class="shape s4"><span class="tag">— to Halki</span>
+        <div class="route"><span class="node">BUD</span><span class="fly">✈</span><span class="node">RHO</span><span class="grd">🚌</span><span class="node">port</span><span class="grd">⛴</span><span class="node">Halki</span></div>
+        <p><code>getaway --to halki</code> → “Halki (via RHO), €187 rt … then bus 30m + ⛴, ~€20 rt”. Year-round ferry, 5–7 days a week.</p></div>
+      <div class="shape s3"><span class="tag">— to La Maddalena</span>
+        <div class="route"><span class="node">BUD</span><span class="fly">✈</span><span class="node">OLB</span><span class="grd">🚌</span><span class="node">Palau</span><span class="grd">⛴</span><span class="node">Madd.</span></div>
+        <p>Shuttle-grade ferry every 15–30 minutes. Caprera included by causeway.</p></div>
+      <div class="shape s2"><span class="tag">— by category</span>
+        <div class="route"><span class="node">--where</span><span class="node">"hidden-gem &amp; island &amp; greece"</span></div>
+        <p>Gems match the same tag algebra as airports: Symi, Tilos, Nisyros, Folegandros, Sikinos… Season-gated (an Amorgos fast link won’t appear for a November search); day-trip-only islets need an explicit <code>--to</code>.</p></div>
+    </div>
+    <p class="lead" style="margin-top:.8rem">Gem watches persist: <em>“alert me when Halki under €150”</em> compares the threshold against the full fare-plus-ferry total.</p>
   </section>
 
   <!-- MONITORING -->
@@ -247,7 +270,9 @@ agent_prompt: <span class="cmt"># optional — agentic review</span></code></pre
       <tr><th>Signal</th><th>Meaning</th></tr>
       <tr><td><span class="badge b-ok">exact</span></td><td>Ryanair’s own bookable fare, or a Wizz price re-verified on the exact date. Only these can trigger alerts or final budget decisions.</td></tr>
       <tr><td><span class="badge b-warn">approximate</span></td><td>Wizz timetable cache (±10%) or a day-level pairing — always labeled, confirmed before it matters, never alert-worthy on its own.</td></tr>
-      <tr><td><span class="badge b-warn">~€42 ground</span></td><td>Bus/train estimates are curated, marked with <code>~</code>, and included in the ranked total — never hidden.</td></tr>
+      <tr><td><span class="badge b-ok">3h10 scheduled</span></td><td>A duration without <code>~</code> comes from a real timetable (Transitous). Hybrid and modeled durations keep the <code>~</code>; the <code>estimate_basis</code> field says exactly which kind you’re holding.</td></tr>
+      <tr><td><span class="badge b-warn">~€42 ground</span></td><td>Bus/train/ferry estimates are curated or modeled, marked with <code>~</code>, and included in the ranked total — never hidden. Sea crossings get ferry-tier pricing, never road math.</td></tr>
+      <tr><td><span class="badge b-bad">unverified — never shown</span></td><td>A self-transfer whose connection couldn’t be time-verified does not exist as far as you’re concerned: not displayed, not snapshotted, not alerted.</td></tr>
       <tr><td><span class="badge b-bad">sources: error</span></td><td>A provider failing is reported in every response and in the digest (“results may be incomplete”). “No deals found” always means <em>we looked</em>.</td></tr>
     </table>
   </section>
@@ -258,7 +283,8 @@ agent_prompt: <span class="cmt"># optional — agentic review</span></code></pre
     <h2>Plaintext, git-friendly state</h2>
     <table>
       <tr><th>Path</th><th>What</th></tr>
-      <tr><td>data/destinations.json</td><td>76 airports, 40 tags (the <code>--where</code> vocabulary), multi-airport cities, ground pairs</td></tr>
+      <tr><td>data/destinations.json</td><td>78 airports + 89 gem islands, 40+ tags (the <code>--where</code> vocabulary), city anchors, access pads, curated ferry corridors</td></tr>
+      <tr><td>data/ground_matrix.json</td><td>OSRM-computed + Transitous-scheduled ground pairs, refreshed out-of-band (<code>scripts/refresh_ground.py</code>)</td></tr>
       <tr><td>data/searches/*.yaml</td><td>Your watches / saved searches (hand-editable; a bad file is skipped, never fatal)</td></tr>
       <tr><td>data/price_history.csv</td><td>Every observed price — feeds “is €113 good for this route?”</td></tr>
       <tr><td>data/deals/*.jsonl</td><td>Append-only snapshots behind <code>check &lt;deal_id&gt;</code></td></tr>
@@ -266,11 +292,11 @@ agent_prompt: <span class="cmt"># optional — agentic review</span></code></pre
       <tr><td>docs/CONTRACT.md</td><td>The frozen JSON contract every command obeys (and tests pin)</td></tr>
       <tr><td>deploy/launchd/…plist · docs/OPERATIONS.md</td><td>Cron setup, secrets via env, logs, manual runs</td></tr>
     </table>
-    <p class="lead" style="margin-top:.8rem">371 tests, fixtures recorded from the live APIs, golden outputs, fake-clock alert tests —
+    <p class="lead" style="margin-top:.8rem">560 tests, fixtures recorded from the live APIs, golden outputs, fake-clock alert tests, adversarially-reviewed connection math —
     and a two-tier skill (<code>SKILL.md</code> router for any model, <code>spec-guide.md</code> for strong agents) installed for both Hermes and Claude Code.</p>
   </section>
 
-  <p class="foot">flight-deals · agent-first rebuild · 2026-07 — this file is self-contained; open it anywhere.</p>
+  <p class="foot">flight-deals · agent-first rebuild, complete S1–S5 · 2026-07 — this file is self-contained; open it anywhere.</p>
 </main>
 </div>
 </body>
