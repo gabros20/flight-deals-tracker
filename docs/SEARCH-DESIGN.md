@@ -117,8 +117,10 @@ and watch/alert thresholds all apply to the extended total (fare + onward),
 mirroring the S3/S4 ground-inclusive precedent. `where show "<expr>"` lists
 matched gems distinctly (marginal flagged).
 
-**Out of scope (v1):** Azores (S5-dependent), pseudo-airports, live schedule
-APIs, and any S5 self-transfer onward.
+**Out of scope (v1):** pseudo-airports, live schedule APIs, and any S5
+self-transfer onward. (Azores was out of scope here at v1 time; the registry
+unlock shipped in Task 18 — see §2c below — though no gems are registered
+there yet, and no Ryanair route makes it surface today.)
 
 ## 2c. Via-hub self-transfer (as-built 2026-07-12; Task 16)
 

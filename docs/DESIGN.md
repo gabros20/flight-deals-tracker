@@ -1,3 +1,10 @@
+> **Historical, pre-rebuild.** This document predates the agent-first rewrite
+> (`docs/UPGRADE-PLAN.md`) and proposes a `farepy`/Apify-based architecture
+> that was never built this way — the shipped system has no `farepy`
+> provider and no Apify dependency (free stack only). Kept for historical
+> reference only; current design lives in `docs/SEARCH-DESIGN.md` and
+> `docs/CONTRACT.md`.
+
 # Flight Deals Tracker - Design Document
 
 **Version**: 2026-06-22  

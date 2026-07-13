@@ -1,3 +1,8 @@
+> **Historical, pre-rebuild.** This was the implementation plan for the
+> `farepy`/Apify design in `docs/DESIGN.md`, superseded wholesale by the
+> agent-first rebuild (`docs/UPGRADE-PLAN.md`). Kept for historical
+> reference only.
+
 # Flight Deals Tracker - Implementation Plan
 
 **Goal**: Implement reliable round-trip support using the best findings from research.
