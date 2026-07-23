@@ -142,6 +142,51 @@ def test_retry_still_404_propagates():
 
 
 # --------------------------------------------------------------------------- #
+# 400 InvalidMarket = route Wizz doesn't fly -> empty result, NOT a failure    #
+# and NOT a version re-discovery (regression: spurious "Wizz down" on sweeps)  #
+# --------------------------------------------------------------------------- #
+@responses.activate
+def test_invalid_market_400_is_empty_not_error_and_no_rediscovery():
+    """A category sweep hits Wizz for airports it doesn't serve (e.g. BUD->CAG,
+    a Ryanair-only route). Wizz answers `400 {"validationCodes":["InvalidMarket"]}`.
+    That must resolve to zero fares, never touch version discovery, and never
+    raise — otherwise 'worst status wins' aggregation reports the whole provider
+    down while other routes returned real fares."""
+    url = _timetable_url()
+    responses.add(responses.POST, url,
+                  json={"validationCodes": ["InvalidMarket"]}, status=400)
+
+    result = _p().search_timetable("BUD", "CAG", "2026-08-22", "2026-08-29")
+
+    assert result.outbound == [] and result.inbound == []
+    assert result.version_refreshed is False
+    # Exactly ONE call: no discovery GET, no retry POST — a 400 is not drift.
+    assert len(responses.calls) == 1
+    assert responses.calls[0].request.method == "POST"
+
+
+@responses.activate
+def test_invalid_market_400_leaves_oneway_deals_empty_without_raising():
+    url = _timetable_url()
+    responses.add(responses.POST, url,
+                  json={"validationCodes": ["InvalidMarket"]}, status=400)
+    deals, refreshed = _p().oneway_deals("BUD", "CAG", "2026-08-22", "2026-08-29")
+    assert deals == []
+    assert refreshed is False
+
+
+@responses.activate
+def test_other_400_still_raises_provider_down():
+    """A 400 that ISN'T InvalidMarket is a genuine unexpected failure and must
+    still surface as an error (not silently swallowed as 'no fares')."""
+    url = _timetable_url()
+    responses.add(responses.POST, url,
+                  json={"validationCodes": ["InvalidMinAdultCount"]}, status=400)
+    with pytest.raises(ProviderDown):
+        _p().search_timetable("BUD", "CTA", "2026-08-22", "2026-08-29")
+
+
+# --------------------------------------------------------------------------- #
 # Unknown currency -> typed error                                             #
 # --------------------------------------------------------------------------- #
 @responses.activate
