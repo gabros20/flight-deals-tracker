@@ -10,8 +10,10 @@ Two facts drive the design:
   version drifts (live capture confirmed 29.5.0 -> 29.6.0). A pinned version
   eventually 404s. So the version is **auto-discovered**: resolved from a module
   cache -> ``data/wizz_version.txt`` -> a compiled-in fallback, and on a
-  version-drift **404/400** the timetable page HTML is re-scraped for
-  ``be.wizzair.com/{X.Y.Z}``, persisted, and the call **retried once**.
+  version-drift **404** the timetable page HTML is re-scraped for
+  ``be.wizzair.com/{X.Y.Z}``, persisted, and the call **retried once**. A
+  **400** is *not* drift — Wizz answers ``400 InvalidMarket`` for a city-pair it
+  doesn't fly, mapped to an empty (benign) result, never an error.
 * The timetable endpoint returns **day-level minima for BOTH directions in one
   POST**, priced in the origin market currency (**HUF for BUD**). Every price is
   converted to EUR at this boundary via ``fx.to_eur`` (Global Constraint 4), and
@@ -52,9 +54,21 @@ SOURCE_ENDPOINT = "wizz/timetable"
 _VERSION_IN_HTML = re.compile(r"be\.wizzair\.com/(\d+\.\d+\.\d+)")
 _VERSION_BARE = re.compile(r"^\d+\.\d+\.\d+$")
 
-# Statuses that mean "your pinned API version is wrong" — the signal to
-# re-discover and retry once.
-_VERSION_DRIFT_STATUSES = (404, 400)
+# The status that means "your pinned API version is wrong" — the signal to
+# re-discover and retry once. A genuinely stale version 404s (the versioned
+# host path doesn't exist); confirmed against live: POSTing an old version
+# returns 404 HTML. A 400 is NOT drift — see `_NOT_SERVED_CODE`.
+_VERSION_DRIFT_STATUSES = (404,)
+
+# Wizz returns HTTP 400 `{"validationCodes":["InvalidMarket"]}` for any
+# city-pair it does not operate (e.g. BUD->CAG — Ryanair flies it, Wizz doesn't).
+# This is a normal, expected answer during a category sweep whose candidate
+# airports aren't all Wizz routes — NOT a provider failure. Treating it as one
+# used to (a) trigger a pointless version re-discovery that found the same
+# current version, and (b) propagate an error that "worst status wins"
+# aggregation turned into a spurious whole-provider "Wizz down". Detected in the
+# 400 body and mapped to an empty (benign) result instead.
+_NOT_SERVED_CODE = "InvalidMarket"
 
 # POST headers that worked in the live capture (see scripts/capture_fixtures.py).
 # No special market cookie was required; the passenger counts in the body are
@@ -228,6 +242,16 @@ class WizzProvider:
         try:
             body = http.post_json(TIMETABLE_URL.format(version=version), payload, headers=_HEADERS)
         except UnexpectedStatus as e:
+            if e.status == 400 and _NOT_SERVED_CODE in (e.body or ""):
+                # Route Wizz doesn't fly — a normal answer, not a failure. Yield
+                # an empty timetable so the planner records zero fares with an
+                # OK status (never a whole-provider "Wizz down"). Not cached: a
+                # route's served-ness isn't ours to memoize on a validation code.
+                logger.debug(
+                    "wizz: %s->%s not a Wizz market (400 %s); treating as no fares",
+                    origin, dest, _NOT_SERVED_CODE,
+                )
+                return {"outboundFlights": [], "returnFlights": []}, False
             if e.status not in _VERSION_DRIFT_STATUSES:
                 raise
             logger.warning("wizz: version %s got HTTP %s; re-discovering", version, e.status)

@@ -60,13 +60,22 @@ class UnexpectedStatus(ProviderDown):
     A non-retryable, unexpected HTTP status (a 4xx that isn't 403/429 — e.g. a
     404 or 400). Subclasses ``ProviderDown`` so callers that only care that the
     call failed still treat it as a provider outage, but it carries ``.status``
-    so a provider can react to a *specific* code — e.g. Wizz treats a 404/400 on
+    so a provider can react to a *specific* code — e.g. Wizz treats a 404 on
     its versioned timetable path as a signal to re-discover the API version and
-    retry once (Task 4).
+    retry once (Task 4), and inspects the ``.body`` of a 400 to tell an
+    ``InvalidMarket`` (route Wizz doesn't fly — benign) from a real failure.
+
+    ``.body`` is the response text, truncated — enough to read a small JSON
+    validation payload without carrying a whole HTML error page around.
     """
 
-    def __init__(self, status: int, message: str = ""):
+    #: Cap on the retained body text — validation payloads are tiny; HTML error
+    #: pages are not, and we don't want to hold one in an exception.
+    BODY_CAP = 500
+
+    def __init__(self, status: int, message: str = "", *, body: str = ""):
         self.status = status
+        self.body = (body or "")[: self.BODY_CAP]
         super().__init__(message or f"unexpected status {status}")
 
 
@@ -329,9 +338,13 @@ def _request(
                 raise RateLimited(f"{url} returned 429 after {max_retries} retries")
             raise ProviderDown(f"{url} returned {status} after {max_retries} retries")
 
-        # Any other 4xx: not retryable, not a rate limit. Carries the status so
-        # a provider (e.g. Wizz) can act on a specific code like 404.
-        raise UnexpectedStatus(status, f"{url} returned unexpected status {status}")
+        # Any other 4xx: not retryable, not a rate limit. Carries the status
+        # AND the (truncated) body so a provider (e.g. Wizz) can act on a
+        # specific code like 404, or read a 400's validation payload to tell a
+        # benign "route not served" from a real failure.
+        raise UnexpectedStatus(
+            status, f"{url} returned unexpected status {status}", body=resp.text
+        )
 
     # Unreachable, but keeps type-checkers happy.
     raise ProviderDown(f"{url} exhausted retries (last status {last_status})")

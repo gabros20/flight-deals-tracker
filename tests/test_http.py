@@ -183,6 +183,26 @@ def test_post_json_404_raises_unexpected_status_with_code():
 
 
 @responses.activate
+def test_unexpected_status_carries_truncated_body():
+    """A 4xx exposes its response body (truncated) so a provider can read a
+    validation payload — e.g. Wizz telling InvalidMarket from a real failure."""
+    from flight_deals.http import UnexpectedStatus, post_json
+
+    responses.add(responses.POST, URL,
+                  json={"validationCodes": ["InvalidMarket"]}, status=400)
+    with pytest.raises(UnexpectedStatus) as ei:
+        post_json(URL, {"x": 1})
+    assert ei.value.status == 400
+    assert "InvalidMarket" in ei.value.body
+
+    responses.reset()
+    responses.add(responses.POST, URL, body="Z" * 5000, status=400)
+    with pytest.raises(UnexpectedStatus) as ei:
+        post_json(URL, {"x": 1})
+    assert len(ei.value.body) == UnexpectedStatus.BODY_CAP  # oversized body capped
+
+
+@responses.activate
 def test_post_json_retries_5xx_then_succeeds():
     from flight_deals.http import post_json
 
